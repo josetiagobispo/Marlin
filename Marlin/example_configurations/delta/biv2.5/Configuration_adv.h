@@ -157,7 +157,7 @@
 
   #if ENABLED(Z_DUAL_ENDSTOPS)
     #define Z2_MAX_PIN 36                     //Endstop used for Z2 axis. In this case I'm using XMAX in a Rumba Board (pin 36)
-    const bool Z2_MAX_ENDSTOP_INVERTING = false;
+    #define Z2_MAX_ENDSTOP_INVERTING = false;
     #define DISABLE_XMAX_ENDSTOP              //Better to disable the XMAX to avoid conflict. Just rename "XMAX_ENDSTOP" by the endstop you are using for Z2 axis.
   #endif
 
@@ -273,7 +273,11 @@
 #define MINIMUM_PLANNER_SPEED 0.05// (mm/sec)
 
 // Microstep setting (Only functional when stepper driver microstep pins are connected to MCU.
-#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16]
+//Alligator Board support 16 or 32 only value                         *
+#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16,32(32 is supported only by Alligator)]
+
+// Motor Current setting (Only functional on ALLIGATOR BOARD)
+#define MOTOR_CURRENT {1, 1, 1, 1, 1, 1, 1} // X Y Z E0 E1 E2 E3 - Values 0 - 2.5 A
 
 // Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)
 #define DIGIPOT_MOTOR_CURRENT {135,135,135,135,135} // Values 0-255 (RAMBO 135 = ~0.75A, 185 = ~1A)
@@ -404,6 +408,14 @@ const unsigned int dropsegments = 5; //everything with less than this number of 
 
 // Control heater 0 and heater 1 in parallel.
 //#define HEATERS_PARALLEL
+
+//===========================================================================
+//============================= MEDIAN COUNT ================================
+//===========================================================================
+
+//For Smoother temperature
+//ONLY FOR DUE
+#define MEDIAN_COUNT 10
 
 //===========================================================================
 //================================= Buffers =================================
