@@ -126,11 +126,65 @@
   #include "pins_RIGIDBOARD.h"
 #elif MB(MEGACONTROLLER)
   #include "pins_MEGACONTROLLER.h"
+#elif MB(RADDS)
+  #include "pins_RADDS.h"
+#elif MB(RAMPS_FD_V1) || MB(RAMPS_FD_V2)
+  #include "pins_RAMPS_FD.h"
+#elif MB(RAMPS_SMART)
+  #include "pins_RAMPS_SMART.h"
+#elif MB(RAMPS_DUO_EFB)
+  #define IS_RAMPS_14
+  #define IS_RAMPS_DUO
+  #include "pins_RAMPS_13_EFB.h"
+#elif MB(RAMPS_DUO_EEB) || MB(RAMPS_DUO_EFF) || MB(RAMPS_DUO_EEF) || MB(RAMPS_DUO_SF)
+  #define IS_RAMPS_14
+  #define IS_RAMPS_DUO
+  #include "pins_RAMPS_13.h"
+#elif MB(RAMPS4DUE_EFB)
+  #define IS_RAMPS_14
+  #define IS_RAMPS4DUE
+  #include "pins_RAMPS_13_EFB.h"
+#elif MB(RAMPS4DUE_EEB) || MB(RAMPS4DUE_EFF) || MB(RAMPS4DUE_EEF) || MB(RAMPS4DUE_SF)
+  #define IS_RAMPS_14
+  #define IS_RAMPS4DUE
+  #include "pins_RAMPS_13.h"
+#elif MB(ALLIGATOR)
+  #include "pins_ALLIGATOR_R2.h"
 #elif MB(99)
   #include "pins_99.h"
 #else
   #error Unknown MOTHERBOARD value set in Configuration.h
 #endif
+
+#ifdef __SAM3X8E__
+  /****************************************************************************************
+  *********** Available chip select pins for HW SPI are 4 10 52 77 ************************
+  ****************************************************************************************/
+  #if (SDSS == 4) || (SDSS == 10) || (SDSS == 52) || (SDSS == 77)
+    #if (SDSS == 4)
+      #define SPI_PIN         87
+      #define SPI_CHAN        1
+    #elif (SDSS == 10)
+      #define SPI_PIN         77
+      #define SPI_CHAN        0
+    #elif (SDSS == 52) 
+      #define SPI_PIN         86
+      #define SPI_CHAN        2
+    #else
+      #define SPI_PIN         77
+      #define SPI_CHAN        0
+    #endif
+    #define MOSI_PIN          75
+    #define MISO_PIN          74
+    #define SCK_PIN           76
+  #else
+    #define SOFTWARE_SPI
+    #define MOSI_PIN		51
+    #define MISO_PIN		50
+    #define SCK_PIN 		52
+  #endif
+#endif
+/****************************************************************************************/
 
 // List of pins which to ignore when asked to change by gcode, 0 and 1 are RX and TX, do not mess with those!
 #define _E0_PINS E0_STEP_PIN, E0_DIR_PIN, E0_ENABLE_PIN, HEATER_0_PIN, analogInputToDigitalPin(TEMP_0_PIN),
