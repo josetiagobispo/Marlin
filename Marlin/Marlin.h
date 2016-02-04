@@ -16,13 +16,17 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include <util/delay.h>
+#ifdef __SAM3X8E__
+  #include "HAL.h"
+#else
+  #include <util/delay.h>
+  #include <avr/eeprom.h>
+  #include "fastio.h"
+#endif
 #include <avr/pgmspace.h>
-#include <avr/eeprom.h>
 #include <avr/interrupt.h>
 
 
-#include "fastio.h"
 #include "Configuration.h"
 #include "pins.h"
 
@@ -34,16 +38,20 @@
 
 typedef unsigned long millis_t;
 
-// Arduino < 1.0.0 does not define this, so we need to do it ourselves
-#ifndef analogInputToDigitalPin
-  #define analogInputToDigitalPin(p) ((p) + 0xA0)
+#ifndef __SAM3X8E__
+  // Arduino < 1.0.0 does not define this, so we need to do it ourselves
+  #ifndef analogInputToDigitalPin
+    #define analogInputToDigitalPin(p) ((p) + 0xA0)
+  #endif
 #endif
 
 #ifdef USBCON
   #include "HardwareSerial.h"
 #endif
 
-#include "MarlinSerial.h"
+#ifndef __SAM3X8E__
+  #include "MarlinSerial.h"
+#endif
 
 #ifndef cbi
   #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -61,7 +69,21 @@ typedef unsigned long millis_t;
     #define MYSERIAL Serial
   #endif // BLUETOOTH
 #else
-  #define MYSERIAL customizedSerial
+  #ifdef __SAM3X8E__
+    #if SERIAL_PORT == -1
+      #define MYSERIAL SerialUSB
+    #elif SERIAL_PORT == 0
+      #define MYSERIAL Serial
+    #elif SERIAL_PORT == 1
+      #define MYSERIAL Serial1
+    #elif SERIAL_PORT == 2
+      #define MYSERIAL Serial2
+    #elif SERIAL_PORT == 3
+      #define MYSERIAL Serial3
+    #endif
+  #else
+    #define MYSERIAL customizedSerial
+  #endif
 #endif
 
 #define SERIAL_CHAR(x) MYSERIAL.write(x)
