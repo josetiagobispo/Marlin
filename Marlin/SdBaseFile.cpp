@@ -291,7 +291,11 @@ bool SdBaseFile::getFilename(char* name) {
   return true;
 }
 //------------------------------------------------------------------------------
-void SdBaseFile::getpos(fpos_t* pos) {
+  #ifdef __SAM3X8E__
+    void SdBaseFile::getpos(FatPos_t* pos) {
+  #else
+    void SdBaseFile::getpos(fpos_t* pos) {
+  #endif
   pos->position = curPosition_;
   pos->cluster = curCluster_;
 }
@@ -392,9 +396,16 @@ bool SdBaseFile::make83Name(const char* str, uint8_t* name, const char** ptr) {
     }
     else {
       // illegal FAT characters
-      PGM_P p = PSTR("|<>^+=?/[];,*\"\\");
-      uint8_t b;
-      while ((b = pgm_read_byte(p++))) if (b == c) goto fail;
+      #ifdef __SAM3X8E__
+        // store chars in RAM
+        if (strchr("|<>^+=?/[];,*\"\\", c)) {
+          goto fail;
+        }
+      #else  // __SAM3X8E__
+        PGM_P p = PSTR("|<>^+=?/[];,*\"\\");
+        uint8_t b;
+        while ((b = pgm_read_byte(p++))) if (b == c) goto fail;
+      #endif  // __SAM3X8E__
       // check size and only allow ASCII printable characters
       if (i > n || c < 0X21 || c > 0X7E)goto fail;
       // only upper case allowed in 8.3 names - convert lower to upper
@@ -923,7 +934,11 @@ fail:
  * \return The byte if no error and not at eof else -1;
  */
 int SdBaseFile::peek() {
-  fpos_t pos;
+  #ifdef __SAM3X8E__
+    FatPos_t pos;
+  #else
+    fpos_t pos;
+  #endif
   getpos(&pos);
   int c = read();
   if (c >= 0) setpos(&pos);
@@ -1479,7 +1494,11 @@ fail:
   return false;
 }
 //------------------------------------------------------------------------------
-void SdBaseFile::setpos(fpos_t* pos) {
+#ifdef __SAM3X8E__
+  void SdBaseFile::setpos(FatPos_t* pos) {
+#else
+  void SdBaseFile::setpos(fpos_t* pos) {
+#endif
   curPosition_ = pos->position;
   curCluster_ = pos->cluster;
 }
