@@ -134,5 +134,8 @@ char* ftostr32sp(const float& x); // remove zero-padding from ftostr32
 char* ftostr5(const float& x);
 char* ftostr51(const float& x);
 char* ftostr52(const float& x);
+#ifdef __SAM3X8E__
+  char* ftostr62(const float& x);
+#endif
 
 #endif //ULTRALCD_H
