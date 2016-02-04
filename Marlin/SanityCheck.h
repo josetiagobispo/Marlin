@@ -332,6 +332,25 @@
   #error TEMP_SENSOR_0 is required.
 #endif
 
+#ifdef __SAM3X8E__
+  #if MB(ALLIGATOR)
+    #if DISABLED(UI_VOLTAGE_LEVEL)
+      #error DEPENDENCY ERROR: Missing setting UI_VOLTAGE_LEVEL
+    #endif
+  #endif
+  #ifdef M100_FREE_MEMORY_WATCHER
+    #error M100_FREE_MEMORY_WATCHER is not supported by ARM platform yet.
+  #endif
+  #ifdef FAST_PWM_FAN
+    #error FAST_PWM_FAN is not supported by ARM platform yet.
+  #endif
+  #ifdef WATCHDOG_RESET_MANUAL
+    #error WATCHDOG_RESET_MANUAL is not supported by ARM platform yet.
+  #endif
+  #ifdef ADVANCE
+    #error ADVANCE is not supported by ARM platform yet.
+  #endif
+#endif
 /**
  * Warnings for old configurations
  */
