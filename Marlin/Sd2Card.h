@@ -31,17 +31,31 @@
 #include "Sd2PinMap.h"
 #include "SdInfo.h"
 //------------------------------------------------------------------------------
-// SPI speed is F_CPU/2^(1 + index), 0 <= index <= 6
-/** Set SCK to max rate of F_CPU/2. See Sd2Card::setSckRate(). */
-uint8_t const SPI_FULL_SPEED = 0;
-/** Set SCK rate to F_CPU/4. See Sd2Card::setSckRate(). */
-uint8_t const SPI_HALF_SPEED = 1;
-/** Set SCK rate to F_CPU/8. See Sd2Card::setSckRate(). */
-uint8_t const SPI_QUARTER_SPEED = 2;
-/** Set SCK rate to F_CPU/16. See Sd2Card::setSckRate(). */
-uint8_t const SPI_EIGHTH_SPEED = 3;
-/** Set SCK rate to F_CPU/32. See Sd2Card::setSckRate(). */
-uint8_t const SPI_SIXTEENTH_SPEED = 4;
+#ifdef __SAM3X8E__
+  // On Due, SPI rate = MCLK / n
+  // where MCK = 84 MHz
+
+  uint8_t const SPI_FULL_SPEED = 8;	// 10.5 MHz
+  uint8_t const SPI_HALF_SPEED = 16;	//  5.25 MHz
+  uint8_t const SPI_QUARTER_SPEED = 32;	//  2.625 MHz
+  uint8_t const SPI_EIGHTH_SPEED = 64;	//  1.3125 MHz
+  uint8_t const SPI_SIXTEENTH_SPEED = 128;	//  0.65625 MHz
+
+  // slow speed for initialization
+  uint8_t const SPI_INIT_SPEED = 240;	// 350 kHz
+#else
+  // SPI speed is F_CPU/2^(1 + index), 0 <= index <= 6
+  /** Set SCK to max rate of F_CPU/2. See Sd2Card::setSckRate(). */
+  uint8_t const SPI_FULL_SPEED = 0;
+  /** Set SCK rate to F_CPU/4. See Sd2Card::setSckRate(). */
+  uint8_t const SPI_HALF_SPEED = 1;
+  /** Set SCK rate to F_CPU/8. See Sd2Card::setSckRate(). */
+  uint8_t const SPI_QUARTER_SPEED = 2;
+  /** Set SCK rate to F_CPU/16. See Sd2Card::setSckRate(). */
+  uint8_t const SPI_EIGHTH_SPEED = 3;
+  /** Set SCK rate to F_CPU/32. See Sd2Card::setSckRate(). */
+  uint8_t const SPI_SIXTEENTH_SPEED = 4;
+#endif
 //------------------------------------------------------------------------------
 /** init timeout ms */
 uint16_t const SD_INIT_TIMEOUT = 2000;
@@ -117,18 +131,24 @@ uint8_t const SD_CARD_TYPE_SDHC = 3;
  * define SOFTWARE_SPI to use bit-bang SPI
  */
 //------------------------------------------------------------------------------
-#if MEGA_SOFT_SPI && (defined(__AVR_ATmega1280__)||defined(__AVR_ATmega2560__))
-  #define SOFTWARE_SPI
-#elif USE_SOFTWARE_SPI
-  #define SOFTWARE_SPI
-#endif  // MEGA_SOFT_SPI
+#ifndef __SAM3X8E__
+  #if MEGA_SOFT_SPI && (defined(__AVR_ATmega1280__)||defined(__AVR_ATmega2560__))
+    #define SOFTWARE_SPI
+  #elif USE_SOFTWARE_SPI
+    #define SOFTWARE_SPI
+  #endif  // MEGA_SOFT_SPI
+#endif
 //------------------------------------------------------------------------------
 // SPI pin definitions - do not edit here - change in SdFatConfig.h
 //
 #if DISABLED(SOFTWARE_SPI)
   // hardware pin defs
   /** The default chip select pin for the SD card is SS. */
-  uint8_t const  SD_CHIP_SELECT_PIN = SS_PIN;
+  #ifdef __SAM3X8E__
+    uint8_t const  SD_CHIP_SELECT_PIN = SPI_PIN;
+  #else
+    uint8_t const  SD_CHIP_SELECT_PIN = SS_PIN;
+  #endif
   // The following three pins must not be redefined for hardware SPI.
   /** SPI Master Out Slave In pin */
   uint8_t const  SPI_MOSI_PIN = MOSI_PIN;
@@ -206,7 +226,9 @@ class Sd2Card {
   bool readData(uint8_t* dst);
   bool readStart(uint32_t blockNumber);
   bool readStop();
-  bool setSckRate(uint8_t sckRateID);
+  #ifndef __SAM3X8E__
+    bool setSckRate(uint8_t sckRateID);
+  #endif
   /** Return the card type: SD V1, SD V2 or SDHC
    * \return 0 - SD V1, 1 - SD V2, or 3 - SDHC.
    */
