@@ -25,6 +25,10 @@
 
 #ifndef Sd2PinMap_h
 #define Sd2PinMap_h
+#ifdef __SAM3X8E__
+// SPI port
+uint8_t const SS_PIN = SDSS;    // A.28, A.29, B.21, C.26, C.29
+#else
 #include <avr/io.h>
 //------------------------------------------------------------------------------
 /** struct for mapping digital pins */
@@ -438,6 +442,7 @@ static inline __attribute__((always_inline))
     badPinNumber();
   }
 }
+#endif //__SAM3X8E__
 #endif  // Sd2PinMap_h
 
 
