@@ -50,11 +50,12 @@
  *       A15 | NC
  */
 
-#ifndef IS_RAMPS_DUO
+#if !defined(IS_RAMPS_DUO) && !defined(IS_RAMPS4DUE)
   #if !defined(__AVR_ATmega1280__) && !defined(__AVR_ATmega2560__)
     #error Oops!  Make sure you have 'Arduino Mega' selected from the 'Tools -> Boards' menu.
   #endif
 #endif
+
 #define LARGE_FLASH true
 
 #ifdef IS_RAMPS_DUO
@@ -95,7 +96,7 @@
 #define X_STEP_PIN         54
 #define X_DIR_PIN          55
 #define X_ENABLE_PIN       38
-#define X_MIN_PIN          -1 // unused for deltabot, was 3
+#define X_MIN_PIN           3
 #ifndef X_MAX_PIN
   #define X_MAX_PIN         2
 #endif
@@ -103,13 +104,13 @@
 #define Y_STEP_PIN         60
 #define Y_DIR_PIN          61
 #define Y_ENABLE_PIN       56
-#define Y_MIN_PIN          -1 // unused for deltabot, was 14
+#define Y_MIN_PIN          14
 #define Y_MAX_PIN          15
 
 #define Z_STEP_PIN         46
 #define Z_DIR_PIN          48
 #define Z_ENABLE_PIN       62
-#define Z_MIN_PIN          18 // autolevel for deltabot
+#define Z_MIN_PIN          18
 #define Z_MAX_PIN          19
 
 #define E0_STEP_PIN        26
@@ -141,7 +142,7 @@
 #endif
 
 #if MB(RAMPS_13_EFF) || ENABLED(IS_RAMPS_EFB)
-  #define FAN_PIN           5 // (Sprinter config), was 9
+  #define FAN_PIN           9 // (Sprinter config)
   #if MB(RAMPS_13_EFF)
     #define CONTROLLERFAN_PIN  -1 // Pin used for the fan to cool controller
   #endif
@@ -151,7 +152,7 @@
   #define FAN_PIN           4 // IO pin. Buffer needed
 #endif
 
-#define PS_ON_PIN          11 // was 12
+#define PS_ON_PIN          12
 
 #if ENABLED(REPRAP_DISCOUNT_SMART_CONTROLLER) || ENABLED(G3D_PANEL)
   #define KILL_PIN         41
@@ -207,7 +208,7 @@
     #endif
 
     #if ENABLED(REPRAP_DISCOUNT_SMART_CONTROLLER)
-      #define BEEPER_PIN -1
+      #define BEEPER_PIN 37
 
       #define BTN_EN1 31
       #define BTN_EN2 33
@@ -245,7 +246,7 @@
       // Pins for DOGM SPI LCD Support
       #define DOGLCD_A0  44
       #define DOGLCD_CS  AUX2_9PIN
-      #define LCD_PIN_BL AUX2_10PIN // backlight LED on A11/D65(RAMPS v1.3/1.4) or A14/D68(RAMPS DUO)
+      #define LCD_PIN_BL AUX2_10PIN // backlight LED on A11/D65(RAMPS v1.3/1.4 and RAMPS4DUE) or A14/D68(RAMPS DUO)
       #define SDSS   53
 
       #define KILL_PIN AUX2_5PIN
