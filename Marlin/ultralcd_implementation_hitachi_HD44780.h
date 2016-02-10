@@ -33,6 +33,13 @@
     #define EN_C BIT(BLEN_C)
   #endif
 
+  #ifdef __SAM3X8E__
+    #if ENABLED(BTN_BACK) && BTN_BACK > 0
+      #define BLEN_D 3
+      #define EN_D BIT(BLEN_D)
+    #endif
+  #endif
+
   //
   // Setup other button mappings of each panel
   //
@@ -101,6 +108,11 @@
 
   #elif ENABLED(NEWPANEL)
     #define LCD_CLICKED (buttons&EN_C)
+    #ifdef __SAM3X8E__
+      #if HAS_BTN_BACK
+        #define LCD_BACK_CLICKED (buttons&EN_D)
+      #endif
+    #endif
 
   #else // old style ULTIPANEL
     //bits in the shift register that carry the buttons for:
