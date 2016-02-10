@@ -537,7 +537,7 @@ bool enqueuecommand(const char* cmd) {
       SET_OUTPUT(EXP_VOLTAGE_LEVEL_PIN);
       WRITE(EXP_VOLTAGE_LEVEL_PIN, UI_VOLTAGE_LEVEL);
       ExternalDac::begin(); //initialize ExternalDac
-      #if HAS(BUZZER)
+      #if HAS_BUZZER
         buzz(10,10);
       #endif
     }
