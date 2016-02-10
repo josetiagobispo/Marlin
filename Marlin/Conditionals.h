@@ -578,6 +578,9 @@
   #define HAS_E1_STEP (PIN_EXISTS(E1_STEP))
   #define HAS_E2_STEP (PIN_EXISTS(E2_STEP))
   #define HAS_E3_STEP (PIN_EXISTS(E3_STEP))
+  #ifdef __SAM3X8E__
+    #define HAS_BTN_BACK (PIN_EXISTS(BTN_BACK))
+  #endif
 
   /**
    * Helper Macros for heaters and extruder fan
