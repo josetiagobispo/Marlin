@@ -135,15 +135,44 @@ static void lcd_status_screen();
   /**
    * START_MENU generates the init code for a menu function
    */
-  #define START_MENU() do { \
-    encoderRateMultiplierEnabled = false; \
-    if (encoderPosition > 0x8000) encoderPosition = 0; \
-    uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
-    if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
-    uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
-    bool wasClicked = LCD_CLICKED, itemSelected; \
-    for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
-      _menuItemNr = 0;
+  #ifdef __SAM3X8E__
+    #if ENABLED(BTN_BACK) && BTN_BACK > 0
+      #define START_MENU(last_menu) do { \
+        encoderRateMultiplierEnabled = false; \
+        if (encoderPosition > 0x8000) encoderPosition = 0; \
+        uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+        if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
+        uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+        bool wasClicked = LCD_CLICKED, itemSelected; \
+        bool wasBackClicked = LCD_BACK_CLICKED; \
+        if (wasBackClicked) { \
+          lcd_quick_feedback(); \
+          menu_action_back( last_menu ); \
+          return; } \
+        for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+          _menuItemNr = 0;
+    #else
+      #define START_MENU(last_menu) do { \
+        encoderRateMultiplierEnabled = false; \
+        if (encoderPosition > 0x8000) encoderPosition = 0; \
+        uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+        if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
+        uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+        bool wasClicked = LCD_CLICKED, itemSelected; \
+        for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+          _menuItemNr = 0;
+    #endif
+  #else
+    #define START_MENU() do { \
+      encoderRateMultiplierEnabled = false; \
+      if (encoderPosition > 0x8000) encoderPosition = 0; \
+      uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+      if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
+      uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+      bool wasClicked = LCD_CLICKED, itemSelected; \
+      for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+        _menuItemNr = 0;
+  #endif //__SAM3X8E__
 
   /**
    * MENU_ITEM generates draw & handler code for a menu item, potentially calling:
@@ -1936,6 +1965,11 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
       #endif
       #if BTN_ENC > 0
         if (now > next_button_update_ms && READ(BTN_ENC) == 0) newbutton |= EN_C;
+        #ifdef __SAM3X8E__
+          #if ENABLED(BTN_BACK) && BTN_BACK > 0
+            if (now > next_button_update_ms && READ(BTN_BACK) == 0) newbutton |= EN_D;
+          #endif
+        #endif
       #endif
       buttons = newbutton;
       #if ENABLED(LCD_HAS_SLOW_BUTTONS)
