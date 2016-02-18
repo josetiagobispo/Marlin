@@ -77,7 +77,6 @@
 #define BOARD_RAMPS4DUE_EEF     546  // RAMPS4DUE (Power outputs: Extruder0, Extruder1, Fan)
 #define BOARD_RAMPS4DUE_SF      548  // RAMPS4DUE (Power outputs: Spindle, Controller Fan)
 #define BOARD_ALLIGATOR         602  // ALLIGATOR R2
-#define BOARD_ULTRATRONICS      605  // Ultratronics v1.0
 
 #define BOARD_99                99   // This is in pins.h but...?
 
