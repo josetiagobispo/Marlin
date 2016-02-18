@@ -214,8 +214,10 @@
 
   #include "pins.h"
 
-  #ifndef USBCON
-    #define HardwareSerial_h // trick to disable the standard HWserial
+  #ifndef __SAM3X8E__
+    #ifndef USBCON
+      #define HardwareSerial_h // trick to disable the standard HWserial
+    #endif
   #endif
 
   #include "Arduino.h"
@@ -238,6 +240,81 @@
       #define ENDSTOPPULLUP_ZMIN_PROBE
     #endif
   #endif
+
+#ifdef __SAM3X8E__
+  /**
+   * ENDSTOP LOGICAL
+   */
+  #if MB(ALLIGATOR)
+    #if ENABLED(X_MIN_ENDSTOP_INVERTING)
+      #undef X_MIN_ENDSTOP_INVERTING
+      #define X_MIN_ENDSTOP_INVERTING false
+    #else
+      #undef X_MIN_ENDSTOP_INVERTING
+      #define X_MIN_ENDSTOP_INVERTING true
+    #endif
+    #if ENABLED(Y_MIN_ENDSTOP_INVERTING)
+      #undef Y_MIN_ENDSTOP_INVERTING
+      #define Y_MIN_ENDSTOP_INVERTING false
+    #else
+      #undef Y_MIN_ENDSTOP_INVERTING
+      #define Y_MIN_ENDSTOP_INVERTING true
+    #endif
+    #if ENABLED(Z_MIN_ENDSTOP_INVERTING)
+      #undef Z_MIN_ENDSTOP_INVERTING
+      #define Z_MIN_ENDSTOP_INVERTING false
+    #else
+      #undef Z_MIN_ENDSTOP_INVERTING
+      #define Z_MIN_ENDSTOP_INVERTING true
+    #endif
+    #if ENABLED(X_MAX_ENDSTOP_INVERTING)
+      #undef X_MAX_ENDSTOP_INVERTING
+      #define X_MAX_ENDSTOP_INVERTING false
+    #else
+      #undef X_MAX_ENDSTOP_INVERTING
+      #define X_MAX_ENDSTOP_INVERTING true
+    #endif
+    #if ENABLED(Y_MAX_ENDSTOP_INVERTING)
+      #undef Y_MAX_ENDSTOP_INVERTING
+      #define Y_MAX_ENDSTOP_INVERTING false
+    #else
+      #undef Y_MAX_ENDSTOP_INVERTING
+      #define Y_MAX_ENDSTOP_INVERTING true
+    #endif
+    #if ENABLED(Z_MAX_ENDSTOP_INVERTING)
+      #undef Z_MAX_ENDSTOP_INVERTING
+      #define Z_MAX_ENDSTOP_INVERTING false
+    #else
+      #undef Z_MAX_ENDSTOP_INVERTING
+      #define Z_MAX_ENDSTOP_INVERTING true
+    #endif
+    #ifdef Z2_MAX_ENDSTOP_INVERTING
+      #if ENABLED(Z2_MAX_ENDSTOP_INVERTING)
+        #undef Z2_MAX_ENDSTOP_INVERTING
+        #define Z2_MAX_ENDSTOP_INVERTING false
+      #else
+        #undef Z2_MAX_ENDSTOP_INVERTING
+        #define Z2_MAX_ENDSTOP_INVERTING true
+      #endif
+    #endif
+    #if ENABLED(Z_MIN_PROBE_ENDSTOP_INVERTING)
+      #undef Z_MIN_PROBE_ENDSTOP_INVERTING
+      #define Z_MIN_PROBE_ENDSTOP_INVERTING false
+    #else
+      #undef Z_MIN_PROBE_ENDSTOP_INVERTING
+      #define Z_MIN_PROBE_ENDSTOP_INVERTING true
+    #endif
+    #ifdef Z2_MIN_ENDSTOP_INVERTING
+      #if ENABLED(Z2_MIN_ENDSTOP_INVERTING)
+        #undef Z2_MIN_ENDSTOP_INVERTING
+        #define Z2_MIN_ENDSTOP_INVERTING false
+      #else
+        #undef Z2_MIN_ENDSTOP_INVERTING
+        #define Z2_MIN_ENDSTOP_INVERTING true
+      #endif
+    #endif
+  #endif
+#endif
 
   /**
    * Axis lengths
@@ -295,10 +372,20 @@
   /**
    * MAX_STEP_FREQUENCY differs for TOSHIBA
    */
-  #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
-    #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
+  #ifdef __SAM3X8E__
+    #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
+      #define MAX_STEP_FREQUENCY 150000 // Max step frequency for Toshiba Stepper Controllers
+      #define DOUBLE_STEP_FREQUENCY MAX_STEP_FREQUENCY
+    #else
+      #define MAX_STEP_FREQUENCY 320000     // Max step frequency for the Due is approx. 330kHz
+      #define DOUBLE_STEP_FREQUENCY 90000  // 96kHz is close to maximum for an Arduino Due
+    #endif
   #else
-    #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
+    #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
+      #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
+    #else
+      #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
+    #endif
   #endif
 
   // MS1 MS2 Stepper Driver Microstepping mode table
@@ -306,7 +393,16 @@
   #define MICROSTEP2 HIGH,LOW
   #define MICROSTEP4 LOW,HIGH
   #define MICROSTEP8 HIGH,HIGH
-  #define MICROSTEP16 HIGH,HIGH
+  #ifdef __SAM3X8E__
+    #if MB(ALLIGATOR)
+      #define MICROSTEP16 LOW,LOW
+      #define MICROSTEP32 HIGH,HIGH
+    #else
+      #define MICROSTEP16 HIGH,HIGH
+    #endif
+  #else
+    #define MICROSTEP16 HIGH,HIGH
+  #endif
 
   /**
    * Advance calculated values
@@ -387,6 +483,10 @@
   #elif TEMP_SENSOR_BED > 0
     #define THERMISTORBED TEMP_SENSOR_BED
     #define BED_USES_THERMISTOR
+  #endif
+
+  #ifdef __SAM3X8E__
+    #define HEATER_USES_AD595 (ENABLED(HEATER_0_USES_AD595) || ENABLED(HEATER_1_USES_AD595) || ENABLED(HEATER_2_USES_AD595) || ENABLED(HEATER_3_USES_AD595))
   #endif
 
   /**
@@ -485,6 +585,9 @@
   #define HAS_E2_STEP (PIN_EXISTS(E2_STEP))
   #define HAS_E3_STEP (PIN_EXISTS(E3_STEP))
   #define HAS_E4_STEP (PIN_EXISTS(E4_STEP))
+  #ifdef __SAM3X8E__
+    #define HAS_BTN_BACK (PIN_EXISTS(BTN_BACK))
+  #endif
 
   /**
    * Helper Macros for heaters and extruder fan
@@ -527,6 +630,21 @@
       #define HAS_SERVO_ENDSTOPS true
       #define SERVO_ENDSTOP_IDS { X_ENDSTOP_SERVO_NR, Y_ENDSTOP_SERVO_NR, Z_ENDSTOP_SERVO_NR }
     #endif
+  #endif
+
+  #ifdef __SAM3X8E__
+    #undef M100_FREE_MEMORY_WATCHER
+    #undef FAST_PWM_FAN
+    #undef WATCHDOG_RESET_MANUAL
+    #undef ADVANCE
+    #ifndef MEDIAN_COUNT
+      #define MEDIAN_COUNT 10
+    #endif
+  #else
+    #undef UI_VOLTAGE_LEVEL
+    #undef RADDS_DISPLAY
+    #undef MOTOR_CURRENT
+    #undef MEDIAN_COUNT
   #endif
 
 #endif //CONFIGURATION_LCD
