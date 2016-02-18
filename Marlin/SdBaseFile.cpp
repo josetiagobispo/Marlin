@@ -291,11 +291,7 @@ bool SdBaseFile::getFilename(char* name) {
   return true;
 }
 //------------------------------------------------------------------------------
-  #ifdef __SAM3X8E__
-    void SdBaseFile::getpos(FatPos_t* pos) {
-  #else
-    void SdBaseFile::getpos(filepos_t* pos) {
-  #endif
+void SdBaseFile::getpos(filepos_t* pos) {
   pos->position = curPosition_;
   pos->cluster = curCluster_;
 }
@@ -934,11 +930,7 @@ fail:
  * \return The byte if no error and not at eof else -1;
  */
 int SdBaseFile::peek() {
-  #ifdef __SAM3X8E__
-    FatPos_t pos;
-  #else
-    filepos_t pos;
-  #endif
+  filepos_t pos;
   getpos(&pos);
   int c = read();
   if (c >= 0) setpos(&pos);
@@ -1494,11 +1486,7 @@ fail:
   return false;
 }
 //------------------------------------------------------------------------------
-#ifdef __SAM3X8E__
-  void SdBaseFile::setpos(FatPos_t* pos) {
-#else
-  void SdBaseFile::setpos(filepos_t* pos) {
-#endif
+void SdBaseFile::setpos(filepos_t* pos) {
   curPosition_ = pos->position;
   curCluster_ = pos->cluster;
 }
