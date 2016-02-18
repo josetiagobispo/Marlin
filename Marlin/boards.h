@@ -61,8 +61,8 @@
 #define BOARD_MKS_BASE          40   // MKS BASE 1.0
 #define BOARD_BAM_DICE          401  // 2PrintBeta BAM&DICE with STK drivers
 #define BOARD_BAM_DICE_DUE      402  // 2PrintBeta BAM&DICE Due with STK drivers
-
-#define BOARD_RADDS             502  // RADDS ARM 32
+//ARM 32
+#define BOARD_RADDS             502  // RADDS
 #define BOARD_RAMPS_FD_V1       503  // RAMPS-FD V1
 #define BOARD_RAMPS_FD_V2       504  // RAMPS-FD V2
 #define BOARD_RAMPS_SMART       523  // RAMPS-SMART
@@ -76,7 +76,8 @@
 #define BOARD_RAMPS4DUE_EFF     545  // RAMPS4DUE (Power outputs: Extruder, Fan, Fan)
 #define BOARD_RAMPS4DUE_EEF     546  // RAMPS4DUE (Power outputs: Extruder0, Extruder1, Fan)
 #define BOARD_RAMPS4DUE_SF      548  // RAMPS4DUE (Power outputs: Spindle, Controller Fan)
-#define BOARD_ALLIGATOR         602  // ALLIGATOR R2 ARM 32
+#define BOARD_ALLIGATOR         602  // ALLIGATOR R2
+#define BOARD_ULTRATRONICS      605  // Ultratronics v1.0
 
 #define BOARD_99                99   // This is in pins.h but...?
 
