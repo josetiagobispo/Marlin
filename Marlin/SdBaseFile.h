@@ -30,18 +30,33 @@
 #include "SdFatConfig.h"
 #include "SdVolume.h"
 //------------------------------------------------------------------------------
-/**
- * \struct filepos_t
- * \brief internal type for istream
- * do not use in user apps
- */
-struct filepos_t {
-  /** stream position */
-  uint32_t position;
-  /** cluster for position */
-  uint32_t cluster;
-  filepos_t() : position(0), cluster(0) {}
-};
+#ifdef __SAM3X8E__
+  /**
+   * \struct FatPos_t
+   * \brief internal type for istream
+   * do not use in user apps
+   */
+  struct FatPos_t {
+    /** stream position */
+    uint32_t position;
+    /** cluster for position */
+    uint32_t cluster;
+    FatPos_t() : position(0), cluster(0) {}
+  };
+#else
+  /**
+   * \struct filepos_t
+   * \brief internal type for istream
+   * do not use in user apps
+   */
+    struct filepos_t {
+    /** stream position */
+    uint32_t position;
+    /** cluster for position */
+    uint32_t cluster;
+    filepos_t() : position(0), cluster(0) {}
+  };
+#endif
 
 // use the gnu style oflag in open()
 /** open() oflag for reading */
@@ -196,11 +211,19 @@ class SdBaseFile {
   /** get position for streams
    * \param[out] pos struct to receive position
    */
-  void getpos(filepos_t* pos);
+  #ifdef __SAM3X8E__
+    void getpos(FatPos_t* pos);
+  #else
+    void getpos(filepos_t* pos);
+  #endif
   /** set position for streams
    * \param[out] pos struct with value for new position
    */
-  void setpos(filepos_t* pos);
+  #ifdef __SAM3X8E__
+    void setpos(FatPos_t* pos);
+  #else
+    void setpos(filepos_t* pos);
+  #endif
   //----------------------------------------------------------------------------
   bool close();
   bool contiguousRange(uint32_t* bgnBlock, uint32_t* endBlock);
