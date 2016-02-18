@@ -150,6 +150,8 @@
   #include "pins_RAMPS_13.h"
 #elif MB(ALLIGATOR)
   #include "pins_ALLIGATOR_R2.h"
+#elif MB(ULTRATRONICS)
+  #include "pins_ULTRATRONICS.h"
 #elif MB(99)
   #include "pins_99.h"
 #else
