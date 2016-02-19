@@ -1588,7 +1588,7 @@ void lcd_init() {
       #endif
     #endif
 
-    #if BTN_EN2 > 0      
+    #if BTN_EN2 > 0
       SET_INPUT(BTN_EN2);
       #ifdef __SAM3X8E__
         PULLUP(BTN_EN2, HIGH);
