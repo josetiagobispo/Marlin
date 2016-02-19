@@ -88,6 +88,9 @@ static void lcd_status_screen();
   static void menu_action_setting_edit_float5(const char* pstr, float* ptr, float minValue, float maxValue);
   static void menu_action_setting_edit_float51(const char* pstr, float* ptr, float minValue, float maxValue);
   static void menu_action_setting_edit_float52(const char* pstr, float* ptr, float minValue, float maxValue);
+#ifdef __SAM3X8E__
+  static void menu_action_setting_edit_float62(const char* pstr, float* ptr, float minValue, float maxValue);
+#endif
   static void menu_action_setting_edit_long5(const char* pstr, unsigned long* ptr, unsigned long minValue, unsigned long maxValue);
   static void menu_action_setting_edit_callback_bool(const char* pstr, bool* ptr, menuFunc_t callbackFunc);
   static void menu_action_setting_edit_callback_int3(const char* pstr, int* ptr, int minValue, int maxValue, menuFunc_t callbackFunc);
@@ -97,6 +100,9 @@ static void lcd_status_screen();
   static void menu_action_setting_edit_callback_float5(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
   static void menu_action_setting_edit_callback_float51(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
   static void menu_action_setting_edit_callback_float52(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
+#ifdef __SAM3X8E__
+  static void menu_action_setting_edit_callback_float62(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
+#endif
   static void menu_action_setting_edit_callback_long5(const char* pstr, unsigned long* ptr, unsigned long minValue, unsigned long maxValue, menuFunc_t callbackFunc);
 
   #if ENABLED(SDSUPPORT)
@@ -129,15 +135,44 @@ static void lcd_status_screen();
   /**
    * START_MENU generates the init code for a menu function
    */
-  #define START_MENU() do { \
-    encoderRateMultiplierEnabled = false; \
-    if (encoderPosition > 0x8000) encoderPosition = 0; \
-    uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
-    if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
-    uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
-    bool wasClicked = LCD_CLICKED, itemSelected; \
-    for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
-      _menuItemNr = 0;
+  #ifdef __SAM3X8E__
+    #if ENABLED(BTN_BACK) && BTN_BACK > 0
+      #define START_MENU(last_menu) do { \
+        encoderRateMultiplierEnabled = false; \
+        if (encoderPosition > 0x8000) encoderPosition = 0; \
+        uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+        if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
+        uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+        bool wasClicked = LCD_CLICKED, itemSelected; \
+        bool wasBackClicked = LCD_BACK_CLICKED; \
+        if (wasBackClicked) { \
+          lcd_quick_feedback(); \
+          menu_action_back( last_menu ); \
+          return; } \
+        for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+          _menuItemNr = 0;
+    #else
+      #define START_MENU(last_menu) do { \
+        encoderRateMultiplierEnabled = false; \
+        if (encoderPosition > 0x8000) encoderPosition = 0; \
+        uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+        if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
+        uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+        bool wasClicked = LCD_CLICKED, itemSelected; \
+        for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+          _menuItemNr = 0;
+    #endif
+  #else
+    #define START_MENU() do { \
+      encoderRateMultiplierEnabled = false; \
+      if (encoderPosition > 0x8000) encoderPosition = 0; \
+      uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+      if (encoderLine < currentMenuViewOffset) currentMenuViewOffset = encoderLine; \
+      uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+      bool wasClicked = LCD_CLICKED, itemSelected; \
+      for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+        _menuItemNr = 0;
+  #endif //__SAM3X8E__
 
   /**
    * MENU_ITEM generates draw & handler code for a menu item, potentially calling:
@@ -1198,10 +1233,19 @@ static void lcd_control_motion_menu() {
   MENU_ITEM_EDIT_CALLBACK(long5, MSG_AMAX MSG_E, &max_acceleration_units_per_sq_second[E_AXIS], 100, 99000, reset_acceleration_rates);
   MENU_ITEM_EDIT(float5, MSG_A_RETRACT, &retract_acceleration, 100, 99000);
   MENU_ITEM_EDIT(float5, MSG_A_TRAVEL, &travel_acceleration, 100, 99000);
-  MENU_ITEM_EDIT(float52, MSG_XSTEPS, &axis_steps_per_unit[X_AXIS], 5, 9999);
-  MENU_ITEM_EDIT(float52, MSG_YSTEPS, &axis_steps_per_unit[Y_AXIS], 5, 9999);
+  #ifdef __SAM3X8E__
+    MENU_ITEM_EDIT(float62, MSG_XSTEPS, &axis_steps_per_unit[X_AXIS], 5, 9999);
+    MENU_ITEM_EDIT(float62, MSG_YSTEPS, &axis_steps_per_unit[Y_AXIS], 5, 9999);
+  #else
+    MENU_ITEM_EDIT(float52, MSG_XSTEPS, &axis_steps_per_unit[X_AXIS], 5, 9999);
+    MENU_ITEM_EDIT(float52, MSG_YSTEPS, &axis_steps_per_unit[Y_AXIS], 5, 9999);
+  #endif
   #if ENABLED(DELTA)
-    MENU_ITEM_EDIT(float52, MSG_ZSTEPS, &axis_steps_per_unit[Z_AXIS], 5, 9999);
+    #ifdef __SAM3X8E__
+      MENU_ITEM_EDIT(float62, MSG_ZSTEPS, &axis_steps_per_unit[Z_AXIS], 5, 9999);
+    #else
+      MENU_ITEM_EDIT(float52, MSG_ZSTEPS, &axis_steps_per_unit[Z_AXIS], 5, 9999);
+    #endif
   #else
     MENU_ITEM_EDIT(float51, MSG_ZSTEPS, &axis_steps_per_unit[Z_AXIS], 5, 9999);
   #endif
@@ -1405,6 +1449,9 @@ menu_edit_type(float, float43, ftostr43, 1000)
 menu_edit_type(float, float5, ftostr5, 0.01)
 menu_edit_type(float, float51, ftostr51, 10)
 menu_edit_type(float, float52, ftostr52, 100)
+#ifdef __SAM3X8E__
+  menu_edit_type(float, float62, ftostr62, 100)
+#endif
 menu_edit_type(unsigned long, long5, ftostr5, 0.01)
 
 /**
@@ -1534,24 +1581,40 @@ void lcd_init() {
   #if ENABLED(NEWPANEL)
     #if BTN_EN1 > 0
       SET_INPUT(BTN_EN1);
-      WRITE(BTN_EN1, HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(BTN_EN1, HIGH);
+      #else
+        WRITE(BTN_EN1, HIGH);
+      #endif
     #endif
 
-    #if BTN_EN2 > 0
+    #if BTN_EN2 > 0      
       SET_INPUT(BTN_EN2);
-      WRITE(BTN_EN2, HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(BTN_EN2, HIGH);
+      #else
+        WRITE(BTN_EN2, HIGH);
+      #endif
     #endif
 
     #if BTN_ENC > 0
       SET_INPUT(BTN_ENC);
-      WRITE(BTN_ENC, HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(BTN_ENC, HIGH);
+      #else
+        WRITE(BTN_ENC, HIGH);
+      #endif
     #endif
 
     #if ENABLED(REPRAPWORLD_KEYPAD)
       pinMode(SHIFT_CLK, OUTPUT);
       pinMode(SHIFT_LD, OUTPUT);
       pinMode(SHIFT_OUT, INPUT);
-      WRITE(SHIFT_OUT, HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(SHIFT_OUT, HIGH);
+      #else
+        WRITE(SHIFT_OUT, HIGH);
+      #endif
       WRITE(SHIFT_LD, HIGH);
     #endif
 
@@ -1572,7 +1635,11 @@ void lcd_init() {
       pinMode(SHIFT_LD, OUTPUT);
       pinMode(SHIFT_EN, OUTPUT);
       pinMode(SHIFT_OUT, INPUT);
-      WRITE(SHIFT_OUT, HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(SHIFT_OUT, HIGH);
+      #else
+        WRITE(SHIFT_OUT, HIGH);
+      #endif
       WRITE(SHIFT_LD, HIGH);
       WRITE(SHIFT_EN, LOW);
     #endif // SR_LCD_2W_NL
@@ -1581,7 +1648,11 @@ void lcd_init() {
 
   #if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
     pinMode(SD_DETECT_PIN, INPUT);
-    WRITE(SD_DETECT_PIN, HIGH);
+    #ifdef __SAM3X8E__
+      PULLUP(SD_DETECT_PIN, HIGH);
+    #else
+      WRITE(SD_DETECT_PIN, HIGH);
+    #endif
     lcd_sd_status = 2; // UNKNOWN
   #endif
 
@@ -1893,6 +1964,11 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
       #endif
       #if BTN_ENC > 0
         if (now > next_button_update_ms && READ(BTN_ENC) == 0) newbutton |= EN_C;
+        #ifdef __SAM3X8E__
+          #if ENABLED(BTN_BACK) && BTN_BACK > 0
+            if (now > next_button_update_ms && READ(BTN_BACK) == 0) newbutton |= EN_D;
+          #endif
+        #endif
       #endif
       buttons = newbutton;
       #if ENABLED(LCD_HAS_SLOW_BUTTONS)
@@ -2219,6 +2295,23 @@ char* ftostr52(const float& x) {
   conv[7] = 0;
   return conv;
 }
+
+#ifdef __SAM3X8E__
+  // Convert float to string with +1234.56 format
+  char* ftostr62(const float& x) {
+    conv[0] = (x >= 0) ? '+' : '-';
+    long xx = abs(x * 100);
+    conv[1] = (xx / 100000) % 10 + '0';
+    conv[2] = (xx / 10000) % 10 + '0';
+    conv[3] = (xx / 1000) % 10 + '0';
+    conv[4] = (xx / 100) % 10 + '0';
+    conv[5] = '.';
+    conv[6] = (xx / 10) % 10 + '0';
+    conv[7] = xx % 10 + '0';
+    conv[8] = 0;
+    return conv;
+  }
+#endif
 
 #if ENABLED(MANUAL_BED_LEVELING)
 
