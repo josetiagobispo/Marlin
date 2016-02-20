@@ -171,18 +171,10 @@ uint8_t Sd2Card::cardCommand(uint8_t cmd, uint32_t arg) {
   spiSend(crc);
 
   // skip stuff byte for stop read
-  #ifdef __SAM3X8E__
-    if (cmd == CMD12) spiReceive();
-  #else
-    if (cmd == CMD12) spiRec();
-  #endif
+  if (cmd == CMD12) spiRec();
 
   // wait for response
-  #ifdef __SAM3X8E__
-    for (uint8_t i = 0; ((status_ = spiReceive()) & 0X80) && i != 0XFF; i++) { /* Intentionally left empty */ }
-  #else
-    for (uint8_t i = 0; ((status_ = spiRec()) & 0X80) && i != 0XFF; i++) { /* Intentionally left empty */ }
-  #endif
+  for (uint8_t i = 0; ((status_ = spiRec()) & 0X80) && i != 0XFF; i++) { /* Intentionally left empty */ }
   return status_;
 }
 //------------------------------------------------------------------------------
@@ -340,11 +332,7 @@ bool Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
   }
   else {
     // only need last byte of r7 response
-    #ifdef __SAM3X8E__
-      for (uint8_t i = 0; i < 4; i++) status_ = spiReceive();
-    #else
-      for (uint8_t i = 0; i < 4; i++) status_ = spiRec();
-    #endif
+    for (uint8_t i = 0; i < 4; i++) status_ = spiRec();
     if (status_ != 0XAA) {
       error(SD_CARD_ERROR_CMD8);
       goto fail;
@@ -367,15 +355,9 @@ bool Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
       error(SD_CARD_ERROR_CMD58);
       goto fail;
     }
-    #ifdef __SAM3X8E__
-      if ((spiReceive() & 0XC0) == 0XC0) type(SD_CARD_TYPE_SDHC);
-      // discard rest of ocr - contains allowed voltage range
-      for (uint8_t i = 0; i < 3; i++) spiReceive();
-    #else
-      if ((spiRec() & 0XC0) == 0XC0) type(SD_CARD_TYPE_SDHC);
-      // discard rest of ocr - contains allowed voltage range
-      for (uint8_t i = 0; i < 3; i++) spiRec();
-    #endif
+    if ((spiRec() & 0XC0) == 0XC0) type(SD_CARD_TYPE_SDHC);
+    // discard rest of ocr - contains allowed voltage range
+    for (uint8_t i = 0; i < 3; i++) spiRec();
   }
   chipSelectHigh();
 
@@ -499,11 +481,7 @@ static uint16_t CRC_CCITT(const uint8_t* data, size_t n) {
 bool Sd2Card::readData(uint8_t* dst, uint16_t count) {
   // wait for start block token
   uint16_t t0 = millis();
-  #ifdef __SAM3X8E__
-    while ((status_ = spiReceive()) == 0XFF) {
-  #else
-    while ((status_ = spiRec()) == 0XFF) {
-  #endif
+  while ((status_ = spiRec()) == 0XFF) {
     if (((uint16_t)millis() - t0) > SD_READ_TIMEOUT) {
       error(SD_CARD_ERROR_READ_TIMEOUT);
       goto fail;
@@ -514,22 +492,13 @@ bool Sd2Card::readData(uint8_t* dst, uint16_t count) {
     goto fail;
   }
   // transfer data
-  #ifdef __SAM3X8E__
-    spiReadBlock(dst, count);
-  #else
-    spiRead(dst, count);
-  #endif
+  spiRead(dst, count);
 
 #if ENABLED(SD_CHECK_AND_RETRY)
   {
     uint16_t calcCrc = CRC_CCITT(dst, count);
-    #ifdef __SAM3X8E__
-      uint16_t recvCrc = spiReceive() << 8;
-      recvCrc |= spiReceive();
-    #else
-      uint16_t recvCrc = spiRec() << 8;
-      recvCrc |= spiRec();
-    #endif
+    uint16_t recvCrc = spiRec() << 8;
+    recvCrc |= spiRec();
     if (calcCrc != recvCrc) {
       error(SD_CARD_ERROR_CRC);
       goto fail;
@@ -537,13 +506,8 @@ bool Sd2Card::readData(uint8_t* dst, uint16_t count) {
   }
 #else
   // discard CRC
-  #ifdef __SAM3X8E__
-    spiReceive();
-    spiReceive();
-  #else
-    spiRec();
-    spiRec();
-  #endif
+  spiRec();
+  spiRec();
 #endif
   chipSelectHigh();
   return true;
@@ -632,11 +596,7 @@ fail:
 // wait for card to go not busy
 bool Sd2Card::waitNotBusy(uint16_t timeoutMillis) {
   uint16_t t0 = millis();
-  #ifdef __SAM3X8E__
-    while (spiReceive() != 0XFF) {
-  #else
-    while (spiRec() != 0XFF) {
-  #endif
+  while (spiRec() != 0XFF) {
     if (((uint16_t)millis() - t0) >= timeoutMillis) goto fail;
   }
   return true;
@@ -667,11 +627,7 @@ bool Sd2Card::writeBlock(uint32_t blockNumber, const uint8_t* src) {
     goto fail;
   }
   // response is r2 so get and check two bytes for nonzero
-  #ifdef __SAM3X8E__
-    if (cardCommand(CMD13, 0) || spiReceive()) {
-  #else
-    if (cardCommand(CMD13, 0) || spiRec()) {
-  #endif
+  if (cardCommand(CMD13, 0) || spiRec()) {
     error(SD_CARD_ERROR_WRITE_PROGRAMMING);
     goto fail;
   }
@@ -707,11 +663,7 @@ bool Sd2Card::writeData(uint8_t token, const uint8_t* src) {
   spiSend(0xff);  // dummy crc
   spiSend(0xff);  // dummy crc
 
-  #ifdef __SAM3X8E__
-    status_ = spiReceive();
-  #else
-    status_ = spiRec();
-  #endif
+  status_ = spiRec();
   if ((status_ & DATA_RES_MASK) != DATA_RES_ACCEPTED) {
     error(SD_CARD_ERROR_WRITE);
     goto fail;
