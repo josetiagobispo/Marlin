@@ -66,8 +66,8 @@
     inline uint8_t spiTransfer(uint8_t b); // using Mode 0
     inline void spiBegin();
     inline void spiInit(uint8_t spiClock);
-    inline uint8_t spiReceive();
-    inline void spiReadBlock(uint8_t*buf, uint16_t nbyte);
+    inline uint8_t spiRec();
+    inline void spiRead(uint8_t*buf, uint16_t nbyte);
     inline void spiSend(uint8_t b);
     inline void spiSend(const uint8_t* buf , size_t n) ;
     inline void spiSendBlock(uint8_t token, const uint8_t* buf);
@@ -81,10 +81,10 @@
     void spiSend(uint32_t chan, byte b);
     void spiSend(uint32_t chan , const uint8_t* buf , size_t n);
     // Read single byte from SPI
-    uint8_t spiReceive();
-    uint8_t spiReceive(uint32_t chan);
+    uint8_t spiRec();
+    uint8_t spiRec(uint32_t chan);
     // Read from SPI into buffer
-    void spiReadBlock(uint8_t* buf, uint16_t nbyte);
+    void spiRead(uint8_t* buf, uint16_t nbyte);
     // Write from buffer to SPI
     void spiSendBlock(uint8_t token, const uint8_t* buf);
   #endif
