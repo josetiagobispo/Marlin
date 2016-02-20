@@ -105,14 +105,14 @@ int freeMemory() {
     WRITE(SCK_PIN, LOW);
   }
 
-  uint8_t spiReceive() {
+  uint8_t spiRec() {
     WRITE(SDSS, LOW);
     uint8_t b = spiTransfer(0xff);
     WRITE(SDSS, HIGH);
     return b;
   }
 
-  void spiReadBlock(uint8_t*buf, uint16_t nbyte) {
+  void spiRead(uint8_t*buf, uint16_t nbyte) {
     if (nbyte == 0) return;
     WRITE(SDSS, LOW);
     for (int i = 0; i < nbyte; i++) {
@@ -278,7 +278,7 @@ int freeMemory() {
   }
 
   // Read single byte from SPI
-  uint8_t spiReceive() {
+  uint8_t spiRec() {
     // write dummy byte with address and end transmission flag
     SPI0->SPI_TDR = 0x000000FF | SPI_PCS(SPI_CHAN) | SPI_TDR_LASTXFER;
     // wait for transmit register empty
@@ -291,7 +291,7 @@ int freeMemory() {
     return SPI0->SPI_RDR;
   }
 
-  uint8_t spiReceive(uint32_t chan) {
+  uint8_t spiRec(uint32_t chan) {
     uint8_t spirec_tmp;
     // wait for transmit register empty
     while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
@@ -308,7 +308,7 @@ int freeMemory() {
   }
 
   // Read from SPI into buffer
-  void spiReadBlock(uint8_t*buf, uint16_t nbyte) {
+  void spiRead(uint8_t*buf, uint16_t nbyte) {
     if (nbyte-- == 0) return;
 
     for (int i = 0; i < nbyte; i++) {
@@ -318,7 +318,7 @@ int freeMemory() {
       buf[i] = SPI0->SPI_RDR;
       // delayMicroseconds(1);
     }
-    buf[nbyte] = spiReceive();
+    buf[nbyte] = spiRec();
   }
 
   // Write from buffer to SPI
@@ -394,7 +394,7 @@ static void eeprom_init(void) {
     digitalWrite(SPI_EEPROM1_CS, LOW);
     spiSend(SPI_CHAN_EEPROM1, eeprom_temp, 3);
 
-    v = spiReceive(SPI_CHAN_EEPROM1); 
+    v = spiRec(SPI_CHAN_EEPROM1); 
     digitalWrite(SPI_EEPROM1_CS, HIGH);
     return v;
   }
