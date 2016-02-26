@@ -361,13 +361,13 @@ Here are some standard links for getting your machine calibrated:
 #endif
 
 // Mechanical endstop with COM to ground and NC to Signal uses "false" here (most common setup).
-#define X_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
-#define Y_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
-#define Z_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
-#define X_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
-#define Y_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
-#define Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
-#define Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the logic of the endstop.
+const bool X_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+const bool Y_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+const bool Z_MIN_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+const bool X_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+const bool Y_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic of the endstop.
+const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the logic of the endstop.
 //#define DISABLE_MAX_ENDSTOPS
 #define DISABLE_MIN_ENDSTOPS // Deltas only use min endstops for probing.
 
