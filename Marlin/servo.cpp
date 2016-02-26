@@ -417,12 +417,14 @@ void Servo::writeMicroseconds(int value) {
     value = value - TRIM_DURATION;
     value = usToTicks(value);  // convert to ticks after compensating for interrupt overhead - 12 Aug 2009
 
-    #ifndef __SAM3X8E__
+    #ifdef __SAM3X8E__
+      CRITICAL_SECTION_START;
+      servo_info[channel].ticks = value;
+      CRITICAL_SECTION_END;
+    #else
       uint8_t oldSREG = SREG;
       cli();
-    #endif
-    servo_info[channel].ticks = value;
-    #ifndef __SAM3X8E__
+      servo_info[channel].ticks = value;
       SREG = oldSREG;
     #endif
   }
