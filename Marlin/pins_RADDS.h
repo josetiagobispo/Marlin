@@ -65,8 +65,8 @@
 
 #define TEMP_BED_PIN        4   // ANALOG NUMBERING
 #define TEMP_0_PIN          0   // ANALOG NUMBERING
-#define TEMP_1_PIN         -1  // 1   // ANALOG NUMBERING
-#define TEMP_2_PIN         -1  // 2   // ANALOG NUMBERING
+#define TEMP_1_PIN          1   // ANALOG NUMBERING
+#define TEMP_2_PIN          2   // ANALOG NUMBERING
 #define TEMP_3_PIN         -1  // 3   // ANALOG NUMBERING
 
 #if NUM_SERVOS > 0
