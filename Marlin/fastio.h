@@ -1,93 +1,167 @@
-#ifdef __SAM3X8E__
 /*
- Contributors:
-    Copyright (c) 2015 Nico Tonnhofer wurstnase.reprap@gmail.com
+  This code contributed by Triffid_Hunter and modified by Kliment
+  why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
 */
-/* **************************************************************************
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+#ifndef _FASTIO_ARDUINO_H
+#define _FASTIO_ARDUINO_H
 
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
-****************************************************************************/
-
-// **************************************************************************
-//
-// Description: Fast IO functions for Arduino Due
-//
-// ARDUINO_ARCH_SAM
-// **************************************************************************
-
-#ifndef	_FASTIO_H
-#define	_FASTIO_H
-
-#ifndef HIGH
-  #define HIGH 1
-#endif
-#ifndef LOW
-  #define LOW 0
+#ifdef __SAM3X8E__
+  #ifndef HIGH
+    #define HIGH 1
+  #endif
+  #ifndef LOW
+    #define LOW 0
+  #endif
+#else
+  #include <avr/io.h>
 #endif
 
-// --------------------------------------------------------------------------
-// magic I/O routines
-// now you can simply SET_OUTPUT(STEP); WRITE(STEP, 1); WRITE(STEP, 0);
-// --------------------------------------------------------------------------
+/*
+  utility functions
+*/
 
 #ifndef MASK
   #define MASK(PIN)  (1 << PIN)
 #endif
 
-static inline void digitalFastWrite(int pin, bool v) {
-  if (v) g_APinDescription[pin].pPort->PIO_SODR = g_APinDescription[pin].ulPin;
-  else g_APinDescription[pin].pPort->PIO_CODR = g_APinDescription[pin].ulPin;
-}
-
-#define _FASTREAD(IO) ((bool)(DIO ## IO ## _WPORT -> PIO_PDSR & (MASK(DIO ## IO ## _PIN))))
-
-#define _FASTWRITE(IO, v) do {  if (v) {DIO ## IO ## _WPORT -> PIO_SODR = MASK(DIO ## IO ##_PIN); } \
-                                else {DIO ##  IO ## _WPORT -> PIO_CODR = MASK(DIO ## IO ## _PIN); }; \
-                             } while (0)
-
+/*
+  magic I/O routines
+  now you can simply SET_OUTPUT(STEP); WRITE(STEP, 1); WRITE(STEP, 0);
+*/
 
 /// Read a pin
-#define READ(IO)            _FASTREAD(IO)
-
+#ifdef __SAM3X8E__
+  #define _FASTREAD(IO) ((bool)(DIO ## IO ## _WPORT -> PIO_PDSR & (MASK(DIO ## IO ## _PIN))))
+#else
+  #define _READ(IO) ((bool)(DIO ## IO ## _RPORT & MASK(DIO ## IO ## _PIN)))
+#endif
 /// write to a pin
-#define WRITE_VAR(IO, v)    digitalWrite(IO, v)
-#define WRITE(IO, v)        _FASTWRITE(IO, v)
+// On some boards pins > 0x100 are used. These are not converted to atomic actions. An critical section is needed.
 
-/// set pin as input
-#define	  SET_INPUT(IO)   pmc_enable_periph_clk(g_APinDescription[IO].ulPeripheralId); \
-                          PIO_Configure(g_APinDescription[IO].pPort, PIO_INPUT, g_APinDescription[IO].ulPin, 0)
-/// set pin as output
-#define	  SET_OUTPUT(IO)  PIO_Configure(g_APinDescription[IO].pPort, PIO_OUTPUT_1, \
+#ifdef __SAM3X8E__
+  static inline void digitalFastWrite(int pin, bool v) {
+    if (v) g_APinDescription[pin].pPort->PIO_SODR = g_APinDescription[pin].ulPin;
+    else g_APinDescription[pin].pPort->PIO_CODR = g_APinDescription[pin].ulPin;
+  }
+
+  #define _FASTWRITE(IO, v) do {  if (v) {DIO ## IO ## _WPORT -> PIO_SODR = MASK(DIO ## IO ##_PIN); } \
+                                  else {DIO ##  IO ## _WPORT -> PIO_CODR = MASK(DIO ## IO ## _PIN); }; \
+                               } while (0)
+#else
+  #define _WRITE_NC(IO, v)  do { if (v) {DIO ##  IO ## _WPORT |= MASK(DIO ## IO ## _PIN); } else {DIO ##  IO ## _WPORT &= ~MASK(DIO ## IO ## _PIN); }; } while (0)
+
+  #define _WRITE_C(IO, v)   do { if (v) { \
+                                           CRITICAL_SECTION_START; \
+                                           {DIO ##  IO ## _WPORT |= MASK(DIO ## IO ## _PIN); } \
+                                           CRITICAL_SECTION_END; \
+                                         } \
+                                         else { \
+                                           CRITICAL_SECTION_START; \
+                                           {DIO ##  IO ## _WPORT &= ~MASK(DIO ## IO ## _PIN); } \
+                                           CRITICAL_SECTION_END; \
+                                         } \
+                                       } \
+                                       while (0)
+
+  #define _WRITE(IO, v)  do {  if (&(DIO ##  IO ## _RPORT) >= (uint8_t *)0x100) {_WRITE_C(IO, v); } else {_WRITE_NC(IO, v); }; } while (0)
+#endif
+
+#ifndef __SAM3X8E__
+  /// toggle a pin
+  #define _TOGGLE(IO)  do {DIO ##  IO ## _RPORT = MASK(DIO ## IO ## _PIN); } while (0)
+
+  /// set pin as input
+  #define _SET_INPUT(IO) do {DIO ##  IO ## _DDR &= ~MASK(DIO ## IO ## _PIN); } while (0)
+  /// set pin as output
+  #define _SET_OUTPUT(IO) do {DIO ##  IO ## _DDR |=  MASK(DIO ## IO ## _PIN); } while (0)
+
+  /// check if pin is an input
+  #define _GET_INPUT(IO)  ((DIO ## IO ## _DDR & MASK(DIO ## IO ## _PIN)) == 0)
+  /// check if pin is an output
+  #define _GET_OUTPUT(IO)  ((DIO ## IO ## _DDR & MASK(DIO ## IO ## _PIN)) != 0)
+
+  /// check if pin is an timer
+  #define _GET_TIMER(IO)  ((DIO ## IO ## _PWM)
+#endif
+
+//  why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
+
+/// Read a pin wrapper
+#ifdef __SAM3X8E__
+  #define READ(IO)  _FASTREAD(IO)
+#else
+  #define READ(IO)  _READ(IO)
+#endif
+/// Write to a pin wrapper
+#ifdef __SAM3X8E__
+  #define WRITE_VAR(IO, v)  digitalWrite(IO, v)
+  #define WRITE(IO, v)  _FASTWRITE(IO, v)
+#else
+  #define WRITE(IO, v)  _WRITE(IO, v)
+#endif
+
+/// toggle a pin wrapper
+#ifdef __SAM3X8E__
+  #define TOGGLE(IO)  WRITE(IO, !READ(IO))
+#else
+  #define TOGGLE(IO)  _TOGGLE(IO)
+#endif
+
+/// set pin as input wrapper
+#ifdef __SAM3X8E__
+  #define SET_INPUT(IO)  pmc_enable_periph_clk(g_APinDescription[IO].ulPeripheralId); \
+                         PIO_Configure(g_APinDescription[IO].pPort, PIO_INPUT, g_APinDescription[IO].ulPin, 0)
+#else
+  #define SET_INPUT(IO)  _SET_INPUT(IO)
+#endif
+/// set pin as output wrapper
+#ifdef __SAM3X8E__
+  #define SET_OUTPUT(IO)  PIO_Configure(g_APinDescription[IO].pPort, PIO_OUTPUT_1, \
                           g_APinDescription[IO].ulPin, g_APinDescription[IO].ulPinConfiguration)
-/// toggle a pin	
-#define   TOGGLE(IO)      WRITE(IO, !READ(IO))
+#else
+  #define SET_OUTPUT(IO)  _SET_OUTPUT(IO)
+#endif
 
-// Write doesn't work for pullups
-#define   PULLUP(IO, v)   { pinMode(IO, (v!=LOW ? INPUT_PULLUP : INPUT)); }
+#ifdef __SAM3X8E__
+  // Write doesn't work for pullups
+  #define PULLUP(IO, v)  { pinMode(IO, (v!=LOW ? INPUT_PULLUP : INPUT)); }
+#endif
 
-/// check if pin is an input
-#define   GET_INPUT(IO)
+/// check if pin is an input wrapper
+#ifdef __SAM3X8E__
+  #define GET_INPUT(IO)
+#else
+  #define GET_INPUT(IO)  _GET_INPUT(IO)
+#endif
+/// check if pin is an output wrapper
+#ifdef __SAM3X8E__
+  #define GET_OUTPUT(IO)
+#else
+  #define GET_OUTPUT(IO)  _GET_OUTPUT(IO)
+#endif
 
-/// check if pin is an output
-#define   GET_OUTPUT(IO)
-
-/// check if pin is an timer
-#define   GET_TIMER(IO)
+/// check if pin is an timer wrapper
+#ifdef __SAM3X8E__
+  #define GET_TIMER(IO)
+#else
+  #define GET_TIMER(IO)  _GET_TIMER(IO)
+#endif
 
 // Shorthand
-#define   OUT_WRITE(IO, v)  { SET_OUTPUT(IO); WRITE_VAR(IO, v); }
+#ifdef __SAM3X8E__
+  #define OUT_WRITE(IO, v) { SET_OUTPUT(IO); WRITE_VAR(IO, v); }
+#else
+  #define OUT_WRITE(IO, v) { SET_OUTPUT(IO); WRITE(IO, v); }
+#endif
 
+/*
+  ports and functions
 
+  added as necessary or if I feel like it- not a comprehensive list!
+*/
+
+#ifdef __SAM3X8E__
 /*
 ** direct pins
 */
@@ -394,102 +468,7 @@ static inline void digitalFastWrite(int pin, bool v) {
 
 #define DIO100_PIN 11
 #define DIO100_WPORT PIOC
-
-#endif	/* _FASTIO_H */
-#else
-/*
-  This code contributed by Triffid_Hunter and modified by Kliment
-  why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
-*/
-
-#ifndef _FASTIO_ARDUINO_H
-#define _FASTIO_ARDUINO_H
-
-#include <avr/io.h>
-
-/*
-  utility functions
-*/
-
-#ifndef MASK
-  #define MASK(PIN)  (1 << PIN)
-#endif
-
-/*
-  magic I/O routines
-  now you can simply SET_OUTPUT(STEP); WRITE(STEP, 1); WRITE(STEP, 0);
-*/
-
-/// Read a pin
-#define _READ(IO) ((bool)(DIO ## IO ## _RPORT & MASK(DIO ## IO ## _PIN)))
-/// write to a pin
-// On some boards pins > 0x100 are used. These are not converted to atomic actions. An critical section is needed.
-
-#define _WRITE_NC(IO, v)  do { if (v) {DIO ##  IO ## _WPORT |= MASK(DIO ## IO ## _PIN); } else {DIO ##  IO ## _WPORT &= ~MASK(DIO ## IO ## _PIN); }; } while (0)
-
-#define _WRITE_C(IO, v)   do { if (v) { \
-                                         CRITICAL_SECTION_START; \
-                                         {DIO ##  IO ## _WPORT |= MASK(DIO ## IO ## _PIN); } \
-                                         CRITICAL_SECTION_END; \
-                                       } \
-                                       else { \
-                                         CRITICAL_SECTION_START; \
-                                         {DIO ##  IO ## _WPORT &= ~MASK(DIO ## IO ## _PIN); } \
-                                         CRITICAL_SECTION_END; \
-                                       } \
-                                     } \
-                                     while (0)
-
-#define _WRITE(IO, v)  do {  if (&(DIO ##  IO ## _RPORT) >= (uint8_t *)0x100) {_WRITE_C(IO, v); } else {_WRITE_NC(IO, v); }; } while (0)
-
-/// toggle a pin
-#define _TOGGLE(IO)  do {DIO ##  IO ## _RPORT = MASK(DIO ## IO ## _PIN); } while (0)
-
-/// set pin as input
-#define _SET_INPUT(IO) do {DIO ##  IO ## _DDR &= ~MASK(DIO ## IO ## _PIN); } while (0)
-/// set pin as output
-#define _SET_OUTPUT(IO) do {DIO ##  IO ## _DDR |=  MASK(DIO ## IO ## _PIN); } while (0)
-
-/// check if pin is an input
-#define _GET_INPUT(IO)  ((DIO ## IO ## _DDR & MASK(DIO ## IO ## _PIN)) == 0)
-/// check if pin is an output
-#define _GET_OUTPUT(IO)  ((DIO ## IO ## _DDR & MASK(DIO ## IO ## _PIN)) != 0)
-
-/// check if pin is an timer
-#define _GET_TIMER(IO)  ((DIO ## IO ## _PWM)
-
-//  why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
-
-/// Read a pin wrapper
-#define READ(IO)  _READ(IO)
-/// Write to a pin wrapper
-#define WRITE(IO, v)  _WRITE(IO, v)
-
-/// toggle a pin wrapper
-#define TOGGLE(IO)  _TOGGLE(IO)
-
-/// set pin as input wrapper
-#define SET_INPUT(IO)  _SET_INPUT(IO)
-/// set pin as output wrapper
-#define SET_OUTPUT(IO)  _SET_OUTPUT(IO)
-
-/// check if pin is an input wrapper
-#define GET_INPUT(IO)  _GET_INPUT(IO)
-/// check if pin is an output wrapper
-#define GET_OUTPUT(IO)  _GET_OUTPUT(IO)
-
-/// check if pin is an timer wrapper
-#define GET_TIMER(IO)  _GET_TIMER(IO)
-
-// Shorthand
-#define OUT_WRITE(IO, v) { SET_OUTPUT(IO); WRITE(IO, v); }
-
-/*
-  ports and functions
-
-  added as necessary or if I feel like it- not a comprehensive list!
-*/
-
+#else //__SAM3X8E__
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328__) || defined(__AVR_ATmega328P__)
   // UART
   #define RXD         DIO0
@@ -4417,6 +4396,6 @@ static inline void digitalFastWrite(int pin, bool v) {
 #ifndef DIO0_PIN
   #error pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please submit a pull request
 #endif
+#endif //__SAM3X8E__
 
 #endif /* _FASTIO_ARDUINO_H */
-#endif //__SAM3X8E__
