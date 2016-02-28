@@ -1,5 +1,5 @@
 /**
- * Arduino Mega with RAMPS v1.3 v1.4, Due with RAMPS DUO 4DUE pin assignments
+ * Arduino Mega with RAMPS v1.3 v1.4 DUO 4DUE pin assignments
  *
  * Applies to the following boards:
  *
