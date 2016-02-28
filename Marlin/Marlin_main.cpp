@@ -5733,8 +5733,12 @@ void process_next_command() {
   // Get the command code, which must be G, M, or T
   char command_code = *current_command;
 
+  // Skip the letter-code and spaces to get the numeric part
+  current_command_args = current_command + 1;
+  while (*current_command_args == ' ') ++current_command_args;
+
   // The code must have a numeric value
-  bool code_is_good = (current_command[1] >= '0' && current_command[1] <= '9');
+  bool code_is_good = (*current_command_args >= '0' && *current_command_args <= '9');
 
   int codenum; // define ahead of goto
 
@@ -5743,9 +5747,7 @@ void process_next_command() {
 
   // Args pointer optimizes code_seen, especially those taking XYZEF
   // This wastes a little cpu on commands that expect no arguments.
-  current_command_args = current_command+2; // skip two chars for command code and first digit
-  while (*current_command_args >= '0' && *current_command_args <= '9') ++current_command_args;
-  while (*current_command_args == ' ') ++current_command_args;
+  while (*current_command_args == ' ' || (*current_command_args >= '0' && *current_command_args <= '9')) ++current_command_args;
 
   // Interpret the code int
   seen_pointer = current_command;
