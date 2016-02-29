@@ -6816,7 +6816,7 @@ void plan_arc(
       }
       #ifdef __SAM3X8E__
         #if ENABLED(INVERTED_FAN_PINS)
-          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 255 - 0 : (255 - CONTROLLERFAN_SPEED);
+          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 255 : (255 - CONTROLLERFAN_SPEED);
         #else
           uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
         #endif
