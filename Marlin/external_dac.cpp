@@ -19,7 +19,7 @@
     // All SPI chip-select HIGH
     pinMode (DAC0_SYNC, OUTPUT);
     digitalWrite( DAC0_SYNC , HIGH );
-    #if DRIVER_EXTRUDERS > 1
+    #if EXTRUDERS > 1
       pinMode (DAC1_SYNC, OUTPUT);
       digitalWrite( DAC1_SYNC , HIGH );
     #endif
@@ -40,7 +40,7 @@
     spiSend(SPI_CHAN_DAC,externalDac_buf , 2);
     digitalWrite( DAC0_SYNC , HIGH );
 
-    #if DRIVER_EXTRUDERS > 1
+    #if EXTRUDERS > 1
       //init Piggy DAC
       delayMicroseconds(2U);
       digitalWrite( DAC1_SYNC , LOW );
@@ -73,7 +73,7 @@
     
     // All SPI chip-select HIGH
     digitalWrite( DAC0_SYNC , HIGH );
-    #if DRIVER_EXTRUDERS > 1
+    #if EXTRUDERS > 1
       digitalWrite( DAC1_SYNC , HIGH );
     #endif
     digitalWrite( SPI_EEPROM1_CS , HIGH );
