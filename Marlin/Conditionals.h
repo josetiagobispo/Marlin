@@ -515,26 +515,60 @@
   /**
    * Helper Macros for heaters and extruder fan
    */
-  #define WRITE_HEATER_0P(v) WRITE(HEATER_0_PIN, v)
-  #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
-    #define WRITE_HEATER_1(v) WRITE(HEATER_1_PIN, v)
-    #if EXTRUDERS > 2
-      #define WRITE_HEATER_2(v) WRITE(HEATER_2_PIN, v)
-      #if EXTRUDERS > 3
-        #define WRITE_HEATER_3(v) WRITE(HEATER_3_PIN, v)
+  #ifdef __SAM3X8E__
+    #if ENABLED(INVERTED_HEATER_PINS)
+      #define WRITE_HEATER(pin, value) WRITE(pin, !value)
+    #else
+      #define WRITE_HEATER(pin, value) WRITE(pin, value)
+    #endif
+    #define WRITE_HEATER_0P(v) WRITE_HEATER(HEATER_0_PIN, v)
+    #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
+      #define WRITE_HEATER_1(v) WRITE_HEATER(HEATER_1_PIN, v)
+      #if EXTRUDERS > 2
+        #define WRITE_HEATER_2(v) WRITE_HEATER(HEATER_2_PIN, v)
+        #if EXTRUDERS > 3
+          #define WRITE_HEATER_3(v) WRITE_HEATER(HEATER_3_PIN, v)
+        #endif
       #endif
     #endif
-  #endif
+  #else //__SAM3X8E__
+    #define WRITE_HEATER_0P(v) WRITE(HEATER_0_PIN, v)
+    #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
+      #define WRITE_HEATER_1(v) WRITE(HEATER_1_PIN, v)
+      #if EXTRUDERS > 2
+        #define WRITE_HEATER_2(v) WRITE(HEATER_2_PIN, v)
+        #if EXTRUDERS > 3
+          #define WRITE_HEATER_3(v) WRITE(HEATER_3_PIN, v)
+        #endif
+      #endif
+    #endif
+  #endif //__SAM3X8E__
   #if ENABLED(HEATERS_PARALLEL)
     #define WRITE_HEATER_0(v) { WRITE_HEATER_0P(v); WRITE_HEATER_1(v); }
   #else
     #define WRITE_HEATER_0(v) WRITE_HEATER_0P(v)
   #endif
   #if HAS_HEATER_BED
-    #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
+    #ifdef __SAM3X8E__
+      #if ENABLED(INVERTED_BED_PINS)
+        #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN,!v)
+      #else
+        #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN,v)
+      #endif
+    #else
+      #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
+    #endif
   #endif
   #if HAS_FAN
-    #define WRITE_FAN(v) WRITE(FAN_PIN, v)
+    #ifdef __SAM3X8E__
+      #if ENABLED(INVERTED_FAN_PINS)
+        #define WRITE_FAN(v) WRITE(FAN_PIN, !v)
+      #else
+        #define WRITE_FAN(v) WRITE(FAN_PIN, v)
+      #endif
+    #else
+      #define WRITE_FAN(v) WRITE(FAN_PIN, v)
+    #endif
   #endif
 
   #define HAS_BUZZER (PIN_EXISTS(BEEPER) || defined(LCD_USE_I2C_BUZZER))
