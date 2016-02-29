@@ -241,81 +241,6 @@
     #endif
   #endif
 
-#ifdef __SAM3X8E__
-  /**
-   * ENDSTOP LOGICAL
-   */
-  #if MB(ALLIGATOR)
-    #if ENABLED(X_MIN_ENDSTOP_INVERTING)
-      #undef X_MIN_ENDSTOP_INVERTING
-      #define X_MIN_ENDSTOP_INVERTING false
-    #else
-      #undef X_MIN_ENDSTOP_INVERTING
-      #define X_MIN_ENDSTOP_INVERTING true
-    #endif
-    #if ENABLED(Y_MIN_ENDSTOP_INVERTING)
-      #undef Y_MIN_ENDSTOP_INVERTING
-      #define Y_MIN_ENDSTOP_INVERTING false
-    #else
-      #undef Y_MIN_ENDSTOP_INVERTING
-      #define Y_MIN_ENDSTOP_INVERTING true
-    #endif
-    #if ENABLED(Z_MIN_ENDSTOP_INVERTING)
-      #undef Z_MIN_ENDSTOP_INVERTING
-      #define Z_MIN_ENDSTOP_INVERTING false
-    #else
-      #undef Z_MIN_ENDSTOP_INVERTING
-      #define Z_MIN_ENDSTOP_INVERTING true
-    #endif
-    #if ENABLED(X_MAX_ENDSTOP_INVERTING)
-      #undef X_MAX_ENDSTOP_INVERTING
-      #define X_MAX_ENDSTOP_INVERTING false
-    #else
-      #undef X_MAX_ENDSTOP_INVERTING
-      #define X_MAX_ENDSTOP_INVERTING true
-    #endif
-    #if ENABLED(Y_MAX_ENDSTOP_INVERTING)
-      #undef Y_MAX_ENDSTOP_INVERTING
-      #define Y_MAX_ENDSTOP_INVERTING false
-    #else
-      #undef Y_MAX_ENDSTOP_INVERTING
-      #define Y_MAX_ENDSTOP_INVERTING true
-    #endif
-    #if ENABLED(Z_MAX_ENDSTOP_INVERTING)
-      #undef Z_MAX_ENDSTOP_INVERTING
-      #define Z_MAX_ENDSTOP_INVERTING false
-    #else
-      #undef Z_MAX_ENDSTOP_INVERTING
-      #define Z_MAX_ENDSTOP_INVERTING true
-    #endif
-    #ifdef Z2_MAX_ENDSTOP_INVERTING
-      #if ENABLED(Z2_MAX_ENDSTOP_INVERTING)
-        #undef Z2_MAX_ENDSTOP_INVERTING
-        #define Z2_MAX_ENDSTOP_INVERTING false
-      #else
-        #undef Z2_MAX_ENDSTOP_INVERTING
-        #define Z2_MAX_ENDSTOP_INVERTING true
-      #endif
-    #endif
-    #if ENABLED(Z_MIN_PROBE_ENDSTOP_INVERTING)
-      #undef Z_MIN_PROBE_ENDSTOP_INVERTING
-      #define Z_MIN_PROBE_ENDSTOP_INVERTING false
-    #else
-      #undef Z_MIN_PROBE_ENDSTOP_INVERTING
-      #define Z_MIN_PROBE_ENDSTOP_INVERTING true
-    #endif
-    #ifdef Z2_MIN_ENDSTOP_INVERTING
-      #if ENABLED(Z2_MIN_ENDSTOP_INVERTING)
-        #undef Z2_MIN_ENDSTOP_INVERTING
-        #define Z2_MIN_ENDSTOP_INVERTING false
-      #else
-        #undef Z2_MIN_ENDSTOP_INVERTING
-        #define Z2_MIN_ENDSTOP_INVERTING true
-      #endif
-    #endif
-  #endif
-#endif
-
   /**
    * Axis lengths
    */
@@ -372,17 +297,15 @@
   /**
    * MAX_STEP_FREQUENCY differs for TOSHIBA
    */
-  #ifdef __SAM3X8E__
-    #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
-      #define MAX_STEP_FREQUENCY 150000 // Max step frequency for Toshiba Stepper Controllers
-      #define DOUBLE_STEP_FREQUENCY MAX_STEP_FREQUENCY
+  #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
+    #ifdef __SAM3X8E__
+      #define MAX_STEP_FREQUENCY 90000 // Max step frequency for Toshiba Stepper Controllers, 96kHz is close to maximum for an Arduino Due
     #else
-      #define MAX_STEP_FREQUENCY 320000     // Max step frequency for the Due is approx. 330kHz
-      #define DOUBLE_STEP_FREQUENCY 90000  // 96kHz is close to maximum for an Arduino Due
+      #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
     #endif
   #else
-    #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
-      #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
+    #ifdef __SAM3X8E__
+      #define MAX_STEP_FREQUENCY 320000 // Max step frequency for the Due is approx. 330kHz
     #else
       #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
     #endif
