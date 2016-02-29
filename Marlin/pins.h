@@ -136,18 +136,22 @@
   #define IS_RAMPS_14
   #define IS_RAMPS_DUO
   #include "pins_RAMPS_13_EFB.h"
+  #include "pins_RAMPS_DUO.h"
 #elif MB(RAMPS_DUO_EEB) || MB(RAMPS_DUO_EFF) || MB(RAMPS_DUO_EEF) || MB(RAMPS_DUO_SF)
   #define IS_RAMPS_14
   #define IS_RAMPS_DUO
   #include "pins_RAMPS_13.h"
+  #include "pins_RAMPS_DUO.h"
 #elif MB(RAMPS4DUE_EFB)
   #define IS_RAMPS_14
   #define IS_RAMPS4DUE
   #include "pins_RAMPS_13_EFB.h"
+  #include "pins_RAMPS4DUE.h"
 #elif MB(RAMPS4DUE_EEB) || MB(RAMPS4DUE_EFF) || MB(RAMPS4DUE_EEF) || MB(RAMPS4DUE_SF)
   #define IS_RAMPS_14
   #define IS_RAMPS4DUE
   #include "pins_RAMPS_13.h"
+  #include "pins_RAMPS4DUE.h"
 #elif MB(ALLIGATOR)
   #include "pins_ALLIGATOR_R2.h"
 #elif MB(99)
