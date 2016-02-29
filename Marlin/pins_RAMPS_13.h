@@ -1,5 +1,5 @@
 /**
- * Arduino Mega with RAMPS v1.3 v1.4 DUO 4DUE pin assignments
+ * Arduino Mega with RAMPS v1.3 v1.4 pin assignments
  *
  * Applies to the following boards:
  *
@@ -15,39 +15,11 @@
  *  RAMPS_14_EEF (Extruder, Extruder, Fan)
  *  RAMPS_14_SF  (Spindle, Controller Fan)
  *
- *  RAMPS_DUO_EFB (Extruder, Fan, Bed)
- *  RAMPS_DUO_EEB (Extruder, Extruder, Bed)
- *  RAMPS_DUO_EFF (Extruder, Fan, Fan)
- *  RAMPS_DUO_EEF (Extruder, Extruder, Fan)
- *  RAMPS_DUO_SF  (Spindle, Controller Fan)
- *
- *  RAMPS4DUE_EFB (Extruder, Fan, Bed)
- *  RAMPS4DUE_EEB (Extruder, Extruder, Bed)
- *  RAMPS4DUE_EFF (Extruder, Fan, Fan)
- *  RAMPS4DUE_EEF (Extruder, Extruder, Fan)
- *  RAMPS4DUE_SF  (Spindle, Controller Fan)
- *
  *  Other pins_MYBOARD.h files may override these defaults
  *
  *  Differences between
  *  RAMPS_13 | RAMPS_14
  *         7 | 11
- *
- *  Differences between
- *  RAMPS_14 | RAMPS_DUO
- *    A9/D63 | A12/D66
- *   A10/D64 | A13/D67
- *   A11/D65 | A14/D68
- *   A12/D66 | A15/D69
- *       A13 | A9
- *       A14 | A10
- *       A15 | A11
- *
- *  Differences between
- *  RAMPS_14 | RAMPS4DUE
- *       A13 | A9/D63
- *       A14 | A10/D64
- *       A15 | NC
  */
 
 #if !defined(IS_RAMPS_DUO) && !defined(IS_RAMPS4DUE)
@@ -57,32 +29,6 @@
 #endif
 
 #define LARGE_FLASH true
-
-#ifdef IS_RAMPS_DUO
-  #define AUX2_4PIN        66
-  #define AUX2_5PIN        67
-  #define AUX2_9PIN        69
-  #define AUX2_10PIN       68
-
-  #define T0_PIN            9
-  #define T1_PIN           10
-  #define T2_PIN           11
-#else
-  #define AUX2_4PIN        63
-  #define AUX2_5PIN        64
-  #define AUX2_9PIN        66
-  #define AUX2_10PIN       65
-
-  #ifdef IS_RAMPS4DUE
-    #define T0_PIN          9 //shares the same pin with AUX2_4PIN
-    #define T1_PIN         10 //shares the same pin with AUX2_5PIN
-    #define T2_PIN         -1
-  #else
-    #define T0_PIN         13
-    #define T1_PIN         14
-    #define T2_PIN         15
-  #endif
-#endif
 
 #ifdef IS_RAMPS_14
   #define SERVO0_PIN       11
@@ -172,8 +118,8 @@
 
 #define HEATER_2_PIN       -1
 
-#define TEMP_0_PIN         T0_PIN   // ANALOG NUMBERING
-#define TEMP_1_PIN         T2_PIN   // ANALOG NUMBERING
+#define TEMP_0_PIN         13   // ANALOG NUMBERING
+#define TEMP_1_PIN         15   // ANALOG NUMBERING
 #define TEMP_2_PIN         -1   // ANALOG NUMBERING
 
 #if MB(RAMPS_13_EFF) || MB(RAMPS_13_EEF) || MB(RAMPS_13_SF)
@@ -182,7 +128,7 @@
   #define HEATER_BED_PIN    8    // BED
 #endif
 
-#define TEMP_BED_PIN         T1_PIN   // ANALOG NUMBERING
+#define TEMP_BED_PIN         14   // ANALOG NUMBERING
 
 #if ENABLED(Z_PROBE_SLED)
   #define SLED_PIN           -1
@@ -194,10 +140,10 @@
     #if ENABLED(PANEL_ONE)
       #define LCD_PINS_RS 40
       #define LCD_PINS_ENABLE 42
-      #define LCD_PINS_D4 AUX2_10PIN
-      #define LCD_PINS_D5 AUX2_9PIN
+      #define LCD_PINS_D4 65
+      #define LCD_PINS_D5 66
       #define LCD_PINS_D6 44
-      #define LCD_PINS_D7 AUX2_5PIN
+      #define LCD_PINS_D7 64
     #else
       #define LCD_PINS_RS 16
       #define LCD_PINS_ENABLE 17
@@ -245,11 +191,11 @@
       #define BEEPER_PIN 42
       // Pins for DOGM SPI LCD Support
       #define DOGLCD_A0  44
-      #define DOGLCD_CS  AUX2_9PIN
-      #define LCD_PIN_BL AUX2_10PIN // backlight LED on A11/D65(RAMPS v1.3/1.4 and RAMPS4DUE) or A14/D68(RAMPS DUO)
+      #define DOGLCD_CS  66
+      #define LCD_PIN_BL 65 // backlight LED on A11/D65
       #define SDSS   53
 
-      #define KILL_PIN AUX2_5PIN
+      #define KILL_PIN 64
       // GLCD features
       //#define LCD_CONTRAST 190
       // Uncomment screen orientation
@@ -258,7 +204,7 @@
       //#define LCD_SCREEN_ROT_270
       //The encoder and click button
       #define BTN_EN1 40
-      #define BTN_EN2 AUX2_4PIN
+      #define BTN_EN2 63
       #define BTN_ENC 59  //the click switch
       //not connected to a pin
       #define SD_DETECT_PIN 49
@@ -269,15 +215,15 @@
 
       // buttons are directly attached using AUX-2
       #if ENABLED(REPRAPWORLD_KEYPAD)
-        #define BTN_EN1 AUX2_5PIN // encoder
+        #define BTN_EN1 64 // encoder
         #define BTN_EN2 59 // encoder
-        #define BTN_ENC AUX2_4PIN // enter button
+        #define BTN_ENC 63 // enter button
         #define SHIFT_OUT 40 // shift register
         #define SHIFT_CLK 44 // shift register
         #define SHIFT_LD 42 // shift register
       #elif ENABLED(PANEL_ONE)
         #define BTN_EN1 59 // AUX2 PIN 3
-        #define BTN_EN2 AUX2_4PIN // AUX2 PIN 4
+        #define BTN_EN2 63 // AUX2 PIN 4
         #define BTN_ENC 49 // AUX3 PIN 7
       #else
         #define BTN_EN1 37
@@ -316,9 +262,9 @@
 
 // SPI for Max6675 Thermocouple
 #if DISABLED(SDSUPPORT)
-  #define MAX6675_SS       AUX2_9PIN // Do not use pin 53 if there is even the remote possibility of using Display/SD card
+  #define MAX6675_SS       66 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
 #else
-  #define MAX6675_SS       AUX2_9PIN // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
+  #define MAX6675_SS       66 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
 #endif
 
 #if DISABLED(SDSUPPORT)
