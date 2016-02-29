@@ -509,29 +509,24 @@ void st_wake_up() {
   NOMORE(step_rate, MAX_STEP_FREQUENCY);
 
   #ifdef __SAM3X8E__
-    #if ENABLED(ENABLE_HIGH_SPEED_STEPPING)
-      if(step_rate > (2 * DOUBLE_STEP_FREQUENCY)) { // If steprate > 2*DOUBLE_STEP_FREQUENCY >> step 4 times
-        step_rate = (step_rate >> 2);
-        step_loops = 4;
-      }
-      else if(step_rate > DOUBLE_STEP_FREQUENCY) { // If steprate > DOUBLE_STEP_FREQUENCY >> step 2 times
-        step_rate = (step_rate >> 1);
-        step_loops = 2;
-      }
-      else
-    #endif
-    {
+    if(step_rate > 180000) { // If steprate > 180kHz >> step 4 times
+      step_rate = (step_rate >> 2);
   #else
     if (step_rate > 20000) { // If steprate > 20kHz >> step 4 times
       step_rate = (step_rate >> 2) & 0x3fff;
-      step_loops = 4;
-    }
+  #endif
+    step_loops = 4;
+  }
+  #ifdef __SAM3X8E__
+    else if(step_rate > 90000) { // If steprate > 90kHz >> step 2 times
+      step_rate = (step_rate >> 1);
+  #else
     else if (step_rate > 10000) { // If steprate > 10kHz >> step 2 times
       step_rate = (step_rate >> 1) & 0x7fff;
-      step_loops = 2;
-    }
-    else {
   #endif
+    step_loops = 2;
+  }
+  else {
     step_loops = 1;
   }
 
@@ -726,106 +721,67 @@ FORCE_INLINE void trapezoid_generator_reset() {
     // Update endstops state, if enabled
     if (check_endstops) update_endstops();
 
-    #ifdef __SAM3X8E__
-      #define _COUNTER(axis) counter_## axis
-      #define _APPLY_STEP(AXIS) AXIS ##_APPLY_STEP
-  	  #define _INVERT_STEP_PIN(AXIS) INVERT_## AXIS ##_STEP_PIN
-
-      #define STEP_ADD(axis, AXIS) \
-        _COUNTER(axis) += current_block->steps[_AXIS(AXIS)]; \
-        if (_COUNTER(axis) > 0) { \
-        _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); \
-        _COUNTER(axis) -= current_block->step_event_count; \
-        count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; }
-
-      #define STEP_IF_COUNTER(axis, AXIS) _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0)
-
-      #if ENABLED(ENABLE_HIGH_SPEED_STEPPING)
-        // Take multiple steps per interrupt (For high speed moves)
-        for (int8_t i = 0; i < step_loops; i++) {
-
-          #if ENABLED(ADVANCE)
-            counter_e += current_block->steps[E_AXIS];
-            if (counter_e > 0) {
-              counter_e -= current_block->step_event_count;
-              e_steps[current_block->active_driver] += TEST(out_bits, E_AXIS) ? -1 : 1;
-            }
-          #endif //ADVANCE
-
-          STEP_ADD(x,X);
-          STEP_ADD(y,Y);
-          STEP_ADD(z,Z);
-          #ifndef ADVANCE
-            STEP_ADD(e,E);
-          #endif
-
-          STEP_IF_COUNTER(x, X);
-          STEP_IF_COUNTER(y, Y);
-          STEP_IF_COUNTER(z, Z);
-          #if DISABLED(ADVANCE)
-            STEP_IF_COUNTER(e, E);
-          #endif
-
-          step_events_completed++;
-          if (step_events_completed >= current_block->step_event_count) break;
-        }
-      #else
-        STEP_ADD(x,X);
-        STEP_ADD(y,Y);
-        STEP_ADD(z,Z);
-        #if DISABLED(ADVANCE)
-          STEP_ADD(e,E);
-        #endif
-        step_events_completed++;
-      #endif
-    #else
-      // Take multiple steps per interrupt (For high speed moves)
-      for (int8_t i = 0; i < step_loops; i++) {
+    // Take multiple steps per interrupt (For high speed moves)
+    for (int8_t i = 0; i < step_loops; i++) {
+      #ifndef __SAM3X8E__
         #ifndef USBCON
           customizedSerial.checkRx(); // Check for serial chars.
         #endif
+      #endif
 
-        #if ENABLED(ADVANCE)
-          counter_e += current_block->steps[E_AXIS];
-          if (counter_e > 0) {
-            counter_e -= current_block->step_event_count;
-            e_steps[current_block->active_extruder] += TEST(out_bits, E_AXIS) ? -1 : 1;
-          }
-        #endif //ADVANCE
+      #if ENABLED(ADVANCE)
+        counter_e += current_block->steps[E_AXIS];
+        if (counter_e > 0) {
+          counter_e -= current_block->step_event_count;
+          e_steps[current_block->active_extruder] += TEST(out_bits, E_AXIS) ? -1 : 1;
+        }
+      #endif //ADVANCE
 
-        #define _COUNTER(axis) counter_## axis
-        #define _APPLY_STEP(AXIS) AXIS ##_APPLY_STEP
-        #define _INVERT_STEP_PIN(AXIS) INVERT_## AXIS ##_STEP_PIN
+      #define _COUNTER(axis) counter_## axis
+      #define _APPLY_STEP(AXIS) AXIS ##_APPLY_STEP
+      #define _INVERT_STEP_PIN(AXIS) INVERT_## AXIS ##_STEP_PIN
 
+      #ifdef __SAM3X8E__
+        #define STEP_ADD(axis, AXIS) \
+          _COUNTER(axis) += current_block->steps[_AXIS(AXIS)]; \
+          if (_COUNTER(axis) > 0) { \
+          _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); \
+          _COUNTER(axis) -= current_block->step_event_count; \
+          count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; }
+      #else
         #define STEP_ADD(axis, AXIS) \
           _COUNTER(axis) += current_block->steps[_AXIS(AXIS)]; \
           if (_COUNTER(axis) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); }
+      #endif
 
-        STEP_ADD(x,X);
-        STEP_ADD(y,Y);
-        STEP_ADD(z,Z);
-        #if DISABLED(ADVANCE)
-          STEP_ADD(e,E);
-        #endif
+      STEP_ADD(x,X);
+      STEP_ADD(y,Y);
+      STEP_ADD(z,Z);
+      #if DISABLED(ADVANCE)
+        STEP_ADD(e,E);
+      #endif
 
+      #ifdef __SAM3X8E__
+        #define STEP_IF_COUNTER(axis, AXIS) _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0)
+      #else
         #define STEP_IF_COUNTER(axis, AXIS) \
           if (_COUNTER(axis) > 0) { \
             _COUNTER(axis) -= current_block->step_event_count; \
             count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; \
             _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
           }
+      #endif
 
-        STEP_IF_COUNTER(x, X);
-        STEP_IF_COUNTER(y, Y);
-        STEP_IF_COUNTER(z, Z);
-        #if DISABLED(ADVANCE)
-          STEP_IF_COUNTER(e, E);
-        #endif
+      STEP_IF_COUNTER(x, X);
+      STEP_IF_COUNTER(y, Y);
+      STEP_IF_COUNTER(z, Z);
+      #if DISABLED(ADVANCE)
+        STEP_IF_COUNTER(e, E);
+      #endif
 
-        step_events_completed++;
-        if (step_events_completed >= current_block->step_event_count) break;
-      }
-    #endif //__SAM3X8E__
+      step_events_completed++;
+      if (step_events_completed >= current_block->step_event_count) break;
+    }
     // Calculate new timer value
     #ifdef __SAM3X8E__
       unsigned long timer;
@@ -904,19 +860,10 @@ FORCE_INLINE void trapezoid_generator_reset() {
       // ensure we're running at the correct step rate, even if we just came off an acceleration
       step_loops = step_loops_nominal;
     }
-    #ifdef __SAM3X8E__
-      #if DISABLED(ENABLE_HIGH_SPEED_STEPPING)
-        STEP_IF_COUNTER(x, X);
-        STEP_IF_COUNTER(y, Y);
-        STEP_IF_COUNTER(z, Z);
-        #ifndef ADVANCE
-          STEP_IF_COUNTER(e, E);
-        #endif
-      #endif
 
+    #ifdef __SAM3X8E__
       HAL_timer_stepper_count(timer);
     #else
-
       OCR1A = (OCR1A < (TCNT1 + 16)) ? (TCNT1 + 16) : OCR1A;
     #endif
 
@@ -1440,7 +1387,7 @@ void digipot_init() {
     #if MB(ALLIGATOR)
       const float motor_current[] = MOTOR_CURRENT;
       unsigned int digipot_motor = 0;
-      for (uint8_t i = 0; i < 3 + DRIVER_EXTRUDERS; i++) {
+      for (uint8_t i = 0; i < 3 + EXTRUDERS; i++) {
         digipot_motor = 255 * (motor_current[i] / 2.5);
         ExternalDac::setValue(i, digipot_motor);
       }
