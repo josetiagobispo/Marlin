@@ -26,11 +26,12 @@
 
 // Note that on the Due pin A0 on the board is channel 2 on the ARM chip
 #define HEATER_0_PIN   10
+#define HEATER_1_PIN    9
+#define HEATER_BED_PIN  8
+
 #define TEMP_0_PIN      9  // Due analog pin #
-#define HEATER_1_PIN   8
 #define TEMP_1_PIN     10  // Due analog pin #
-#define HEATER_2_PIN   9
-#define TEMP_2_PIN     11  // Due analog pin #
+#define TEMP_BED_PIN   11  // Due analog pin #
 
 #define E0_STEP_PIN    26
 #define E0_DIR_PIN     28
