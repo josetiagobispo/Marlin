@@ -18,6 +18,7 @@ RC3 - 05 Feb 2016<br>
 ## Current Status: Experimental
 
 ### known issues
+* HEATER_0_USES_MAX6675 does not work on Due
 * M100_FREE_MEMORY_WATCHER does not work on Due
 * FAST_PWM_FAN does not work on Due
 * WATCHDOG_RESET_MANUAL does not work on Due
