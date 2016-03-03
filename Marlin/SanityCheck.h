@@ -338,6 +338,9 @@
       #error DEPENDENCY ERROR: Missing setting UI_VOLTAGE_LEVEL
     #endif
   #endif
+  #ifdef HEATER_0_USES_MAX6675
+    #error HEATER_0_USES_MAX6675 is not supported by ARM platform yet.
+  #endif
   #ifdef M100_FREE_MEMORY_WATCHER
     #error M100_FREE_MEMORY_WATCHER is not supported by ARM platform yet.
   #endif
