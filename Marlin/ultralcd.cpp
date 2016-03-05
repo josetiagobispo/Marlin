@@ -88,9 +88,9 @@ static void lcd_status_screen();
   static void menu_action_setting_edit_float5(const char* pstr, float* ptr, float minValue, float maxValue);
   static void menu_action_setting_edit_float51(const char* pstr, float* ptr, float minValue, float maxValue);
   static void menu_action_setting_edit_float52(const char* pstr, float* ptr, float minValue, float maxValue);
-#ifdef __SAM3X8E__
-  static void menu_action_setting_edit_float62(const char* pstr, float* ptr, float minValue, float maxValue);
-#endif
+  #ifdef __SAM3X8E__
+    static void menu_action_setting_edit_float62(const char* pstr, float* ptr, float minValue, float maxValue);
+  #endif
   static void menu_action_setting_edit_long5(const char* pstr, unsigned long* ptr, unsigned long minValue, unsigned long maxValue);
   static void menu_action_setting_edit_callback_bool(const char* pstr, bool* ptr, menuFunc_t callbackFunc);
   static void menu_action_setting_edit_callback_int3(const char* pstr, int* ptr, int minValue, int maxValue, menuFunc_t callbackFunc);
@@ -100,9 +100,9 @@ static void lcd_status_screen();
   static void menu_action_setting_edit_callback_float5(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
   static void menu_action_setting_edit_callback_float51(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
   static void menu_action_setting_edit_callback_float52(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
-#ifdef __SAM3X8E__
-  static void menu_action_setting_edit_callback_float62(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
-#endif
+  #ifdef __SAM3X8E__
+    static void menu_action_setting_edit_callback_float62(const char* pstr, float* ptr, float minValue, float maxValue, menuFunc_t callbackFunc);
+  #endif
   static void menu_action_setting_edit_callback_long5(const char* pstr, unsigned long* ptr, unsigned long minValue, unsigned long maxValue, menuFunc_t callbackFunc);
 
   #if ENABLED(SDSUPPORT)
