@@ -23,14 +23,14 @@ void watchdog_init() {
 }
 
 #ifdef __SAM3X8E__
-// Reset watchdog. MUST be called every 1s after init or avr will reset.
-void watchdog_reset() {
-	WDT_Restart(WDT);
-}
+  // Reset watchdog. MUST be called every 1s after init or avr will reset.
+  void watchdog_reset() {
+    WDT_Restart(WDT);
+  }
 #endif
 
 #ifndef __SAM3X8E__
-    //===========================================================================
+  //===========================================================================
   //=================================== ISR ===================================
   //===========================================================================
 
