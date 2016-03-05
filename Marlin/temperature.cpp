@@ -1317,17 +1317,17 @@ enum TempState {
   static unsigned char temp_count = 0;
   static TempState temp_state = StartupDelay;
   static unsigned char pwm_count = BIT(SOFT_PWM_SCALE);
-#ifdef __SAM3X8E__
-  static unsigned long raw_temp_value[4] = { 0 };
-  static unsigned long raw_temp_bed_value = 0;
-  static int max_temp[5] = { 0 };
-  static int min_temp[5] = { 123000 };
-  static int temp_read = 0;
+  #ifdef __SAM3X8E__
+    static unsigned long raw_temp_value[4] = { 0 };
+    static unsigned long raw_temp_bed_value = 0;
+    static int max_temp[5] = { 0 };
+    static int min_temp[5] = { 123000 };
+    static int temp_read = 0;
 
-  static unsigned char median_counter = 0;
-  static unsigned long raw_median_temp[5][MEDIAN_COUNT] = { { 3950 * OVERSAMPLENR } };
-  static bool first_start = true;
-#endif
+    static unsigned char median_counter = 0;
+    static unsigned long raw_median_temp[5][MEDIAN_COUNT] = { { 3950 * OVERSAMPLENR } };
+    static bool first_start = true;
+  #endif
 
   // Static members for each heater
   #if ENABLED(SLOW_PWM_HEATERS)
@@ -1362,13 +1362,13 @@ enum TempState {
   #ifdef __SAM3X8E__
     // Initialize some variables only at start!
     if (first_start) {
-	    for (uint8_t i = 0; i < 5; i++) {
-		    for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = 3600 * OVERSAMPLENR;
-		    max_temp[i] = 0;
-		    min_temp[i] = 123000;
-	    }
-	    first_start = false;
-	    SERIAL_ECHOLN("First start for temperature finished.");
+      for (uint8_t i = 0; i < 5; i++) {
+        for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = 3600 * OVERSAMPLENR;
+        max_temp[i] = 0;
+        min_temp[i] = 123000;
+      }
+      first_start = false;
+      SERIAL_ECHOLN("First start for temperature finished.");
     }
 
     HAL_timer_isr_status (TEMP_TIMER_COUNTER, TEMP_TIMER_CHANNEL);
