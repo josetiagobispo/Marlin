@@ -19,7 +19,6 @@
   Modified 23 November 2006 by David A. Mellis
   Modified 28 September 2010 by Mark Sproul
 */
-#ifndef __SAM3X8E__
 
 #include "Marlin.h"
 #include "MarlinSerial.h"
@@ -80,7 +79,7 @@ void MarlinSerial::begin(long baud) {
   #endif
 
   if (useU2X) {
-    M_UCSRxA = BIT(M_U2Xx);
+    M_UCSRxA = _BV(M_U2Xx);
     baud_setting = (F_CPU / 4 / baud - 1) / 2;
   }
   else {
@@ -92,15 +91,15 @@ void MarlinSerial::begin(long baud) {
   M_UBRRxH = baud_setting >> 8;
   M_UBRRxL = baud_setting;
 
-  sbi(M_UCSRxB, M_RXENx);
-  sbi(M_UCSRxB, M_TXENx);
-  sbi(M_UCSRxB, M_RXCIEx);
+  SBI(M_UCSRxB, M_RXENx);
+  SBI(M_UCSRxB, M_TXENx);
+  SBI(M_UCSRxB, M_RXCIEx);
 }
 
 void MarlinSerial::end() {
-  cbi(M_UCSRxB, M_RXENx);
-  cbi(M_UCSRxB, M_TXENx);
-  cbi(M_UCSRxB, M_RXCIEx);
+  CBI(M_UCSRxB, M_RXENx);
+  CBI(M_UCSRxB, M_TXENx);
+  CBI(M_UCSRxB, M_RXCIEx);
 }
 
 
@@ -134,10 +133,6 @@ int MarlinSerial::read(void) {
 }
 
 void MarlinSerial::flush() {
-  // don't reverse this or there may be problems if the RX interrupt
-  // occurs after reading the value of rx_buffer_head but before writing
-  // the value to rx_buffer_tail; the previous value of rx_buffer_head
-  // may be written to rx_buffer_tail, making it appear as if the buffer
   // don't reverse this or there may be problems if the RX interrupt
   // occurs after reading the value of rx_buffer_head but before writing
   // the value to rx_buffer_tail; the previous value of rx_buffer_head
@@ -307,5 +302,3 @@ MarlinSerial customizedSerial;
 #if defined(USBCON) && ENABLED(BLUETOOTH)
   HardwareSerial bluetoothSerial;
 #endif
-
-#endif //__SAM3X8E__
