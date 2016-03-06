@@ -20,6 +20,10 @@
   #error Oops!  Make sure you have 'Arduino Due' or 'Arduino Mega' selected from the 'Tools -> Boards' menu.
 #endif
 
+#define IS_RAMPS4DUE
+
+#include "pins_RAMPS_14.h"
+
 #undef TEMP_0_PIN
 #define TEMP_0_PIN          9   // ANALOG NUMBERING
 
