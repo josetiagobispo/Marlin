@@ -42,11 +42,6 @@
 
 #include "ultralcd.h"
 #include "planner.h"
-#ifdef __SAM3X8E__
-  #if MB(ALLIGATOR)
-    #include "module/external_dac.h"
-  #endif
-#endif
 #include "stepper.h"
 #include "temperature.h"
 #include "cardreader.h"
@@ -294,7 +289,6 @@ static millis_t stepper_inactive_time = DEFAULT_STEPPER_DEACTIVE_TIME * 1000L;
 millis_t print_job_start_ms = 0; ///< Print job start time
 millis_t print_job_stop_ms = 0;  ///< Print job stop time
 static uint8_t target_extruder;
-bool target_direction;
 
 #if ENABLED(AUTO_BED_LEVELING_FEATURE)
   int xy_travel_speed = XY_TRAVEL_SPEED;
@@ -452,27 +446,25 @@ void serial_echopair_P(const char* s_P, unsigned long v) { serialprintPGM(s_P); 
   float extrude_min_temp = EXTRUDE_MINTEMP;
 #endif
 
-#ifndef __SAM3X8E__ // HAL for Due
-  #if ENABLED(SDSUPPORT)
-    #include "SdFatUtil.h"
-    int freeMemory() { return SdFatUtil::FreeRam(); }
-  #else
-    extern "C" {
-      extern unsigned int __bss_end;
-      extern unsigned int __heap_start;
-      extern void* __brkval;
+#if ENABLED(SDSUPPORT)
+  #include "SdFatUtil.h"
+  int freeMemory() { return SdFatUtil::FreeRam(); }
+#else
+extern "C" {
+  extern unsigned int __bss_end;
+  extern unsigned int __heap_start;
+  extern void* __brkval;
 
-      int freeMemory() {
-        int free_memory;
-        if ((int)__brkval == 0)
-          free_memory = ((int)&free_memory) - ((int)&__bss_end);
-        else
-          free_memory = ((int)&free_memory) - ((int)__brkval);
-        return free_memory;
-      }
-    }
-  #endif //!SDSUPPORT
-#endif
+  int freeMemory() {
+    int free_memory;
+    if ((int)__brkval == 0)
+      free_memory = ((int)&free_memory) - ((int)&__bss_end);
+    else
+      free_memory = ((int)&free_memory) - ((int)__brkval);
+    return free_memory;
+  }
+}
+#endif //!SDSUPPORT
 
 /**
  * Inject the next command from the command queue, when possible
@@ -530,20 +522,6 @@ bool enqueuecommand(const char* cmd) {
   commands_in_queue++;
   return true;
 }
-
-#ifdef __SAM3X8E__
-  #if MB(ALLIGATOR)
-    void setup_alligator_board() {
-      // Init Expansion Port Voltage logic Selector
-      SET_OUTPUT(EXP_VOLTAGE_LEVEL_PIN);
-      WRITE(EXP_VOLTAGE_LEVEL_PIN, UI_VOLTAGE_LEVEL);
-      ExternalDac::begin(); //initialize ExternalDac
-      #if HAS_BUZZER
-        buzz(10,10);
-      #endif
-    }
-  #endif
-#endif
 
 void setup_killpin() {
   #if HAS_KILL
@@ -635,9 +613,6 @@ void servo_init() {
 
 /**
  * Marlin entry-point: Set up before the program loop
- #ifdef __SAM3X8E__
-   *  - Set up Alligator Board
- #endif
  *  - Set up the kill pin, filament runout, power hold
  *  - Start the serial port
  *  - Print startup messages and diagnostics
@@ -655,11 +630,13 @@ void servo_init() {
  *    • status LEDs
  */
 void setup() {
-  #ifdef __SAM3X8E__
-    #if MB(ALLIGATOR)
-      setup_alligator_board();// Initialize Alligator Board
-    #endif
+
+  #ifdef DISABLE_JTAG
+    // Disable JTAG on AT90USB chips to free up pins for IO
+    MCUCR = 0x80;
+    MCUCR = 0x80;
   #endif
+
   setup_killpin();
   setup_filrunoutpin();
   setup_powerhold();
@@ -1354,7 +1331,7 @@ static void setup_for_endstop_move() {
       st_synchronize();
 
       // Tell the planner where we ended up - Get this from the stepper handler
-      zPosition = st_get_position_mm(Z_AXIS);
+      zPosition = st_get_axis_position_mm(Z_AXIS);
       plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS]);
 
       // move up the retract distance
@@ -1372,7 +1349,7 @@ static void setup_for_endstop_move() {
       endstops_hit_on_purpose(); // clear endstop hit flags
 
       // Get the current stepper position after bumping an endstop
-      current_position[Z_AXIS] = st_get_position_mm(Z_AXIS);
+      current_position[Z_AXIS] = st_get_axis_position_mm(Z_AXIS);
       sync_plan_position();
 
       #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -1630,8 +1607,8 @@ static void setup_for_endstop_move() {
 
   enum ProbeAction {
     ProbeStay          = 0,
-    ProbeDeploy        = BIT(0),
-    ProbeStow          = BIT(1),
+    ProbeDeploy        = _BV(0),
+    ProbeStow          = _BV(1),
     ProbeDeployAndStow = (ProbeDeploy | ProbeStow)
   };
 
@@ -2344,7 +2321,7 @@ inline void gcode_G28() {
           }
         #endif
 
-      #elif DISABLED(Z_SAFE_HOMING) && defined(Z_RAISE_BEFORE_HOMING) && Z_RAISE_BEFORE_HOMING > 0
+      #elif defined(Z_RAISE_BEFORE_HOMING) && Z_RAISE_BEFORE_HOMING > 0
 
         // Raise Z before homing any other axes
         // (Does this need to be "negative home direction?" Why not just use Z_RAISE_BEFORE_HOMING?)
@@ -3098,8 +3075,7 @@ inline void gcode_G28() {
 
               apply_rotation_xyz(plan_bed_level_matrix, x_tmp, y_tmp, z_tmp);
 
-              if (eqnBVector[ind] - z_tmp < min_diff)
-                min_diff = eqnBVector[ind] - z_tmp;
+              NOMORE(min_diff, eqnBVector[ind] - z_tmp);
 
               if (diff >= 0.0)
                 SERIAL_PROTOCOLPGM(" +");   // Include + for column alignment
@@ -3179,7 +3155,7 @@ inline void gcode_G28() {
         float x_tmp = current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER,
               y_tmp = current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER,
               z_tmp = current_position[Z_AXIS],
-              real_z = st_get_position_mm(Z_AXIS);  //get the real Z (since plan_get_position is now correcting the plane)
+              real_z = st_get_axis_position_mm(Z_AXIS);  //get the real Z (since plan_get_position is now correcting the plane)
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
           if (marlin_debug_flags & DEBUG_LEVELING) {
@@ -3626,10 +3602,10 @@ inline void gcode_M42() {
       }
     }
 
-    double X_current = st_get_position_mm(X_AXIS),
-           Y_current = st_get_position_mm(Y_AXIS),
-           Z_current = st_get_position_mm(Z_AXIS),
-           E_current = st_get_position_mm(E_AXIS),
+    double X_current = st_get_axis_position_mm(X_AXIS),
+           Y_current = st_get_axis_position_mm(Y_AXIS),
+           Z_current = st_get_axis_position_mm(Z_AXIS),
+           E_current = st_get_axis_position_mm(E_AXIS),
            X_probe_location = X_current, Y_probe_location = Y_current,
            Z_start_location = Z_current + Z_RAISE_BEFORE_PROBING;
 
@@ -3683,10 +3659,10 @@ inline void gcode_M42() {
                      active_extruder);
     st_synchronize();
 
-    current_position[X_AXIS] = X_current = st_get_position_mm(X_AXIS);
-    current_position[Y_AXIS] = Y_current = st_get_position_mm(Y_AXIS);
-    current_position[Z_AXIS] = Z_current = st_get_position_mm(Z_AXIS);
-    current_position[E_AXIS] = E_current = st_get_position_mm(E_AXIS);
+    current_position[X_AXIS] = X_current = st_get_axis_position_mm(X_AXIS);
+    current_position[Y_AXIS] = Y_current = st_get_axis_position_mm(Y_AXIS);
+    current_position[Z_AXIS] = Z_current = st_get_axis_position_mm(Z_AXIS);
+    current_position[E_AXIS] = E_current = st_get_axis_position_mm(E_AXIS);
 
     //
     // OK, do the initial probe to get us close to the bed.
@@ -3698,15 +3674,15 @@ inline void gcode_M42() {
     setup_for_endstop_move();
     run_z_probe();
 
-    current_position[Z_AXIS] = Z_current = st_get_position_mm(Z_AXIS);
-    Z_start_location = st_get_position_mm(Z_AXIS) + Z_RAISE_BEFORE_PROBING;
+    Z_current = current_position[Z_AXIS] = st_get_axis_position_mm(Z_AXIS);
+    Z_start_location = Z_current + Z_RAISE_BEFORE_PROBING;
 
     plan_buffer_line(X_probe_location, Y_probe_location, Z_start_location,
                      E_current,
                      homing_feedrate[X_AXIS] / 60,
                      active_extruder);
     st_synchronize();
-    current_position[Z_AXIS] = Z_current = st_get_position_mm(Z_AXIS);
+    Z_current = current_position[Z_AXIS] = st_get_axis_position_mm(Z_AXIS);
 
     if (deploy_probe_for_each_reading) stow_z_probe();
 
@@ -3948,7 +3924,8 @@ inline void gcode_M105() {
 #endif // HAS_FAN
 
 /**
- * M109: Wait for extruder(s) to reach temperature
+ * M109: Sxxx Wait for extruder(s) to reach temperature. Waits only when heating.
+ *       Rxxx Wait for extruder(s) to reach temperature. Waits when heating and cooling.
  */
 inline void gcode_M109() {
   bool no_wait_for_cooling = true;
@@ -3975,57 +3952,52 @@ inline void gcode_M109() {
     if (code_seen('B')) autotemp_max = code_value();
   #endif
 
-  millis_t temp_ms = millis();
-
-  /* See if we are heating up or cooling down */
-  target_direction = isHeatingHotend(target_extruder); // true if heating, false if cooling
-
-  cancel_heatup = false;
+  // Exit if the temperature is above target and not waiting for cooling
+  if (no_wait_for_cooling && !isHeatingHotend(target_extruder)) return;
 
   #ifdef TEMP_RESIDENCY_TIME
     long residency_start_ms = -1;
-    /* continue to loop until we have reached the target temp
-      _and_ until TEMP_RESIDENCY_TIME hasn't passed since we reached it */
-    while ((!cancel_heatup) && ((residency_start_ms == -1) ||
-                                (residency_start_ms >= 0 && (((unsigned int)(millis() - residency_start_ms)) < (TEMP_RESIDENCY_TIME * 1000UL)))))
+    // Loop until the temperature has stabilized
+    #define TEMP_CONDITIONS (residency_start_ms < 0 || now < residency_start_ms + TEMP_RESIDENCY_TIME * 1000UL)
   #else
-    while (target_direction ? (isHeatingHotend(target_extruder)) : (isCoolingHotend(target_extruder) && (no_wait_for_cooling == false)))
+    // Loop until the temperature is very close target
+    #define TEMP_CONDITIONS (fabs(degHotend(target_extruder) - degTargetHotend(target_extruder)) < 0.75f)
   #endif //TEMP_RESIDENCY_TIME
 
-  { // while loop
-    if (millis() > temp_ms + 1000UL) { //Print temp & remaining time every 1s while waiting
+  cancel_heatup = false;
+  millis_t now = millis(), next_temp_ms = now + 1000UL;
+  while (!cancel_heatup && TEMP_CONDITIONS) {
+    now = millis();
+    if (now > next_temp_ms) { //Print temp & remaining time every 1s while waiting
+      next_temp_ms = now + 1000UL;
       #if HAS_TEMP_0 || HAS_TEMP_BED || ENABLED(HEATER_0_USES_MAX6675)
         print_heaterstates();
       #endif
       #ifdef TEMP_RESIDENCY_TIME
         SERIAL_PROTOCOLPGM(" W:");
-        if (residency_start_ms > -1) {
-          temp_ms = ((TEMP_RESIDENCY_TIME * 1000UL) - (millis() - residency_start_ms)) / 1000UL;
-          SERIAL_PROTOCOLLN(temp_ms);
+        if (residency_start_ms >= 0) {
+          long rem = ((TEMP_RESIDENCY_TIME * 1000UL) - (now - residency_start_ms)) / 1000UL;
+          SERIAL_PROTOCOLLN(rem);
         }
         else {
           SERIAL_PROTOCOLLNPGM("?");
         }
       #else
         SERIAL_EOL;
-      #endif
-      temp_ms = millis();
+      #endif //TEMP_RESIDENCY_TIME
     }
 
     idle();
     refresh_cmd_timeout(); // to prevent stepper_inactive_time from running out
 
     #ifdef TEMP_RESIDENCY_TIME
-      // start/restart the TEMP_RESIDENCY_TIME timer whenever we reach target temp for the first time
-      // or when current temp falls outside the hysteresis after target temp was reached
-      if ((residency_start_ms == -1 &&  target_direction && (degHotend(target_extruder) >= (degTargetHotend(target_extruder) - TEMP_WINDOW))) ||
-          (residency_start_ms == -1 && !target_direction && (degHotend(target_extruder) <= (degTargetHotend(target_extruder) + TEMP_WINDOW))) ||
-          (residency_start_ms > -1 && labs(degHotend(target_extruder) - degTargetHotend(target_extruder)) > TEMP_HYSTERESIS) )
-      {
+      // Start the TEMP_RESIDENCY_TIME timer when we reach target temp for the first time.
+      // Restart the timer whenever the temperature falls outside the hysteresis.
+      if (labs(degHotend(target_extruder) - degTargetHotend(target_extruder)) > ((residency_start_ms < 0) ? TEMP_WINDOW : TEMP_HYSTERESIS))
         residency_start_ms = millis();
-      }
     #endif //TEMP_RESIDENCY_TIME
-  }
+
+  } // while(!cancel_heatup && TEMP_CONDITIONS)
 
   LCD_MESSAGEPGM(MSG_HEATING_COMPLETE);
   print_job_start_ms = previous_cmd_ms;
@@ -4038,28 +4010,24 @@ inline void gcode_M109() {
    *       Rxxx Wait for bed current temp to reach target temp. Waits when heating and cooling
    */
   inline void gcode_M190() {
-    bool no_wait_for_cooling = true;
-
     if (marlin_debug_flags & DEBUG_DRYRUN) return;
 
     LCD_MESSAGEPGM(MSG_BED_HEATING);
-    no_wait_for_cooling = code_seen('S');
+    bool no_wait_for_cooling = code_seen('S');
     if (no_wait_for_cooling || code_seen('R'))
       setTargetBed(code_value());
 
-    millis_t temp_ms = millis();
+    // Exit if the temperature is above target and not waiting for cooling
+    if (no_wait_for_cooling && !isHeatingBed()) return;
 
     cancel_heatup = false;
-    target_direction = isHeatingBed(); // true if heating, false if cooling
-
-    while ((target_direction && !cancel_heatup) ? isHeatingBed() : isCoolingBed() && !no_wait_for_cooling) {
-      millis_t ms = millis();
-      if (ms > temp_ms + 1000UL) { //Print Temp Reading every 1 second while heating up.
-        temp_ms = ms;
-        #if HAS_TEMP_0 || HAS_TEMP_BED || ENABLED(HEATER_0_USES_MAX6675)
-          print_heaterstates();
-          SERIAL_EOL;
-        #endif
+    millis_t now = millis(), next_temp_ms = now + 1000UL;
+    while (!cancel_heatup && degTargetBed() != degBed()) {
+      millis_t now = millis();
+      if (now > next_temp_ms) { //Print Temp Reading every 1 second while heating up.
+        next_temp_ms = now + 1000UL;
+        print_heaterstates();
+        SERIAL_EOL;
       }
       idle();
       refresh_cmd_timeout(); // to prevent stepper_inactive_time from running out
@@ -4324,12 +4292,33 @@ inline void gcode_M114() {
   SERIAL_PROTOCOLPGM(" E:");
   SERIAL_PROTOCOL(current_position[E_AXIS]);
 
-  SERIAL_PROTOCOLPGM(MSG_COUNT_X);
-  SERIAL_PROTOCOL(st_get_position_mm(X_AXIS));
-  SERIAL_PROTOCOLPGM(" Y:");
-  SERIAL_PROTOCOL(st_get_position_mm(Y_AXIS));
-  SERIAL_PROTOCOLPGM(" Z:");
-  SERIAL_PROTOCOL(st_get_position_mm(Z_AXIS));
+  CRITICAL_SECTION_START;
+  extern volatile long count_position[NUM_AXIS];
+  long xpos = count_position[X_AXIS],
+       ypos = count_position[Y_AXIS],
+       zpos = count_position[Z_AXIS];
+  CRITICAL_SECTION_END;
+
+  #if ENABLED(COREXY) || ENABLED(COREXZ)
+    SERIAL_PROTOCOLPGM(MSG_COUNT_A);
+  #else
+    SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+  #endif
+  SERIAL_PROTOCOL(xpos);
+
+  #if ENABLED(COREXY)
+    SERIAL_PROTOCOLPGM(" B:");
+  #else
+    SERIAL_PROTOCOLPGM(" Y:");
+  #endif
+  SERIAL_PROTOCOL(ypos);
+
+  #if ENABLED(COREXZ)
+    SERIAL_PROTOCOLPGM(" C:");
+  #else
+    SERIAL_PROTOCOLPGM(" Z:");
+  #endif
+  SERIAL_PROTOCOL(zpos);
 
   SERIAL_EOL;
 
@@ -5148,7 +5137,7 @@ inline void gcode_M400() { st_synchronize(); }
    */
   inline void gcode_M405() {
     if (code_seen('D')) meas_delay_cm = code_value();
-    if (meas_delay_cm > MAX_MEASUREMENT_DELAY) meas_delay_cm = MAX_MEASUREMENT_DELAY;
+    NOMORE(meas_delay_cm, MAX_MEASUREMENT_DELAY);
 
     if (delay_index2 == -1) { //initialize the ring buffer if it has not been done since startup
       int temp_ratio = widthFil_to_size_ratio();
@@ -6463,33 +6452,33 @@ void mesh_plan_buffer_line(float x, float y, float z, const float e, float feed_
     return;
   }
   float nx, ny, ne, normalized_dist;
-  if (ix > pix && (x_splits) & BIT(ix)) {
+  if (ix > pix && TEST(x_splits, ix)) {
     nx = mbl.get_x(ix);
     normalized_dist = (nx - current_position[X_AXIS]) / (x - current_position[X_AXIS]);
     ny = current_position[Y_AXIS] + (y - current_position[Y_AXIS]) * normalized_dist;
     ne = current_position[E_AXIS] + (e - current_position[E_AXIS]) * normalized_dist;
-    x_splits ^= BIT(ix);
+    CBI(x_splits, ix);
   }
-  else if (ix < pix && (x_splits) & BIT(pix)) {
+  else if (ix < pix && TEST(x_splits, pix)) {
     nx = mbl.get_x(pix);
     normalized_dist = (nx - current_position[X_AXIS]) / (x - current_position[X_AXIS]);
     ny = current_position[Y_AXIS] + (y - current_position[Y_AXIS]) * normalized_dist;
     ne = current_position[E_AXIS] + (e - current_position[E_AXIS]) * normalized_dist;
-    x_splits ^= BIT(pix);
+    CBI(x_splits, pix);
   }
-  else if (iy > piy && (y_splits) & BIT(iy)) {
+  else if (iy > piy && TEST(y_splits, iy)) {
     ny = mbl.get_y(iy);
     normalized_dist = (ny - current_position[Y_AXIS]) / (y - current_position[Y_AXIS]);
     nx = current_position[X_AXIS] + (x - current_position[X_AXIS]) * normalized_dist;
     ne = current_position[E_AXIS] + (e - current_position[E_AXIS]) * normalized_dist;
-    y_splits ^= BIT(iy);
+    CBI(y_splits, iy);
   }
-  else if (iy < piy && (y_splits) & BIT(piy)) {
+  else if (iy < piy && TEST(y_splits, piy)) {
     ny = mbl.get_y(piy);
     normalized_dist = (ny - current_position[Y_AXIS]) / (y - current_position[Y_AXIS]);
     nx = current_position[X_AXIS] + (x - current_position[X_AXIS]) * normalized_dist;
     ne = current_position[E_AXIS] + (e - current_position[E_AXIS]) * normalized_dist;
-    y_splits ^= BIT(piy);
+    CBI(y_splits, piy);
   }
   else {
     // Already split on a border
@@ -6836,15 +6825,7 @@ void plan_arc(
       ) {
         lastMotor = ms; //... set time to NOW so the fan will turn on
       }
-      #ifdef __SAM3X8E__
-        #if ENABLED(INVERTED_FAN_PINS)
-          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 255 : (255 - CONTROLLERFAN_SPEED);
-        #else
-          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
-        #endif
-      #else
-        uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
-      #endif
+      uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
       // allows digital or PWM fan output to be used (see M42 handling)
       digitalWrite(CONTROLLERFAN_PIN, speed);
       analogWrite(CONTROLLERFAN_PIN, speed);
@@ -7165,11 +7146,7 @@ void kill(const char* lcd_msg) {
   disable_all_steppers();
 
   #if HAS_POWER_SWITCH
-    #ifdef __SAM3X8E__
-      SET_INPUT(PS_ON_PIN);
-    #else
-      pinMode(PS_ON_PIN, INPUT);
-    #endif
+    pinMode(PS_ON_PIN, INPUT);
   #endif
 
   SERIAL_ERROR_START;
@@ -7199,11 +7176,7 @@ void kill(const char* lcd_msg) {
 
   void setPwmFrequency(uint8_t pin, int val) {
     val &= 0x07;
-    #ifdef __SAM3X8E__
-      switch (digitalPinHasPWM(pin)) {
-    #else
-      switch (digitalPinToTimer(pin)) {
-    #endif
+    switch (digitalPinToTimer(pin)) {
       #if defined(TCCR0A)
         case TIMER0A:
         case TIMER0B:
