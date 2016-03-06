@@ -877,7 +877,11 @@ float junction_deviation = 0.1;
 
   block->acceleration_st = acc_st;
   block->acceleration = acc_st / steps_per_mm;
-  block->acceleration_rate = (long)(acc_st * 16777216.0 / (F_CPU / 8.0));
+  #ifdef __SAM3X8E__
+    block->acceleration_rate = (long)(acc_st * ( 4294967296.0 / HAL_TIMER_RATE));
+  #else
+    block->acceleration_rate = (long)(acc_st * 16777216.0 / (F_CPU / 8.0));
+  #endif
 
   #if 0  // Use old jerk for now
     // Compute path unit vector
