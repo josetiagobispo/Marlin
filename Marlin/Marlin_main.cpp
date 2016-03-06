@@ -42,6 +42,11 @@
 
 #include "ultralcd.h"
 #include "planner.h"
+#ifdef __SAM3X8E__
+  #if MB(ALLIGATOR)
+    #include "module/external_dac.h"
+  #endif
+#endif
 #include "stepper.h"
 #include "temperature.h"
 #include "cardreader.h"
@@ -446,25 +451,27 @@ void serial_echopair_P(const char* s_P, unsigned long v) { serialprintPGM(s_P); 
   float extrude_min_temp = EXTRUDE_MINTEMP;
 #endif
 
-#if ENABLED(SDSUPPORT)
-  #include "SdFatUtil.h"
-  int freeMemory() { return SdFatUtil::FreeRam(); }
-#else
-extern "C" {
-  extern unsigned int __bss_end;
-  extern unsigned int __heap_start;
-  extern void* __brkval;
+#ifndef __SAM3X8E__ // HAL for Due
+  #if ENABLED(SDSUPPORT)
+    #include "SdFatUtil.h"
+    int freeMemory() { return SdFatUtil::FreeRam(); }
+  #else
+    extern "C" {
+      extern unsigned int __bss_end;
+      extern unsigned int __heap_start;
+      extern void* __brkval;
 
-  int freeMemory() {
-    int free_memory;
-    if ((int)__brkval == 0)
-      free_memory = ((int)&free_memory) - ((int)&__bss_end);
-    else
-      free_memory = ((int)&free_memory) - ((int)__brkval);
-    return free_memory;
-  }
-}
-#endif //!SDSUPPORT
+      int freeMemory() {
+        int free_memory;
+        if ((int)__brkval == 0)
+          free_memory = ((int)&free_memory) - ((int)&__bss_end);
+        else
+          free_memory = ((int)&free_memory) - ((int)__brkval);
+        return free_memory;
+      }
+    }
+  #endif //!SDSUPPORT
+#endif
 
 /**
  * Inject the next command from the command queue, when possible
@@ -522,6 +529,20 @@ bool enqueuecommand(const char* cmd) {
   commands_in_queue++;
   return true;
 }
+
+#ifdef __SAM3X8E__
+  #if MB(ALLIGATOR)
+    void setup_alligator_board() {
+      // Init Expansion Port Voltage logic Selector
+      SET_OUTPUT(EXP_VOLTAGE_LEVEL_PIN);
+      WRITE(EXP_VOLTAGE_LEVEL_PIN, UI_VOLTAGE_LEVEL);
+      ExternalDac::begin(); //initialize ExternalDac
+      #if HAS_BUZZER
+        buzz(10,10);
+      #endif
+    }
+  #endif
+#endif
 
 void setup_killpin() {
   #if HAS_KILL
@@ -613,6 +634,9 @@ void servo_init() {
 
 /**
  * Marlin entry-point: Set up before the program loop
+ #ifdef __SAM3X8E__
+   *  - Set up Alligator Board
+ #endif
  *  - Set up the kill pin, filament runout, power hold
  *  - Start the serial port
  *  - Print startup messages and diagnostics
@@ -630,6 +654,11 @@ void servo_init() {
  *    • status LEDs
  */
 void setup() {
+  #ifdef __SAM3X8E__
+    #if MB(ALLIGATOR)
+      setup_alligator_board();// Initialize Alligator Board
+    #endif
+  #endif
 
   #ifdef DISABLE_JTAG
     // Disable JTAG on AT90USB chips to free up pins for IO
@@ -6825,7 +6854,15 @@ void plan_arc(
       ) {
         lastMotor = ms; //... set time to NOW so the fan will turn on
       }
-      uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
+      #ifdef __SAM3X8E__
+        #if ENABLED(INVERTED_FAN_PINS)
+          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 255 : (255 - CONTROLLERFAN_SPEED);
+        #else
+          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
+        #endif
+      #else
+        uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
+      #endif
       // allows digital or PWM fan output to be used (see M42 handling)
       digitalWrite(CONTROLLERFAN_PIN, speed);
       analogWrite(CONTROLLERFAN_PIN, speed);
@@ -7146,7 +7183,11 @@ void kill(const char* lcd_msg) {
   disable_all_steppers();
 
   #if HAS_POWER_SWITCH
-    pinMode(PS_ON_PIN, INPUT);
+    #ifdef __SAM3X8E__
+      SET_INPUT(PS_ON_PIN);
+    #else
+      pinMode(PS_ON_PIN, INPUT);
+    #endif
   #endif
 
   SERIAL_ERROR_START;
@@ -7176,7 +7217,11 @@ void kill(const char* lcd_msg) {
 
   void setPwmFrequency(uint8_t pin, int val) {
     val &= 0x07;
-    switch (digitalPinToTimer(pin)) {
+    #ifdef __SAM3X8E__
+      switch (digitalPinHasPWM(pin)) {
+    #else
+      switch (digitalPinToTimer(pin)) {
+    #endif
       #if defined(TCCR0A)
         case TIMER0A:
         case TIMER0B:
