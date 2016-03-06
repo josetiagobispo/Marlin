@@ -19,6 +19,7 @@
   Modified 23 November 2006 by David A. Mellis
   Modified 28 September 2010 by Mark Sproul
 */
+#ifndef __SAM3X8E__
 
 #include "Marlin.h"
 #include "MarlinSerial.h"
@@ -302,3 +303,5 @@ MarlinSerial customizedSerial;
 #if defined(USBCON) && ENABLED(BLUETOOTH)
   HardwareSerial bluetoothSerial;
 #endif
+
+#endif //__SAM3X8E__
