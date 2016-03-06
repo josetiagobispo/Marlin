@@ -25,6 +25,11 @@
 #include "Marlin.h"
 #include "stepper.h"
 #include "planner.h"
+#ifdef __SAM3X8E__
+  #if MB(ALLIGATOR)
+    #include "external_dac.h"
+  #endif
+#endif
 #include "temperature.h"
 #include "ultralcd.h"
 #include "language.h"
@@ -67,10 +72,17 @@ volatile static unsigned long step_events_completed; // The number of step event
 
 static long acceleration_time, deceleration_time;
 //static unsigned long accelerate_until, decelerate_after, acceleration_rate, initial_rate, final_rate, nominal_rate;
-static unsigned short acc_step_rate; // needed for deceleration start point
-static uint8_t step_loops;
-static uint8_t step_loops_nominal;
-static unsigned short OCR1A_nominal;
+#ifdef __SAM3X8E__
+  static unsigned long acc_step_rate; // needed for deceleration start point
+  static char step_loops;
+  static unsigned short step_loops_nominal;
+  static unsigned long OCR1A_nominal;
+#else
+  static unsigned short acc_step_rate; // needed for deceleration start point
+  static uint8_t step_loops;
+  static uint8_t step_loops_nominal;
+  static unsigned short OCR1A_nominal;
+#endif
 
 volatile long endstops_trigsteps[3] = { 0 };
 volatile long endstops_stepsTotal, endstops_stepsDone;
@@ -160,90 +172,98 @@ volatile signed char count_direction[NUM_AXIS] = { 1 };
 #define E_APPLY_STEP(v,Q) E_STEP_WRITE(v)
 
 // intRes = intIn1 * intIn2 >> 16
-// uses:
-// r26 to store 0
-// r27 to store the byte 1 of the 24 bit result
-#define MultiU16X8toH16(intRes, charIn1, intIn2) \
-  asm volatile ( \
-                 "clr r26 \n\t" \
-                 "mul %A1, %B2 \n\t" \
-                 "movw %A0, r0 \n\t" \
-                 "mul %A1, %A2 \n\t" \
-                 "add %A0, r1 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "lsr r0 \n\t" \
-                 "adc %A0, r26 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "clr r1 \n\t" \
-                 : \
-                 "=&r" (intRes) \
-                 : \
-                 "d" (charIn1), \
-                 "d" (intIn2) \
-                 : \
-                 "r26" \
-               )
+#ifdef __SAM3X8E__
+  #define MultiU16X8toH16(intRes, charIn1, intIn2)   intRes = ((charIn1) * (intIn2)) >> 16
+#else
+  // uses:
+  // r26 to store 0
+  // r27 to store the byte 1 of the 24 bit result
+  #define MultiU16X8toH16(intRes, charIn1, intIn2) \
+    asm volatile ( \
+                   "clr r26 \n\t" \
+                   "mul %A1, %B2 \n\t" \
+                   "movw %A0, r0 \n\t" \
+                   "mul %A1, %A2 \n\t" \
+                   "add %A0, r1 \n\t" \
+                   "adc %B0, r26 \n\t" \
+                   "lsr r0 \n\t" \
+                   "adc %A0, r26 \n\t" \
+                   "adc %B0, r26 \n\t" \
+                   "clr r1 \n\t" \
+                   : \
+                   "=&r" (intRes) \
+                   : \
+                   "d" (charIn1), \
+                   "d" (intIn2) \
+                   : \
+                   "r26" \
+                 )
+#endif
 
 // intRes = longIn1 * longIn2 >> 24
-// uses:
-// r26 to store 0
-// r27 to store bits 16-23 of the 48bit result. The top bit is used to round the two byte result.
-// note that the lower two bytes and the upper byte of the 48bit result are not calculated.
-// this can cause the result to be out by one as the lower bytes may cause carries into the upper ones.
-// B0 A0 are bits 24-39 and are the returned value
-// C1 B1 A1 is longIn1
-// D2 C2 B2 A2 is longIn2
-//
-#define MultiU24X32toH16(intRes, longIn1, longIn2) \
-  asm volatile ( \
-                 "clr r26 \n\t" \
-                 "mul %A1, %B2 \n\t" \
-                 "mov r27, r1 \n\t" \
-                 "mul %B1, %C2 \n\t" \
-                 "movw %A0, r0 \n\t" \
-                 "mul %C1, %C2 \n\t" \
-                 "add %B0, r0 \n\t" \
-                 "mul %C1, %B2 \n\t" \
-                 "add %A0, r0 \n\t" \
-                 "adc %B0, r1 \n\t" \
-                 "mul %A1, %C2 \n\t" \
-                 "add r27, r0 \n\t" \
-                 "adc %A0, r1 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "mul %B1, %B2 \n\t" \
-                 "add r27, r0 \n\t" \
-                 "adc %A0, r1 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "mul %C1, %A2 \n\t" \
-                 "add r27, r0 \n\t" \
-                 "adc %A0, r1 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "mul %B1, %A2 \n\t" \
-                 "add r27, r1 \n\t" \
-                 "adc %A0, r26 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "lsr r27 \n\t" \
-                 "adc %A0, r26 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "mul %D2, %A1 \n\t" \
-                 "add %A0, r0 \n\t" \
-                 "adc %B0, r1 \n\t" \
-                 "mul %D2, %B1 \n\t" \
-                 "add %B0, r0 \n\t" \
-                 "clr r1 \n\t" \
-                 : \
-                 "=&r" (intRes) \
-                 : \
-                 "d" (longIn1), \
-                 "d" (longIn2) \
-                 : \
-                 "r26" , "r27" \
-               )
+#ifdef __SAM3X8E__
+  #define MultiU32X32toH32(intRes, longIn1, longIn2) intRes = ((uint64_t)longIn1 * longIn2 + 0x80000000) >> 32
+#else
+  // uses:
+  // r26 to store 0
+  // r27 to store bits 16-23 of the 48bit result. The top bit is used to round the two byte result.
+  // note that the lower two bytes and the upper byte of the 48bit result are not calculated.
+  // this can cause the result to be out by one as the lower bytes may cause carries into the upper ones.
+  // B0 A0 are bits 24-39 and are the returned value
+  // C1 B1 A1 is longIn1
+  // D2 C2 B2 A2 is longIn2
+  //
+  #define MultiU24X32toH16(intRes, longIn1, longIn2) \
+    asm volatile ( \
+                   "clr r26 \n\t" \
+                   "mul %A1, %B2 \n\t" \
+                   "mov r27, r1 \n\t" \
+                   "mul %B1, %C2 \n\t" \
+                   "movw %A0, r0 \n\t" \
+                   "mul %C1, %C2 \n\t" \
+                   "add %B0, r0 \n\t" \
+                   "mul %C1, %B2 \n\t" \
+                   "add %A0, r0 \n\t" \
+                   "adc %B0, r1 \n\t" \
+                   "mul %A1, %C2 \n\t" \
+                   "add r27, r0 \n\t" \
+                   "adc %A0, r1 \n\t" \
+                   "adc %B0, r26 \n\t" \
+                   "mul %B1, %B2 \n\t" \
+                   "add r27, r0 \n\t" \
+                   "adc %A0, r1 \n\t" \
+                   "adc %B0, r26 \n\t" \
+                   "mul %C1, %A2 \n\t" \
+                   "add r27, r0 \n\t" \
+                   "adc %A0, r1 \n\t" \
+                   "adc %B0, r26 \n\t" \
+                   "mul %B1, %A2 \n\t" \
+                   "add r27, r1 \n\t" \
+                   "adc %A0, r26 \n\t" \
+                   "adc %B0, r26 \n\t" \
+                   "lsr r27 \n\t" \
+                   "adc %A0, r26 \n\t" \
+                   "adc %B0, r26 \n\t" \
+                   "mul %D2, %A1 \n\t" \
+                   "add %A0, r0 \n\t" \
+                   "adc %B0, r1 \n\t" \
+                   "mul %D2, %B1 \n\t" \
+                   "add %B0, r0 \n\t" \
+                   "clr r1 \n\t" \
+                   : \
+                   "=&r" (intRes) \
+                   : \
+                   "d" (longIn1), \
+                   "d" (longIn2) \
+                   : \
+                   "r26" , "r27" \
+                 )
 
-// Some useful constants
+  // Some useful constants
 
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()  SBI(TIMSK1, OCIE1A)
-#define DISABLE_STEPPER_DRIVER_INTERRUPT() CBI(TIMSK1, OCIE1A)
+  #define ENABLE_STEPPER_DRIVER_INTERRUPT()  SBI(TIMSK1, OCIE1A)
+  #define DISABLE_STEPPER_DRIVER_INTERRUPT() CBI(TIMSK1, OCIE1A)
+#endif
 
 void endstops_hit_on_purpose() {
   endstop_hit_bits = 0;
@@ -499,39 +519,58 @@ void st_wake_up() {
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 }
 
-FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
-  unsigned short timer;
+#ifdef __SAM3X8E__
+  FORCE_INLINE unsigned long calc_timer(unsigned long step_rate) {
+    unsigned long timer;
+#else
+  FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
+    unsigned short timer;
+#endif
 
   NOMORE(step_rate, MAX_STEP_FREQUENCY);
 
-  if (step_rate > 20000) { // If steprate > 20kHz >> step 4 times
-    step_rate = (step_rate >> 2) & 0x3fff;
+  #ifdef __SAM3X8E__
+    if(step_rate > 180000) { // If steprate > 180kHz >> step 4 times
+      step_rate = (step_rate >> 2);
+  #else
+    if (step_rate > 20000) { // If steprate > 20kHz >> step 4 times
+      step_rate = (step_rate >> 2) & 0x3fff;
+  #endif
     step_loops = 4;
   }
-  else if (step_rate > 10000) { // If steprate > 10kHz >> step 2 times
-    step_rate = (step_rate >> 1) & 0x7fff;
+  #ifdef __SAM3X8E__
+    else if(step_rate > 90000) { // If steprate > 90kHz >> step 2 times
+      step_rate = (step_rate >> 1);
+  #else
+    else if (step_rate > 10000) { // If steprate > 10kHz >> step 2 times
+      step_rate = (step_rate >> 1) & 0x7fff;
+  #endif
     step_loops = 2;
   }
   else {
     step_loops = 1;
   }
 
-  NOLESS(step_rate, F_CPU / 500000);
-  step_rate -= F_CPU / 500000; // Correct for minimal speed
-  if (step_rate >= (8 * 256)) { // higher step rate
-    unsigned short table_address = (unsigned short)&speed_lookuptable_fast[(unsigned char)(step_rate >> 8)][0];
-    unsigned char tmp_step_rate = (step_rate & 0x00ff);
-    unsigned short gain = (unsigned short)pgm_read_word_near(table_address + 2);
-    MultiU16X8toH16(timer, tmp_step_rate, gain);
-    timer = (unsigned short)pgm_read_word_near(table_address) - timer;
-  }
-  else { // lower step rates
-    unsigned short table_address = (unsigned short)&speed_lookuptable_slow[0][0];
-    table_address += ((step_rate) >> 1) & 0xfffc;
-    timer = (unsigned short)pgm_read_word_near(table_address);
-    timer -= (((unsigned short)pgm_read_word_near(table_address + 2) * (unsigned char)(step_rate & 0x0007)) >> 3);
-  }
-  if (timer < 100) { timer = 100; MYSERIAL.print(MSG_STEPPER_TOO_HIGH); MYSERIAL.println(step_rate); }//(20kHz this should never happen)
+  #ifdef __SAM3X8E__
+    timer = HAL_TIMER_RATE / step_rate;
+  #else
+    NOLESS(step_rate, F_CPU / 500000);
+    step_rate -= F_CPU / 500000; // Correct for minimal speed
+    if (step_rate >= (8 * 256)) { // higher step rate
+      unsigned short table_address = (unsigned short)&speed_lookuptable_fast[(unsigned char)(step_rate >> 8)][0];
+      unsigned char tmp_step_rate = (step_rate & 0x00ff);
+      unsigned short gain = (unsigned short)pgm_read_word_near(table_address + 2);
+      MultiU16X8toH16(timer, tmp_step_rate, gain);
+      timer = (unsigned short)pgm_read_word_near(table_address) - timer;
+    }
+    else { // lower step rates
+      unsigned short table_address = (unsigned short)&speed_lookuptable_slow[0][0];
+      table_address += ((step_rate) >> 1) & 0xfffc;
+      timer = (unsigned short)pgm_read_word_near(table_address);
+      timer -= (((unsigned short)pgm_read_word_near(table_address + 2) * (unsigned char)(step_rate & 0x0007)) >> 3);
+    }
+    if (timer < 100) { timer = 100; MYSERIAL.print(MSG_STEPPER_TOO_HIGH); MYSERIAL.println(step_rate); }//(20kHz this should never happen)
+  #endif
   return timer;
 }
 
@@ -584,6 +623,19 @@ void set_stepper_direction() {
 
 // Initializes the trapezoid generator from the current block. Called whenever a new
 // block begins.
+
+#ifdef __SAM3X8E__
+  TcChannel *stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL);
+
+  FORCE_INLINE
+  void HAL_timer_stepper_count(uint32_t count) {
+
+    uint32_t counter_value = stepperChannel->TC_CV + 42;  // we need time for other stuff!
+    //if(count < 105) count = 105;
+    stepperChannel->TC_RC = (counter_value <= count) ? count : counter_value;
+  }
+#endif
+
 FORCE_INLINE void trapezoid_generator_reset() {
 
   if (current_block->direction_bits != out_bits) {
@@ -605,7 +657,11 @@ FORCE_INLINE void trapezoid_generator_reset() {
   step_loops_nominal = step_loops;
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
-  OCR1A = acceleration_time;
+  #ifdef __SAM3X8E__
+    //HAL_timer_stepper_count(acceleration_time);
+  #else
+    OCR1A = acceleration_time;
+  #endif
 
   // SERIAL_ECHO_START;
   // SERIAL_ECHOPGM("advance :");
@@ -620,7 +676,15 @@ FORCE_INLINE void trapezoid_generator_reset() {
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
-ISR(TIMER1_COMPA_vect) {
+#ifdef __SAM3X8E__
+  HAL_STEP_TIMER_ISR {
+
+    //STEP_TIMER_COUNTER->TC_CHANNEL[STEP_TIMER_CHANNEL].TC_SR;
+    stepperChannel->TC_SR;
+    //stepperChannel->TC_RC = 1000000;
+#else
+  ISR(TIMER1_COMPA_vect) {
+#endif
 
   if (cleaning_buffer_counter) {
     current_block = NULL;
@@ -629,7 +693,11 @@ ISR(TIMER1_COMPA_vect) {
       if ((cleaning_buffer_counter == 1) && (SD_FINISHED_STEPPERRELEASE)) enqueuecommands_P(PSTR(SD_FINISHED_RELEASECOMMAND));
     #endif
     cleaning_buffer_counter--;
-    OCR1A = 200;
+    #ifdef __SAM3X8E__
+      HAL_timer_stepper_count(HAL_TIMER_RATE / 200); //5ms wait
+    #else
+      OCR1A = 200;
+    #endif
     return;
   }
 
@@ -647,7 +715,11 @@ ISR(TIMER1_COMPA_vect) {
       #if ENABLED(Z_LATE_ENABLE)
         if (current_block->steps[Z_AXIS] > 0) {
           enable_z();
-          OCR1A = 2000; //1ms wait
+          #ifdef __SAM3X8E__
+            HAL_timer_set_count (STEP_TIMER_COUNTER, STEP_TIMER_CHANNEL, HAL_TIMER_RATE / 1000); //1ms wait
+          #else
+            OCR1A = 2000; //1ms wait
+          #endif
           return;
         }
       #endif
@@ -657,7 +729,11 @@ ISR(TIMER1_COMPA_vect) {
       // #endif
     }
     else {
-      OCR1A = 2000; // 1kHz.
+      #ifdef __SAM3X8E__
+        HAL_timer_stepper_count(HAL_TIMER_RATE / 1000); // 1kHz
+      #else
+        OCR1A = 2000; // 1kHz.
+      #endif
     }
   }
 
@@ -668,8 +744,10 @@ ISR(TIMER1_COMPA_vect) {
 
     // Take multiple steps per interrupt (For high speed moves)
     for (int8_t i = 0; i < step_loops; i++) {
-      #ifndef USBCON
-        customizedSerial.checkRx(); // Check for serial chars.
+      #ifndef __SAM3X8E__
+        #ifndef USBCON
+          customizedSerial.checkRx(); // Check for serial chars.
+        #endif
       #endif
 
       #if ENABLED(ADVANCE)
@@ -684,9 +762,18 @@ ISR(TIMER1_COMPA_vect) {
       #define _APPLY_STEP(AXIS) AXIS ##_APPLY_STEP
       #define _INVERT_STEP_PIN(AXIS) INVERT_## AXIS ##_STEP_PIN
 
-      #define STEP_ADD(axis, AXIS) \
-        _COUNTER(axis) += current_block->steps[_AXIS(AXIS)]; \
-        if (_COUNTER(axis) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); }
+      #ifdef __SAM3X8E__
+        #define STEP_ADD(axis, AXIS) \
+          _COUNTER(axis) += current_block->steps[_AXIS(AXIS)]; \
+          if (_COUNTER(axis) > 0) { \
+          _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); \
+          _COUNTER(axis) -= current_block->step_event_count; \
+          count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; }
+      #else
+        #define STEP_ADD(axis, AXIS) \
+          _COUNTER(axis) += current_block->steps[_AXIS(AXIS)]; \
+          if (_COUNTER(axis) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); }
+      #endif
 
       STEP_ADD(x,X);
       STEP_ADD(y,Y);
@@ -695,12 +782,16 @@ ISR(TIMER1_COMPA_vect) {
         STEP_ADD(e,E);
       #endif
 
-      #define STEP_IF_COUNTER(axis, AXIS) \
-        if (_COUNTER(axis) > 0) { \
-          _COUNTER(axis) -= current_block->step_event_count; \
-          count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; \
-          _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
-        }
+      #ifdef __SAM3X8E__
+        #define STEP_IF_COUNTER(axis, AXIS) _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0)
+      #else
+        #define STEP_IF_COUNTER(axis, AXIS) \
+          if (_COUNTER(axis) > 0) { \
+            _COUNTER(axis) -= current_block->step_event_count; \
+            count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; \
+            _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
+          }
+      #endif
 
       STEP_IF_COUNTER(x, X);
       STEP_IF_COUNTER(y, Y);
@@ -713,11 +804,20 @@ ISR(TIMER1_COMPA_vect) {
       if (step_events_completed >= current_block->step_event_count) break;
     }
     // Calculate new timer value
-    unsigned short timer;
-    unsigned short step_rate;
+    #ifdef __SAM3X8E__
+      unsigned long timer;
+      unsigned long step_rate;
+    #else
+      unsigned short timer;
+      unsigned short step_rate;
+    #endif
     if (step_events_completed <= (unsigned long)current_block->accelerate_until) {
 
-      MultiU24X32toH16(acc_step_rate, acceleration_time, current_block->acceleration_rate);
+      #ifdef __SAM3X8E__
+        MultiU32X32toH32(acc_step_rate, acceleration_time, current_block->acceleration_rate);
+      #else
+        MultiU24X32toH16(acc_step_rate, acceleration_time, current_block->acceleration_rate);
+      #endif
       acc_step_rate += current_block->initial_rate;
 
       // upper limit
@@ -725,7 +825,9 @@ ISR(TIMER1_COMPA_vect) {
 
       // step_rate to timer interval
       timer = calc_timer(acc_step_rate);
-      OCR1A = timer;
+      #ifndef __SAM3X8E__
+        OCR1A = timer;
+      #endif
       acceleration_time += timer;
 
       #if ENABLED(ADVANCE)
@@ -740,7 +842,11 @@ ISR(TIMER1_COMPA_vect) {
       #endif //ADVANCE
     }
     else if (step_events_completed > (unsigned long)current_block->decelerate_after) {
-      MultiU24X32toH16(step_rate, deceleration_time, current_block->acceleration_rate);
+      #ifdef __SAM3X8E__
+        MultiU32X32toH32(step_rate, deceleration_time, current_block->acceleration_rate);
+      #else
+        MultiU24X32toH16(step_rate, deceleration_time, current_block->acceleration_rate);
+      #endif
 
       if (step_rate <= acc_step_rate) { // Still decelerating?
         step_rate = acc_step_rate - step_rate;
@@ -751,7 +857,9 @@ ISR(TIMER1_COMPA_vect) {
 
       // step_rate to timer interval
       timer = calc_timer(step_rate);
-      OCR1A = timer;
+      #ifndef __SAM3X8E__
+        OCR1A = timer;
+      #endif
       deceleration_time += timer;
 
       #if ENABLED(ADVANCE)
@@ -765,12 +873,20 @@ ISR(TIMER1_COMPA_vect) {
       #endif //ADVANCE
     }
     else {
-      OCR1A = OCR1A_nominal;
+      #ifdef __SAM3X8E__
+        timer = OCR1A_nominal;
+      #else
+        OCR1A = OCR1A_nominal;
+      #endif
       // ensure we're running at the correct step rate, even if we just came off an acceleration
       step_loops = step_loops_nominal;
     }
 
-    OCR1A = (OCR1A < (TCNT1 + 16)) ? (TCNT1 + 16) : OCR1A;
+    #ifdef __SAM3X8E__
+      HAL_timer_stepper_count(timer);
+    #else
+      OCR1A = (OCR1A < (TCNT1 + 16)) ? (TCNT1 + 16) : OCR1A;
+    #endif
 
     // If current block is finished, reset pointer
     if (step_events_completed >= current_block->step_event_count) {
@@ -946,63 +1062,99 @@ void st_init() {
   #if HAS_X_MIN
     SET_INPUT(X_MIN_PIN);
     #if ENABLED(ENDSTOPPULLUP_XMIN)
-      WRITE(X_MIN_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(X_MIN_PIN, HIGH);
+      #else
+        WRITE(X_MIN_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_Y_MIN
     SET_INPUT(Y_MIN_PIN);
     #if ENABLED(ENDSTOPPULLUP_YMIN)
-      WRITE(Y_MIN_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(Y_MIN_PIN, HIGH);
+      #else
+        WRITE(Y_MIN_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_Z_MIN
     SET_INPUT(Z_MIN_PIN);
     #if ENABLED(ENDSTOPPULLUP_ZMIN)
-      WRITE(Z_MIN_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(Z_MIN_PIN, HIGH);
+      #else
+        WRITE(Z_MIN_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_Z2_MIN
     SET_INPUT(Z2_MIN_PIN);
     #if ENABLED(ENDSTOPPULLUP_ZMIN)
-      WRITE(Z2_MIN_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(Z2_MIN_PIN, HIGH);
+      #else
+        WRITE(Z2_MIN_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_X_MAX
     SET_INPUT(X_MAX_PIN);
     #if ENABLED(ENDSTOPPULLUP_XMAX)
-      WRITE(X_MAX_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(X_MAX_PIN, HIGH);
+      #else
+        WRITE(X_MAX_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_Y_MAX
     SET_INPUT(Y_MAX_PIN);
     #if ENABLED(ENDSTOPPULLUP_YMAX)
-      WRITE(Y_MAX_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(Y_MAX_PIN, HIGH);
+      #else
+        WRITE(Y_MAX_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_Z_MAX
     SET_INPUT(Z_MAX_PIN);
     #if ENABLED(ENDSTOPPULLUP_ZMAX)
-      WRITE(Z_MAX_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(Z_MAX_PIN, HIGH);
+      #else
+        WRITE(Z_MAX_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_Z2_MAX
     SET_INPUT(Z2_MAX_PIN);
     #if ENABLED(ENDSTOPPULLUP_ZMAX)
-      WRITE(Z2_MAX_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(Z2_MAX_PIN, HIGH);
+      #else
+        WRITE(Z2_MAX_PIN,HIGH);
+      #endif
     #endif
   #endif
 
   #if HAS_Z_PROBE && ENABLED(Z_MIN_PROBE_ENDSTOP) // Check for Z_MIN_PROBE_ENDSTOP so we don't pull a pin high unless it's to be used.
     SET_INPUT(Z_MIN_PROBE_PIN);
     #if ENABLED(ENDSTOPPULLUP_ZMIN_PROBE)
-      WRITE(Z_MIN_PROBE_PIN,HIGH);
+      #ifdef __SAM3X8E__
+        PULLUP(Z_MIN_PROBE_PIN, HIGH);
+      #else
+        WRITE(Z_MIN_PROBE_PIN,HIGH);
+      #endif
     #endif
   #endif
 
@@ -1051,34 +1203,42 @@ void st_init() {
     E_AXIS_INIT(3);
   #endif
 
-  // waveform generation = 0100 = CTC
-  CBI(TCCR1B, WGM13);
-  SBI(TCCR1B, WGM12);
-  CBI(TCCR1A, WGM11);
-  CBI(TCCR1A, WGM10);
+  #ifdef __SAM3X8E__
+    HAL_step_timer_start();
+  #else
+    // waveform generation = 0100 = CTC
+    CBI(TCCR1B, WGM13);
+    SBI(TCCR1B, WGM12);
+    CBI(TCCR1A, WGM11);
+    CBI(TCCR1A, WGM10);
 
-  // output mode = 00 (disconnected)
-  TCCR1A &= ~(3 << COM1A0);
-  TCCR1A &= ~(3 << COM1B0);
-  // Set the timer pre-scaler
-  // Generally we use a divider of 8, resulting in a 2MHz timer
-  // frequency on a 16MHz MCU. If you are going to change this, be
-  // sure to regenerate speed_lookuptable.h with
-  // create_speed_lookuptable.py
-  TCCR1B = (TCCR1B & ~(0x07 << CS10)) | (2 << CS10);
+    // output mode = 00 (disconnected)
+    TCCR1A &= ~(3 << COM1A0);
+    TCCR1A &= ~(3 << COM1B0);
+    // Set the timer pre-scaler
+    // Generally we use a divider of 8, resulting in a 2MHz timer
+    // frequency on a 16MHz MCU. If you are going to change this, be
+    // sure to regenerate speed_lookuptable.h with
+    // create_speed_lookuptable.py
+    TCCR1B = (TCCR1B & ~(0x07 << CS10)) | (2 << CS10);
 
-  OCR1A = 0x4000;
-  TCNT1 = 0;
+    OCR1A = 0x4000;
+    TCNT1 = 0;
+  #endif
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
-  #if ENABLED(ADVANCE)
-    #if defined(TCCR0A) && defined(WGM01)
-      CBI(TCCR0A, WGM01);
-      CBI(TCCR0A, WGM00);
-    #endif
-    e_steps[0] = e_steps[1] = e_steps[2] = e_steps[3] = 0;
-    SBI(TIMSK0, OCIE0A);
-  #endif //ADVANCE
+  #ifdef __SAM3X8E__
+    //needs rework
+  #else
+    #if ENABLED(ADVANCE)
+      #if defined(TCCR0A) && defined(WGM01)
+        CBI(TCCR0A, WGM01);
+        CBI(TCCR0A, WGM00);
+      #endif
+      e_steps[0] = e_steps[1] = e_steps[2] = e_steps[3] = 0;
+      SBI(TIMSK0, OCIE0A);
+    #endif //ADVANCE
+  #endif
 
   enable_endstops(true); // Start with endstops active. After homing they can be disabled
   sei();
@@ -1202,7 +1362,11 @@ void quickStop() {
           X_STEP_WRITE(!INVERT_X_STEP_PIN);
           Y_STEP_WRITE(!INVERT_Y_STEP_PIN);
           Z_STEP_WRITE(!INVERT_Z_STEP_PIN);
-          delayMicroseconds(2);
+          #ifdef __SAM3X8E__
+            _delay_us(1U);
+          #else
+            delayMicroseconds(2);
+          #endif
           X_STEP_WRITE(INVERT_X_STEP_PIN);
           Y_STEP_WRITE(INVERT_Y_STEP_PIN);
           Z_STEP_WRITE(INVERT_Z_STEP_PIN);
@@ -1256,6 +1420,16 @@ void digipot_init() {
     digipot_current(2, motor_current_setting[2]);
     //Set timer5 to 31khz so the PWM of the motor power is as constant as possible. (removes a buzzing noise)
     TCCR5B = (TCCR5B & ~(_BV(CS50) | _BV(CS51) | _BV(CS52))) | _BV(CS50);
+  #endif
+  #ifdef __SAM3X8E__
+    #if MB(ALLIGATOR)
+      const float motor_current[] = MOTOR_CURRENT;
+      unsigned int digipot_motor = 0;
+      for (uint8_t i = 0; i < 3 + EXTRUDERS; i++) {
+        digipot_motor = 255 * (motor_current[i] / 2.5);
+        ExternalDac::setValue(i, digipot_motor);
+      }
+    #endif//MB(ALLIGATOR)
   #endif
 }
 
@@ -1324,6 +1498,11 @@ void microstep_mode(uint8_t driver, uint8_t stepping_mode) {
     case 4: microstep_ms(driver, MICROSTEP4); break;
     case 8: microstep_ms(driver, MICROSTEP8); break;
     case 16: microstep_ms(driver, MICROSTEP16); break;
+    #ifdef __SAM3X8E__
+      #if MB(ALLIGATOR)
+        case 32: microstep_ms(driver, MICROSTEP32); break;
+      #endif
+    #endif
   }
 }
 
