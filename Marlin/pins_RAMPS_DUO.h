@@ -86,3 +86,25 @@
 #else
   #define MAX6675_SS       69 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
 #endif
+
+
+#undef X_MIN_PIN
+#define X_MIN_PIN          -1 // unused for deltabot, was 3
+
+#undef Y_MIN_PIN
+#define Y_MIN_PIN          -1 // unused for deltabot, was 14
+
+#undef FAN_PIN
+#define FAN_PIN             5 // (Sprinter config), was 9
+
+#undef FAN2_PIN
+#define FAN2_PIN            6
+
+#undef FAN3_PIN
+#define FAN3_PIN            9
+
+#undef PS_ON_PIN
+#define PS_ON_PIN          11 // was 12
+
+#undef BEEPER_PIN
+#define BEEPER_PIN         -1
