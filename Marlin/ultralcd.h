@@ -67,6 +67,12 @@
     #define EN_B BIT(BLEN_B)
     #define EN_A BIT(BLEN_A)
 
+    #ifdef __SAM3X8E__
+      #if ENABLED(BTN_BACK) && BTN_BACK > 0
+        #define EN_D BIT(BLEN_D)
+        #define LCD_BACK_CLICKED (buttons&EN_D)
+      #endif
+    #endif
     #if ENABLED(REPRAPWORLD_KEYPAD)
       #define EN_REPRAPWORLD_KEYPAD_F3 (BIT(BLEN_REPRAPWORLD_KEYPAD_F3))
       #define EN_REPRAPWORLD_KEYPAD_F2 (BIT(BLEN_REPRAPWORLD_KEYPAD_F2))
@@ -135,5 +141,8 @@ char* ftostr32sp(const float& x); // remove zero-padding from ftostr32
 char* ftostr5(const float& x);
 char* ftostr51(const float& x);
 char* ftostr52(const float& x);
+#ifdef __SAM3X8E__
+  char* ftostr62(const float& x);
+#endif
 
 #endif //ULTRALCD_H
