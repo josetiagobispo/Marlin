@@ -236,8 +236,10 @@
 
   #include "pins.h"
 
-  #ifndef USBCON
-    #define HardwareSerial_h // trick to disable the standard HWserial
+  #ifndef __SAM3X8E__
+    #ifndef USBCON
+      #define HardwareSerial_h // trick to disable the standard HWserial
+    #endif
   #endif
 
   #include "Arduino.h"
@@ -318,9 +320,17 @@
    * MAX_STEP_FREQUENCY differs for TOSHIBA
    */
   #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
-    #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
+    #ifdef __SAM3X8E__
+      #define MAX_STEP_FREQUENCY 90000 // Max step frequency for Toshiba Stepper Controllers, 96kHz is close to maximum for an Arduino Due
+    #else
+      #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
+    #endif
   #else
-    #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
+    #ifdef __SAM3X8E__
+      #define MAX_STEP_FREQUENCY 320000 // Max step frequency for the Due is approx. 330kHz
+    #else
+      #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
+    #endif
   #endif
 
   // MS1 MS2 Stepper Driver Microstepping mode table
@@ -328,7 +338,16 @@
   #define MICROSTEP2 HIGH,LOW
   #define MICROSTEP4 LOW,HIGH
   #define MICROSTEP8 HIGH,HIGH
-  #define MICROSTEP16 HIGH,HIGH
+  #ifdef __SAM3X8E__
+    #if MB(ALLIGATOR)
+      #define MICROSTEP16 LOW,LOW
+      #define MICROSTEP32 HIGH,HIGH
+    #else
+      #define MICROSTEP16 HIGH,HIGH
+    #endif
+  #else
+    #define MICROSTEP16 HIGH,HIGH
+  #endif
 
   /**
    * Advance calculated values
@@ -409,6 +428,10 @@
   #elif TEMP_SENSOR_BED > 0
     #define THERMISTORBED TEMP_SENSOR_BED
     #define BED_USES_THERMISTOR
+  #endif
+
+  #ifdef __SAM3X8E__
+    #define HEATER_USES_AD595 (ENABLED(HEATER_0_USES_AD595) || ENABLED(HEATER_1_USES_AD595) || ENABLED(HEATER_2_USES_AD595) || ENABLED(HEATER_3_USES_AD595))
   #endif
 
   /**
@@ -507,30 +530,67 @@
   #define HAS_E2_STEP (PIN_EXISTS(E2_STEP))
   #define HAS_E3_STEP (PIN_EXISTS(E3_STEP))
   #define HAS_E4_STEP (PIN_EXISTS(E4_STEP))
+  #ifdef __SAM3X8E__
+    #define HAS_BTN_BACK (PIN_EXISTS(BTN_BACK))
+  #endif
 
   /**
    * Helper Macros for heaters and extruder fan
    */
-  #define WRITE_HEATER_0P(v) WRITE(HEATER_0_PIN, v)
-  #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
-    #define WRITE_HEATER_1(v) WRITE(HEATER_1_PIN, v)
-    #if EXTRUDERS > 2
-      #define WRITE_HEATER_2(v) WRITE(HEATER_2_PIN, v)
-      #if EXTRUDERS > 3
-        #define WRITE_HEATER_3(v) WRITE(HEATER_3_PIN, v)
+  #ifdef __SAM3X8E__
+    #if ENABLED(INVERTED_HEATER_PINS)
+      #define WRITE_HEATER(pin, value) WRITE(pin, !value)
+    #else
+      #define WRITE_HEATER(pin, value) WRITE(pin, value)
+    #endif
+    #define WRITE_HEATER_0P(v) WRITE_HEATER(HEATER_0_PIN, v)
+    #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
+      #define WRITE_HEATER_1(v) WRITE_HEATER(HEATER_1_PIN, v)
+      #if EXTRUDERS > 2
+        #define WRITE_HEATER_2(v) WRITE_HEATER(HEATER_2_PIN, v)
+        #if EXTRUDERS > 3
+          #define WRITE_HEATER_3(v) WRITE_HEATER(HEATER_3_PIN, v)
+        #endif
       #endif
     #endif
-  #endif
+  #else //__SAM3X8E__
+    #define WRITE_HEATER_0P(v) WRITE(HEATER_0_PIN, v)
+    #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
+      #define WRITE_HEATER_1(v) WRITE(HEATER_1_PIN, v)
+      #if EXTRUDERS > 2
+        #define WRITE_HEATER_2(v) WRITE(HEATER_2_PIN, v)
+        #if EXTRUDERS > 3
+          #define WRITE_HEATER_3(v) WRITE(HEATER_3_PIN, v)
+        #endif
+      #endif
+    #endif
+  #endif //__SAM3X8E__
   #if ENABLED(HEATERS_PARALLEL)
     #define WRITE_HEATER_0(v) { WRITE_HEATER_0P(v); WRITE_HEATER_1(v); }
   #else
     #define WRITE_HEATER_0(v) WRITE_HEATER_0P(v)
   #endif
   #if HAS_HEATER_BED
-    #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
+    #ifdef __SAM3X8E__
+      #if ENABLED(INVERTED_BED_PINS)
+        #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN,!v)
+      #else
+        #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN,v)
+      #endif
+    #else
+      #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
+    #endif
   #endif
   #if HAS_FAN
-    #define WRITE_FAN(v) WRITE(FAN_PIN, v)
+    #ifdef __SAM3X8E__
+      #if ENABLED(INVERTED_FAN_PINS)
+        #define WRITE_FAN(v) WRITE(FAN_PIN, !v)
+      #else
+        #define WRITE_FAN(v) WRITE(FAN_PIN, v)
+      #endif
+    #else
+      #define WRITE_FAN(v) WRITE(FAN_PIN, v)
+    #endif
   #endif
 
   #define HAS_BUZZER (PIN_EXISTS(BEEPER) || defined(LCD_USE_I2C_BUZZER))
@@ -549,6 +609,21 @@
       #define HAS_SERVO_ENDSTOPS true
       #define SERVO_ENDSTOP_IDS { X_ENDSTOP_SERVO_NR, Y_ENDSTOP_SERVO_NR, Z_ENDSTOP_SERVO_NR }
     #endif
+  #endif
+
+  #ifdef __SAM3X8E__
+    #undef M100_FREE_MEMORY_WATCHER
+    #undef FAST_PWM_FAN
+    #undef WATCHDOG_RESET_MANUAL
+    #undef ADVANCE
+    #ifndef MEDIAN_COUNT
+      #define MEDIAN_COUNT 10
+    #endif
+  #else
+    #undef UI_VOLTAGE_LEVEL
+    #undef RADDS_DISPLAY
+    #undef MOTOR_CURRENT
+    #undef MEDIAN_COUNT
   #endif
 
 #endif //CONFIGURATION_LCD
