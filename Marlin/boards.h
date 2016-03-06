@@ -54,6 +54,7 @@
 #define BOARD_OMCA              91   // Final OMCA board
 #define BOARD_RAMBO             301  // Rambo
 #define BOARD_MINIRAMBO         302  // Mini-Rambo
+#define BOARD_AJ4P              303  // AJ4P
 #define BOARD_MEGACONTROLLER    310  // Mega controller
 #define BOARD_ELEFU_3           21   // Elefu Ra Board (v3)
 #define BOARD_5DPRINT           88   // 5DPrint D8 Driver Board
@@ -61,22 +62,7 @@
 #define BOARD_MKS_BASE          40   // MKS BASE 1.0
 #define BOARD_BAM_DICE          401  // 2PrintBeta BAM&DICE with STK drivers
 #define BOARD_BAM_DICE_DUE      402  // 2PrintBeta BAM&DICE Due with STK drivers
-//ARM 32
-#define BOARD_RADDS             502  // RADDS
-#define BOARD_RAMPS_FD_V1       503  // RAMPS-FD V1
-#define BOARD_RAMPS_FD_V2       504  // RAMPS-FD V2
-#define BOARD_RAMPS_SMART       523  // RAMPS-SMART
-#define BOARD_RAMPS_DUO_EFB     533  // RAMPS DUO (Power outputs: Extruder, Fan, Bed)
-#define BOARD_RAMPS_DUO_EEB     534  // RAMPS DUO (Power outputs: Extruder0, Extruder1, Bed)
-#define BOARD_RAMPS_DUO_EFF     535  // RAMPS DUO (Power outputs: Extruder, Fan, Fan)
-#define BOARD_RAMPS_DUO_EEF     536  // RAMPS DUO (Power outputs: Extruder0, Extruder1, Fan)
-#define BOARD_RAMPS_DUO_SF      538  // RAMPS DUO (Power outputs: Spindle, Controller Fan)
-#define BOARD_RAMPS4DUE_EFB     543  // RAMPS4DUE (Power outputs: Extruder, Fan, Bed)
-#define BOARD_RAMPS4DUE_EEB     544  // RAMPS4DUE (Power outputs: Extruder0, Extruder1, Bed)
-#define BOARD_RAMPS4DUE_EFF     545  // RAMPS4DUE (Power outputs: Extruder, Fan, Fan)
-#define BOARD_RAMPS4DUE_EEF     546  // RAMPS4DUE (Power outputs: Extruder0, Extruder1, Fan)
-#define BOARD_RAMPS4DUE_SF      548  // RAMPS4DUE (Power outputs: Spindle, Controller Fan)
-#define BOARD_ALLIGATOR         602  // ALLIGATOR R2
+#define BOARD_BQ_ZUM_MEGA_3D    503  // bq ZUM Mega 3D
 
 #define BOARD_99                99   // This is in pins.h but...?
 
