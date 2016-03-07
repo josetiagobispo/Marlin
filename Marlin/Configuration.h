@@ -656,7 +656,6 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
     //#define Z_PROBE_ALLEN_KEY_STOW_3_FEEDRATE HOMING_FEEDRATE_XYZ
   #endif
 
-
   //If you have enabled the Bed Auto Leveling and are using the same Z Probe for Z Homing,
   //it is highly recommended you let this Z_SAFE_HOMING enabled!!!
 
@@ -911,16 +910,16 @@ Send the following commands to your printer controller: M92 E492.45 (to set e-st
 // REMEMBER TO INSTALL LiquidCrystal_I2C.h in your ARDUINO library folder: https://github.com/kiyoshigawa/LiquidCrystal_I2C
 //#define RA_CONTROL_PANEL
 
+// The MakerLab Mini Panel with graphic controller and SD support
+// http://reprap.org/wiki/Mini_panel
+//#define MINIPANEL
+
 // Delta calibration menu
 // uncomment to add three points calibration menu option.
 // See http://minow.blogspot.com/index.html#4918805519571907051
 // If needed, adjust the X, Y, Z calibration coordinates
 // in ultralcd.cpp@lcd_delta_calibrate_menu()
 #define DELTA_CALIBRATION_MENU
-
-// The MakerLab Mini Panel with graphic controller and SD support
-// http://reprap.org/wiki/Mini_panel
-//#define MINIPANEL
 
 /**
  * I2C Panels
