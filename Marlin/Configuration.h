@@ -911,7 +911,6 @@ Send the following commands to your printer controller: M92 E492.45 (to set e-st
 // REMEMBER TO INSTALL LiquidCrystal_I2C.h in your ARDUINO library folder: https://github.com/kiyoshigawa/LiquidCrystal_I2C
 //#define RA_CONTROL_PANEL
 
-
 // Delta calibration menu
 // uncomment to add three points calibration menu option.
 // See http://minow.blogspot.com/index.html#4918805519571907051
