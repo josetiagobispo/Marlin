@@ -785,6 +785,7 @@ void loop() {
           // M29 closes the file
           card.closefile();
           SERIAL_PROTOCOLLNPGM(MSG_FILE_SAVED);
+          ok_to_send();
         }
         else {
           // Write the string from the read buffer to SD
@@ -792,7 +793,7 @@ void loop() {
           if (card.logging)
             process_next_command(); // The card is saving because it's logging
           else
-            SERIAL_PROTOCOLLNPGM(MSG_OK);
+            ok_to_send();
         }
       }
       else
@@ -899,7 +900,7 @@ void get_command() {
           }
           // if no errors, continue parsing
         }
-        else if (npos == command) {
+        else {
           gcode_line_error(PSTR(MSG_ERR_NO_CHECKSUM));
           return;
         }
@@ -4082,6 +4083,13 @@ inline void gcode_M109() {
 #endif // HAS_TEMP_BED
 
 /**
+ * M110: Set Current Line Number
+ */
+inline void gcode_M110() {
+  if (code_seen('N')) gcode_N = code_value_long();
+}
+
+/**
  * M111: Set the debug level
  */
 inline void gcode_M111() {
@@ -5955,6 +5963,10 @@ void process_next_command() {
         gcode_M104();
         break;
 
+      case 110: // M110: Set Current Line Number
+        gcode_M110();
+        break;
+
       case 111: // M111: Set debug level
         gcode_M111();
         break;
@@ -7214,9 +7226,9 @@ void kill(const char* lcd_msg) {
   cli();   // disable interrupts
   suicide();
   while (1) {
-	#if ENABLED(USE_WATCHDOG)
-	  watchdog_reset();
-	#endif
+    #if ENABLED(USE_WATCHDOG)
+      watchdog_reset();
+    #endif
   } // Wait for reset
 }
 
