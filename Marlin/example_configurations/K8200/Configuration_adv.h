@@ -57,7 +57,7 @@
  * The maximum buffered steps/sec of the extruder motor is called "se".
  * Start autotemp mode with M109 S<mintemp> B<maxtemp> F<factor>
  * The target temperature is set to mintemp+factor*se[steps/sec] and is limited by
- * mintemp and maxtemp. Turn this off by excuting M109 without F*
+ * mintemp and maxtemp. Turn this off by executing M109 without F*
  * Also, if the temperature is set to a value below mintemp, it will not be changed by autotemp.
  * On an Ultimaker, some initial testing worked with M109 S215 B260 F1 in the start.gcode
  */
@@ -274,11 +274,7 @@
 #define MINIMUM_PLANNER_SPEED 0.05// (mm/sec)
 
 // Microstep setting (Only functional when stepper driver microstep pins are connected to MCU.
-//Alligator Board support 16 or 32 only value                         *
-#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16,32(32 is supported only by Alligator)]
-
-// Motor Current setting (Only functional on ALLIGATOR BOARD)
-#define MOTOR_CURRENT {1, 1, 1, 1, 1, 1, 1} // X Y Z E0 E1 E2 E3 - Values 0 - 2.5 A
+#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16]
 
 // Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)
 #define DIGIPOT_MOTOR_CURRENT {135,135,135,135,135} // Values 0-255 (RAMBO 135 = ~0.75A, 185 = ~1A)
@@ -409,14 +405,6 @@ const unsigned int dropsegments = 2; //everything with less than this number of 
 
 // Control heater 0 and heater 1 in parallel.
 //#define HEATERS_PARALLEL
-
-//===========================================================================
-//============================= MEDIAN COUNT ================================
-//===========================================================================
-
-//For Smoother temperature
-//ONLY FOR DUE
-#define MEDIAN_COUNT 10
 
 //===========================================================================
 //================================= Buffers =================================
