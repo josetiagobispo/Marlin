@@ -97,11 +97,11 @@
 #undef FAN_PIN
 #define FAN_PIN             5 // (Sprinter config), was 9
 
-#undef FAN2_PIN
-#define FAN2_PIN            6
+#undef FAN1_PIN
+#define FAN1_PIN            6
 
-#undef FAN3_PIN
-#define FAN3_PIN            9
+#undef FAN2_PIN
+#define FAN2_PIN            9
 
 #undef PS_ON_PIN
 #define PS_ON_PIN          11 // was 12
