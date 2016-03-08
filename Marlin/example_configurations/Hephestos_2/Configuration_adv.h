@@ -269,11 +269,7 @@
 #define MINIMUM_PLANNER_SPEED 0.05// (mm/sec)
 
 // Microstep setting (Only functional when stepper driver microstep pins are connected to MCU.
-//Alligator Board support 16 or 32 only value                         *
-#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16,32(32 is supported only by Alligator)]
-
-// Motor Current setting (Only functional on ALLIGATOR BOARD)
-#define MOTOR_CURRENT {1, 1, 1, 1, 1, 1, 1} // X Y Z E0 E1 E2 E3 - Values 0 - 2.5 A
+#define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16]
 
 // Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)
 #define DIGIPOT_MOTOR_CURRENT {150, 170, 180, 190, 180} // Values 0-255 (bq ZUM Mega 3D (default): X = 150 [~1.17A]; Y = 170 [~1.33A]; Z = 180 [~1.41A]; E0 = 190 [~1.49A])
@@ -404,14 +400,6 @@ const unsigned int dropsegments = 5; //everything with less than this number of 
 
 // Control heater 0 and heater 1 in parallel.
 //#define HEATERS_PARALLEL
-
-//===========================================================================
-//============================= MEDIAN COUNT ================================
-//===========================================================================
-
-//For Smoother temperature
-//ONLY FOR DUE
-#define MEDIAN_COUNT 10
 
 //===========================================================================
 //================================= Buffers =================================
