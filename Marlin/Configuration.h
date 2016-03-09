@@ -424,7 +424,7 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
 #define INVERT_E3_DIR false
 
 // @section homing
-//#define MIN_Z_HEIGHT_FOR_HOMING 4 // (in mm) Minimal z height before homing (G28) for Z clearance above the bed, clamps, ...
+//#define MIN_Z_HEIGHT_FOR_HOMING 0 // (in mm) Minimal z height before homing (G28) for Z clearance above the bed, clamps, ...
                                     // Be sure you have this distance over your Z_MAX_POS in case.
 
 // ENDSTOP SETTINGS:
@@ -561,14 +561,7 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
   #define Y_PROBE_OFFSET_FROM_EXTRUDER 0   // Z offset: -front [of the nozzle] +behind
   #define Z_PROBE_OFFSET_FROM_EXTRUDER 0.5 // Z offset: -below [the nozzle] (always negative!)
 
-<<<<<<< HEAD
-  #define Z_RAISE_BEFORE_HOMING 0       // (in mm) Raise Z axis before homing (G28) for Z probe clearance. // original is 4
-                                        // Be sure you have this distance over your Z_MAX_POS in case.
-
   #define XY_TRAVEL_SPEED 3000         // X and Y axis travel speed between probes, in mm/min.
-=======
-  #define XY_TRAVEL_SPEED 8000         // X and Y axis travel speed between probes, in mm/min.
->>>>>>> refs/remotes/origin/RCBugFix
 
   #define Z_RAISE_BEFORE_PROBING 30   // How much the Z axis will be raised before traveling to the first probing point.
   #define Z_RAISE_BETWEEN_PROBINGS 5  // How much the Z axis will be raised when traveling from between next probing points
