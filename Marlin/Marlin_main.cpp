@@ -3070,11 +3070,16 @@ inline void gcode_G28() {
         if (do_topography_map) {
 
           SERIAL_PROTOCOLPGM(" \nBed Height Topography: \n");
-          SERIAL_PROTOCOLPGM("+-----------+\n");
-          SERIAL_PROTOCOLPGM("|...Back....|\n");
-          SERIAL_PROTOCOLPGM("|Left..Right|\n");
-          SERIAL_PROTOCOLPGM("|...Front...|\n");
-          SERIAL_PROTOCOLPGM("+-----------+\n");
+          SERIAL_PROTOCOLPGM("   +--- BACK --+\n");
+          SERIAL_PROTOCOLPGM("   |           |\n");
+          SERIAL_PROTOCOLPGM(" L |    (+)    | R\n");
+          SERIAL_PROTOCOLPGM(" E |           | I\n");
+          SERIAL_PROTOCOLPGM(" F | (-) N (+) | G\n");
+          SERIAL_PROTOCOLPGM(" T |           | H\n");
+          SERIAL_PROTOCOLPGM("   |    (-)    | T\n");
+          SERIAL_PROTOCOLPGM("   |           |\n");
+          SERIAL_PROTOCOLPGM("   O-- FRONT --+\n");
+          SERIAL_PROTOCOLPGM(" (0,0)\n");
 
           float min_diff = 999;
 
@@ -3968,6 +3973,10 @@ inline void gcode_M109() {
 
   // Exit if the temperature is above target and not waiting for cooling
   if (no_wait_for_cooling && !isHeatingHotend(target_extruder)) return;
+
+  // Prevents a wait-forever situation if R is misused i.e. M109 R0
+  // Try to calculate a ballpark safe margin by halving EXTRUDE_MINTEMP
+  if (degTargetHotend(target_extruder) < (EXTRUDE_MINTEMP/2)) return;
 
   #ifdef TEMP_RESIDENCY_TIME
     long residency_start_ms = -1;
