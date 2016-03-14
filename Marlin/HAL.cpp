@@ -107,7 +107,7 @@ int freeMemory() {
     SET_OUTPUT(MOSI_PIN);
   }
 
-  void spiInit(uint8_t spiClock) {
+  void spiInit(uint8_t spiRate) {
     WRITE(SDSS, HIGH);
     WRITE(MOSI_PIN, HIGH);
     WRITE(SCK_PIN, LOW);
@@ -211,23 +211,23 @@ int freeMemory() {
     }
   }
 
-  void spiInit(uint8_t spiClock) {
+  void spiInit(uint8_t spiRate) {
     if(spiInitMaded == false) {
-      if(spiClock > 4) spiClock = 1;
+      if(spiRate > 4) spiRate = 1;
       #if MB(ALLIGATOR)
         // Set SPI mode 1, clock, select not active after transfer, with delay between transfers  
         SPI_ConfigureNPCS(SPI0, SPI_CHAN_DAC,
-                          SPI_CSR_CSAAT | SPI_CSR_SCBR(spiDueDividors[spiClock]) |
+                          SPI_CSR_CSAAT | SPI_CSR_SCBR(spiDueDividors[spiRate]) |
                           SPI_CSR_DLYBCT(1));
         // Set SPI mode 0, clock, select not active after transfer, with delay between transfers 
         SPI_ConfigureNPCS(SPI0, SPI_CHAN_EEPROM1, SPI_CSR_NCPHA |
-                          SPI_CSR_CSAAT | SPI_CSR_SCBR(spiDueDividors[spiClock]) |
+                          SPI_CSR_CSAAT | SPI_CSR_SCBR(spiDueDividors[spiRate]) |
                           SPI_CSR_DLYBCT(1));
       #endif//MB(ALLIGATOR)
 
       // Set SPI mode 0, clock, select not active after transfer, with delay between transfers
       SPI_ConfigureNPCS(SPI0, SPI_CHAN, SPI_CSR_NCPHA |
-                        SPI_CSR_CSAAT | SPI_CSR_SCBR(spiDueDividors[spiClock]) |
+                        SPI_CSR_CSAAT | SPI_CSR_SCBR(spiDueDividors[spiRate]) |
                         SPI_CSR_DLYBCT(1));
       SPI_Enable(SPI0);
       spiInitMaded = true;

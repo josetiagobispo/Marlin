@@ -91,7 +91,7 @@
   #ifdef SOFTWARE_SPI
     inline uint8_t spiTransfer(uint8_t b); // using Mode 0
     inline void spiBegin();
-    inline void spiInit(uint8_t spiClock);
+    inline void spiInit(uint8_t spiRate);
     inline uint8_t spiRec();
     inline void spiRead(uint8_t*buf, uint16_t nbyte);
     inline void spiSend(uint8_t b);
@@ -100,7 +100,7 @@
   #else
     // Hardware setup
     void spiBegin();
-    void spiInit(uint8_t spiClock);
+    void spiInit(uint8_t spiRate);
     // Write single byte to SPI
     void spiSend(byte b);
     void spiSend(const uint8_t* buf, size_t n);
