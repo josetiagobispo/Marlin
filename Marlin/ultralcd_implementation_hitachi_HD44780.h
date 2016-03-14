@@ -452,7 +452,11 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
       strncpy_P(tmp, text + i, min(len, LCD_WIDTH));
       lcd.setCursor(col, line);
       lcd_print(tmp);
-      delay(time / max(n, 1));
+      #ifdef __SAM3X8E__
+        _delay_ms(time / max(n, 1));
+      #else
+        delay(time / max(n, 1));
+      #endif
     }
   }
 
@@ -510,7 +514,11 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
     lcd.setCursor(TEXT_SCREEN_LOGO_SHIFT, 1);                    lcd_printPGM(PSTR("|Marlin|"));
     lcd.setCursor(TEXT_SCREEN_LOGO_SHIFT, 2); lcd.print('\x02'); lcd_printPGM(PSTR( "------" ));  lcd.print('\x03');
 
-    delay(2000);
+    #ifdef __SAM3X8E__
+      _delay_ms(2000);
+    #else
+      delay(2000);
+    #endif
 
     #ifdef STRING_SPLASH_LINE1
       lcd_erase_line(3);

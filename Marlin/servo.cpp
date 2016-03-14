@@ -432,7 +432,11 @@ void Servo::move(int value) {
   if (this->attach(0) >= 0) {
     this->write(value);
     #if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE)
-      delay(SERVO_DEACTIVATION_DELAY);
+      #ifdef __SAM3X8E__
+        _delay_ms(SERVO_DEACTIVATION_DELAY);
+      #else
+        delay(SERVO_DEACTIVATION_DELAY);
+      #endif
       this->detach();
     #endif
   }

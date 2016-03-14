@@ -47,7 +47,9 @@
   #define strncpy_P(dest, src, num) strncpy((dest), (src), (num))
 
   // On AVR this is in sfr_defs.h
-  #define _BV(bit) (1 << (bit))
+  #ifndef _BV
+    #define _BV(b) (1<<(b))
+  #endif
 
   // --------------------------------------------------------------------------
   // Types
@@ -64,6 +66,27 @@
   // --------------------------------------------------------------------------
   // Public functions
   // --------------------------------------------------------------------------
+
+  class HAL {
+    public:
+
+      HAL();
+
+      virtual ~HAL();
+
+      static FORCE_INLINE void delayMicroseconds(uint32_t usec) { // usec += 3;
+        uint32_t n = usec * (F_CPU / 3000000);
+        asm volatile(
+          "L2_%=_delayMicroseconds:"       "\n\t"
+          "subs   %0, #1"                 "\n\t"
+          "bge    L2_%=_delayMicroseconds" "\n"
+          : "+r" (n) :  
+        );
+      }
+
+    protected:
+    private:
+  };
 
   #ifdef SOFTWARE_SPI
     inline uint8_t spiTransfer(uint8_t b); // using Mode 0
@@ -99,17 +122,12 @@
   void sei(void);
 
   static inline void _delay_ms(uint32_t msec) {
-    delay(msec);
-  }
-
-  static inline void _delay_us(uint32_t usec) {
-    uint32_t n = usec * (F_CPU / 3000000);
-    asm volatile(
-        "L2_%=_delayMicroseconds:"       "\n\t"
-        "subs   %0, #1"                 "\n\t"
-        "bge    L2_%=_delayMicroseconds" "\n"
-        : "+r" (n) :  
-    );
+    unsigned int del;
+    while (msec > 0) {
+      del = msec > 100 ? 100 : msec;
+      delay(del);
+      msec -= del;
+    }
   }
 
   int freeMemory(void);

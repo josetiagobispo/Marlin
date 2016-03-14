@@ -95,11 +95,19 @@ void gcode_M100() {
       for (i = 0; i < 16; i++) {      // and 16 data bytes
         prt_hex_byte(*(ptr + i));
         SERIAL_ECHOPGM(" ");
-        delay(2);
+        #ifdef __SAM3X8E__
+          _delay_ms(2);
+        #else
+          delay(2);
+        #endif
       }
       SERIAL_ECHO("|");         // now show where non 0xE5's are
       for (i = 0; i < 16; i++) {
-        delay(2);
+        #ifdef __SAM3X8E__
+          _delay_ms(2);
+        #else
+          delay(2);
+        #endif
         if (*(ptr + i) == 0xe5)
           SERIAL_ECHOPGM(" ");
         else
@@ -107,7 +115,11 @@ void gcode_M100() {
       }
       SERIAL_ECHO("\n");
       ptr += 16;
-      delay(2);
+      #ifdef __SAM3X8E__
+        _delay_ms(2);
+      #else
+        delay(2);
+      #endif
     }
     SERIAL_ECHOLNPGM("Done.\n");
     return;
@@ -223,7 +235,11 @@ void prt_hex_nibble(unsigned int n) {
     SERIAL_ECHO(n);
   else
     SERIAL_ECHO((char)('A' + n - 10));
-  delay(2);
+  #ifdef __SAM3X8E__
+    _delay_ms(2);
+  #else
+    delay(2);
+  #endif
 }
 
 void prt_hex_byte(unsigned int b) {

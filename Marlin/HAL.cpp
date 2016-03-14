@@ -53,6 +53,14 @@ extern "C" {
   int spiDueDividors[] = {10,21,42,84,168,255,255};
 #endif
 
+HAL::HAL() {
+  // ctor
+}
+
+HAL::~HAL() {
+  // dtor
+}
+
 // return free memory between end of heap (or end bss) and whatever is current
 int freeMemory() {
   int free_memory;
@@ -80,13 +88,13 @@ int freeMemory() {
       b <<= 1;
 
       WRITE(SCK_PIN, HIGH);
-      delayMicroseconds(5);
+      HAL::delayMicroseconds(5);
 
       if (READ(MISO_PIN)) {
         b |= 1;
       }
       WRITE(SCK_PIN, LOW);
-      delayMicroseconds(5);
+      HAL::delayMicroseconds(5);
     }
     return b;
   }
@@ -236,7 +244,7 @@ int freeMemory() {
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
     // clear status
     SPI0->SPI_RDR;
-    //delayMicroseconds(1);
+    //HAL::delayMicroseconds(1);
   }
 
   void spiSend(const uint8_t* buf, size_t n) {
@@ -246,7 +254,7 @@ int freeMemory() {
       while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       SPI0->SPI_RDR;
-      //        delayMicroseconds(1);
+      //HAL::delayMicroseconds(1);
     }
     spiSend(buf[n - 1]);
   }
@@ -287,7 +295,7 @@ int freeMemory() {
     // wait for receive register
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
     // get byte from receive register
-    //delayMicroseconds(1);
+    //HAL::delayMicroseconds(1);
     return SPI0->SPI_RDR;
   }
 
@@ -316,7 +324,7 @@ int freeMemory() {
       SPI0->SPI_TDR = 0x000000FF | SPI_PCS(SPI_CHAN);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       buf[i] = SPI0->SPI_RDR;
-      // delayMicroseconds(1);
+      // HAL::delayMicroseconds(1);
     }
     buf[nbyte] = spiRec();
   }
@@ -332,7 +340,7 @@ int freeMemory() {
       while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       SPI0->SPI_RDR;
-      //        delayMicroseconds(1);
+      //HAL::delayMicroseconds(1);
     }
     spiSend(buf[511]);
   }
@@ -417,7 +425,7 @@ void eeprom_write_byte(unsigned char *pos, unsigned char value) {
 
     // wait for write cycle to complete
     // this could be done more efficiently with "acknowledge polling"
-    delay(5);
+    _delay_ms(5);
   #endif// MB(ALLIGATOR)
 }
 

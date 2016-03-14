@@ -30,11 +30,11 @@
     spiBegin();
 
     //init onboard DAC
-    delayMicroseconds(2U);
+    HAL::delayMicroseconds(2U);
     digitalWrite( DAC0_SYNC , LOW );
-    delayMicroseconds(2U);
+    HAL::delayMicroseconds(2U);
     digitalWrite( DAC0_SYNC , HIGH );
-    delayMicroseconds(2U);
+    HAL::delayMicroseconds(2U);
     digitalWrite( DAC0_SYNC , LOW );
 
     spiSend(SPI_CHAN_DAC,externalDac_buf , 2);
@@ -42,11 +42,11 @@
 
     #if EXTRUDERS > 1
       //init Piggy DAC
-      delayMicroseconds(2U);
+      HAL::delayMicroseconds(2U);
       digitalWrite( DAC1_SYNC , LOW );
-      delayMicroseconds(2U);
+      HAL::delayMicroseconds(2U);
       digitalWrite( DAC1_SYNC , HIGH );
-      delayMicroseconds(2U);
+      HAL::delayMicroseconds(2U);
       digitalWrite( DAC1_SYNC , LOW );
 
       spiSend(SPI_CHAN_DAC,externalDac_buf , 2);
@@ -84,22 +84,22 @@
     if(channel > 3) { // DAC Piggy E1,E2,E3
 
       digitalWrite(DAC1_SYNC , LOW);
-      delayMicroseconds(2U);
+      HAL::delayMicroseconds(2U);
       digitalWrite(DAC1_SYNC , HIGH);
-      delayMicroseconds(2U);
+      HAL::delayMicroseconds(2U);
       digitalWrite(DAC1_SYNC , LOW);
     }
 
     else { // DAC onboard X,Y,Z,E0
 
       digitalWrite(DAC0_SYNC , LOW);
-      delayMicroseconds(2U);
+      HAL::delayMicroseconds(2U);
       digitalWrite(DAC0_SYNC , HIGH);
-      delayMicroseconds(2U);
+      HAL::delayMicroseconds(2U);
       digitalWrite(DAC0_SYNC , LOW);
     }
 
-    delayMicroseconds(2U);
+    HAL::delayMicroseconds(2U);
     spiSend(SPI_CHAN_DAC,externalDac_buf , 2);
 
     return;

@@ -1273,15 +1273,27 @@ void quickStop() {
     #define _INVERT_DIR(AXIS) INVERT_## AXIS ##_DIR
     #define _APPLY_DIR(AXIS, INVERT) AXIS ##_APPLY_DIR(INVERT, true)
 
-    #define BABYSTEP_AXIS(axis, AXIS, INVERT) { \
-        _ENABLE(axis); \
-        uint8_t old_pin = _READ_DIR(AXIS); \
-        _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
-        _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
-        delayMicroseconds(2); \
-        _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
-        _APPLY_DIR(AXIS, old_pin); \
-      }
+    #ifdef __SAM3X8E__
+      #define BABYSTEP_AXIS(axis, AXIS, INVERT) { \
+          _ENABLE(axis); \
+          uint8_t old_pin = _READ_DIR(AXIS); \
+          _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
+          _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
+          HAL::delayMicroseconds(2); \
+          _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
+          _APPLY_DIR(AXIS, old_pin); \
+        }
+    #else
+      #define BABYSTEP_AXIS(axis, AXIS, INVERT) { \
+          _ENABLE(axis); \
+          uint8_t old_pin = _READ_DIR(AXIS); \
+          _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
+          _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
+          delayMicroseconds(2); \
+          _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
+          _APPLY_DIR(AXIS, old_pin); \
+        }
+    #endif
 
     switch (axis) {
 
@@ -1318,7 +1330,7 @@ void quickStop() {
           Y_STEP_WRITE(!INVERT_Y_STEP_PIN);
           Z_STEP_WRITE(!INVERT_Z_STEP_PIN);
           #ifdef __SAM3X8E__
-            _delay_us(1U);
+            HAL::delayMicroseconds(1U);
           #else
             delayMicroseconds(2);
           #endif
@@ -1347,7 +1359,13 @@ void digitalPotWrite(int address, int value) {
     SPI.transfer(address); //  send in the address and value via SPI:
     SPI.transfer(value);
     digitalWrite(DIGIPOTSS_PIN, HIGH); // take the SS pin high to de-select the chip:
-    //delay(10);
+    /*
+    #ifdef __SAM3X8E__
+      //_delay_ms(10);
+    #else
+      //delay(10);
+    #endif
+    */
   #else
     UNUSED(address);
     UNUSED(value);

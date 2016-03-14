@@ -1018,7 +1018,11 @@ void tp_init() {
   #endif
 
   // Wait for temperature measurement to settle
-  delay(250);
+  #ifdef __SAM3X8E__
+    _delay_ms(250);
+  #else
+    delay(250);
+  #endif
 
   #define TEMP_MIN_ROUTINE(NR) \
     minttemp[NR] = HEATER_ ## NR ## _MINTEMP; \

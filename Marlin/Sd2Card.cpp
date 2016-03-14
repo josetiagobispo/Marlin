@@ -170,6 +170,10 @@ uint8_t Sd2Card::cardCommand(uint8_t cmd, uint32_t arg) {
   if (cmd == CMD8) crc = 0X87;  // correct crc for CMD8 with arg 0X1AA
   spiSend(crc);
 
+  #ifdef __SAM3X8E__
+    // additional delay for CMD0
+    if (cmd == CMD0) _delay_ms(100);
+  #endif
   // skip stuff byte for stop read
   if (cmd == CMD12) spiRec();
 

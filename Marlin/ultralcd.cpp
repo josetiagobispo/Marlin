@@ -1542,7 +1542,11 @@ void lcd_quick_feedback() {
     #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
       #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
     #endif
-    delay(LCD_FEEDBACK_FREQUENCY_DURATION_MS);
+    #ifdef __SAM3X8E__
+      _delay_ms(LCD_FEEDBACK_FREQUENCY_DURATION_MS);
+    #else
+      delay(LCD_FEEDBACK_FREQUENCY_DURATION_MS);
+    #endif
   #endif
 }
 

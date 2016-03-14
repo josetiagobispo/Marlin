@@ -435,6 +435,13 @@ static uint8_t target_extruder;
 //================================ Functions ================================
 //===========================================================================
 
+#ifdef __SAM3X8E__
+  void delay_ms(millis_t ms) {
+    ms += millis();
+    while (millis() < ms) idle();
+  }
+#endif
+
 void process_next_command();
 
 void plan_arc(float target[NUM_AXIS], float* offset, uint8_t clockwise);
@@ -3748,7 +3755,11 @@ inline void gcode_M42() {
 
       if (deploy_probe_for_each_reading)  {
         deploy_z_probe();
-        delay(1000);
+        #ifdef __SAM3X8E__
+          delay_ms(1000);
+        #else
+          delay(1000);
+        #endif
       }
 
       setup_for_endstop_move();
@@ -3796,14 +3807,22 @@ inline void gcode_M42() {
       // Stow between
       if (deploy_probe_for_each_reading) {
         stow_z_probe();
-        delay(1000);
+        #ifdef __SAM3X8E__
+          delay_ms(1000);
+        #else
+          delay(1000);
+        #endif
       }
     }
 
     // Stow after
     if (!deploy_probe_for_each_reading) {
       stow_z_probe();
-      delay(1000);
+      #ifdef __SAM3X8E__
+        delay_ms(1000);
+      #else
+        delay(1000);
+      #endif
     }
 
     clean_up_after_endstop_move();
@@ -4222,7 +4241,11 @@ inline void gcode_M81() {
   disable_all_heaters();
   finishAndDisableSteppers();
   fanSpeed = 0;
-  delay(1000); // Wait 1 second before switching off
+  #ifdef __SAM3X8E__
+    delay_ms(1000); // Wait 1 second before switching off
+  #else
+    delay(1000); // Wait 1 second before switching off
+  #endif
   #if HAS_SUICIDE
     st_synchronize();
     suicide();
@@ -4939,7 +4962,11 @@ inline void gcode_M226() {
         WRITE(PHOTOGRAPH_PIN, LOW);
         _delay_ms(PULSE_LENGTH);
       }
-      delay(7.33);
+      #ifdef __SAM3X8E__
+        _delay_ms(7.33);
+      #else
+        delay(7.33);
+      #endif
       for (int i = 0; i < NUM_PULSES; i++) {
         WRITE(PHOTOGRAPH_PIN, HIGH);
         _delay_ms(PULSE_LENGTH);
@@ -5438,7 +5465,11 @@ inline void gcode_M503() {
     disable_e1();
     disable_e2();
     disable_e3();
-    delay(100);
+    #ifdef __SAM3X8E__
+      delay_ms(100);
+    #else
+      delay(100);
+    #endif
     LCD_ALERTMESSAGEPGM(MSG_FILAMENTCHANGE);
     millis_t next_tick = 0;
     while (!lcd_clicked()) {
@@ -7200,7 +7231,11 @@ void kill(const char* lcd_msg) {
 
   // FMC small patch to update the LCD before ending
   sei();   // enable interrupts
-  for (int i = 5; i--; lcd_update()) delay(200); // Wait a short time
+  #ifdef __SAM3X8E__
+    for (int i = 5; i--; lcd_update()) _delay_ms(200); // Wait a short time
+  #else
+    for (int i = 5; i--; lcd_update()) delay(200); // Wait a short time
+  #endif
   cli();   // disable interrupts
   suicide();
   while (1) {

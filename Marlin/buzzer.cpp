@@ -14,22 +14,41 @@
           unsigned int delay = 1000000 / freq / 2;
           int i = duration * freq / 1000;
           while (i--) {
-            WRITE(BEEPER_PIN, HIGH);
-            delayMicroseconds(delay);
-            WRITE(BEEPER_PIN, LOW);
-            delayMicroseconds(delay);
+            #ifdef __SAM3X8E__
+              WRITE(BEEPER_PIN, HIGH);
+              HAL::delayMicroseconds(delay);
+              WRITE(BEEPER_PIN, LOW);
+              HAL::delayMicroseconds(delay);
+            #else
+              WRITE(BEEPER_PIN, HIGH);
+              delayMicroseconds(delay);
+              WRITE(BEEPER_PIN, LOW);
+              delayMicroseconds(delay);
+            #endif
            }
         #else // buzzer has its own resonator - needs a DC
           WRITE(BEEPER_PIN, HIGH);
-          delay(duration);
+          #ifdef __SAM3X8E__
+            _delay_ms(duration);
+          #else
+            delay(duration);
+          #endif
           WRITE(BEEPER_PIN, LOW);
         #endif
       #else
-        delay(duration);
+        #ifdef __SAM3X8E__
+          _delay_ms(duration);
+        #else
+          delay(duration);
+        #endif
       #endif
     }
     else {
-      delay(duration);
+      #ifdef __SAM3X8E__
+        _delay_ms(duration);
+      #else
+        delay(duration);
+      #endif
     }
   }
 #endif

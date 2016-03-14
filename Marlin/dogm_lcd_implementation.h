@@ -250,7 +250,11 @@ static void lcd_implementation_init() {
     } while (u8g.nextPage());
 
     if (show_bootscreen) {
-      delay(1000);
+      #ifdef __SAM3X8E__
+        _delay_ms(1000);
+      #else
+        delay(1000);
+      #endif
       show_bootscreen = false;
     }
   #endif
