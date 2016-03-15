@@ -6890,19 +6890,15 @@ void plan_arc(
       ) {
         lastMotor = ms; //... set time to NOW so the fan will turn on
       }
-<<<<<<< HEAD
       #ifdef __SAM3X8E__
         #if ENABLED(INVERTED_FAN_PINS)
-          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 255 : (255 - CONTROLLERFAN_SPEED);
+          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + ((CONTROLLERFAN_SECS) * 1000UL)) ? 255 : (255 - CONTROLLERFAN_SPEED);
         #else
-          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
+          uint8_t speed = (lastMotor == 0 || ms >= lastMotor + ((CONTROLLERFAN_SECS) * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
         #endif
       #else
-        uint8_t speed = (lastMotor == 0 || ms >= lastMotor + (CONTROLLERFAN_SECS * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
+        uint8_t speed = (lastMotor == 0 || ms >= lastMotor + ((CONTROLLERFAN_SECS) * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
       #endif
-=======
-      uint8_t speed = (lastMotor == 0 || ms >= lastMotor + ((CONTROLLERFAN_SECS) * 1000UL)) ? 0 : CONTROLLERFAN_SPEED;
->>>>>>> refs/remotes/MarlinFirmware/RCBugFix
       // allows digital or PWM fan output to be used (see M42 handling)
       digitalWrite(CONTROLLERFAN_PIN, speed);
       analogWrite(CONTROLLERFAN_PIN, speed);
