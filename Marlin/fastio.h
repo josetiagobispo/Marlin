@@ -32,7 +32,7 @@
 
 /// Read a pin
 #ifdef __SAM3X8E__
-  #define _FASTREAD(IO) ((bool)(DIO ## IO ## _WPORT -> PIO_PDSR & (MASK(DIO ## IO ## _PIN))))
+  #define _READ(IO) ((bool)(DIO ## IO ## _WPORT -> PIO_PDSR & (MASK(DIO ## IO ## _PIN))))
 #else
   #define _READ(IO) ((bool)(DIO ## IO ## _RPORT & MASK(DIO ## IO ## _PIN)))
 #endif
@@ -40,12 +40,11 @@
 // On some boards pins > 0x100 are used. These are not converted to atomic actions. An critical section is needed.
 
 #ifdef __SAM3X8E__
-  static inline void digitalFastWrite(int pin, bool v) {
-    if (v) g_APinDescription[pin].pPort->PIO_SODR = g_APinDescription[pin].ulPin;
-    else g_APinDescription[pin].pPort->PIO_CODR = g_APinDescription[pin].ulPin;
-  }
+  #define _WRITE_VAR(IO, v) do {  if (v) {g_APinDescription[IO].pPort->PIO_SODR = g_APinDescription[IO].ulPin; } \
+                                      else {g_APinDescription[IO].pPort->PIO_CODR = g_APinDescription[IO].ulPin; } \
+                                   } while (0)
 
-  #define _FASTWRITE(IO, v) do {  if (v) {DIO ## IO ## _WPORT -> PIO_SODR = MASK(DIO ## IO ##_PIN); } \
+  #define _WRITE(IO, v) do {  if (v) {DIO ## IO ## _WPORT -> PIO_SODR = MASK(DIO ## IO ##_PIN); } \
                                   else {DIO ##  IO ## _WPORT -> PIO_CODR = MASK(DIO ## IO ## _PIN); }; \
                                } while (0)
 #else
@@ -67,7 +66,28 @@
   #define _WRITE(IO, v)  do {  if (&(DIO ##  IO ## _RPORT) >= (uint8_t *)0x100) {_WRITE_C(IO, v); } else {_WRITE_NC(IO, v); }; } while (0)
 #endif
 
-#ifndef __SAM3X8E__
+#ifdef __SAM3X8E__
+  /// toggle a pin
+  #define _TOGGLE(IO)  _WRITE(IO, !READ(IO))
+
+  /// set pin as input
+  #define _SET_INPUT(IO)  pmc_enable_periph_clk(g_APinDescription[IO].ulPeripheralId); \
+                          PIO_Configure(g_APinDescription[IO].pPort, PIO_INPUT, g_APinDescription[IO].ulPin, 0)
+  /// set pin as output
+  #define _SET_OUTPUT(IO)  PIO_Configure(g_APinDescription[IO].pPort, PIO_OUTPUT_1, \
+                           g_APinDescription[IO].ulPin, g_APinDescription[IO].ulPinConfiguration)
+
+  /// Write doesn't work for pullups
+  #define _PULLUP(IO, v)  { pinMode(IO, (v!=LOW ? INPUT_PULLUP : INPUT)); }
+
+  /// check if pin is an input
+  #define _GET_INPUT(IO)
+  /// check if pin is an output
+  #define _GET_OUTPUT(IO)
+
+  /// check if pin is an timer
+  #define _GET_TIMER(IO)
+#else
   /// toggle a pin
   #define _TOGGLE(IO)  do {DIO ##  IO ## _RPORT = MASK(DIO ## IO ## _PIN); } while (0)
 
@@ -88,72 +108,36 @@
 //  why double up on these macros? see http://gcc.gnu.org/onlinedocs/cpp/Stringification.html
 
 /// Read a pin wrapper
-#ifdef __SAM3X8E__
-  #define READ(IO)  _FASTREAD(IO)
-#else
-  #define READ(IO)  _READ(IO)
-#endif
+#define READ(IO)  _READ(IO)
 /// Write to a pin wrapper
 #ifdef __SAM3X8E__
-  #define WRITE_VAR(IO, v)  digitalWrite(IO, v)
-  #define WRITE(IO, v)  _FASTWRITE(IO, v)
-#else
-  #define WRITE(IO, v)  _WRITE(IO, v)
+  #define WRITE_VAR(IO, v)  _WRITE_VAR(IO, v)
 #endif
+#define WRITE(IO, v)  _WRITE(IO, v)
 
 /// toggle a pin wrapper
-#ifdef __SAM3X8E__
-  #define TOGGLE(IO)  WRITE(IO, !READ(IO))
-#else
-  #define TOGGLE(IO)  _TOGGLE(IO)
-#endif
+#define TOGGLE(IO)  _TOGGLE(IO)
 
 /// set pin as input wrapper
-#ifdef __SAM3X8E__
-  #define SET_INPUT(IO)  pmc_enable_periph_clk(g_APinDescription[IO].ulPeripheralId); \
-                         PIO_Configure(g_APinDescription[IO].pPort, PIO_INPUT, g_APinDescription[IO].ulPin, 0)
-#else
-  #define SET_INPUT(IO)  _SET_INPUT(IO)
-#endif
+#define SET_INPUT(IO)  _SET_INPUT(IO)
 /// set pin as output wrapper
-#ifdef __SAM3X8E__
-  #define SET_OUTPUT(IO)  PIO_Configure(g_APinDescription[IO].pPort, PIO_OUTPUT_1, \
-                          g_APinDescription[IO].ulPin, g_APinDescription[IO].ulPinConfiguration)
-#else
-  #define SET_OUTPUT(IO)  _SET_OUTPUT(IO)
-#endif
+#define SET_OUTPUT(IO)  _SET_OUTPUT(IO)
 
 #ifdef __SAM3X8E__
-  // Write doesn't work for pullups
-  #define PULLUP(IO, v)  { pinMode(IO, (v!=LOW ? INPUT_PULLUP : INPUT)); }
+  /// for pullups wrapper
+  #define PULLUP(IO, v)  _PULLUP(IO, v)
 #endif
 
 /// check if pin is an input wrapper
-#ifdef __SAM3X8E__
-  #define GET_INPUT(IO)
-#else
-  #define GET_INPUT(IO)  _GET_INPUT(IO)
-#endif
+#define GET_INPUT(IO)  _GET_INPUT(IO)
 /// check if pin is an output wrapper
-#ifdef __SAM3X8E__
-  #define GET_OUTPUT(IO)
-#else
-  #define GET_OUTPUT(IO)  _GET_OUTPUT(IO)
-#endif
+#define GET_OUTPUT(IO)  _GET_OUTPUT(IO)
 
 /// check if pin is an timer wrapper
-#ifdef __SAM3X8E__
-  #define GET_TIMER(IO)
-#else
-  #define GET_TIMER(IO)  _GET_TIMER(IO)
-#endif
+#define GET_TIMER(IO)  _GET_TIMER(IO)
 
 // Shorthand
-#ifdef __SAM3X8E__
-  #define OUT_WRITE(IO, v) { SET_OUTPUT(IO); WRITE_VAR(IO, v); }
-#else
-  #define OUT_WRITE(IO, v) { SET_OUTPUT(IO); WRITE(IO, v); }
-#endif
+#define OUT_WRITE(IO, v) { SET_OUTPUT(IO); WRITE(IO, v); }
 
 /*
   ports and functions
