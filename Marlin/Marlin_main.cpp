@@ -551,21 +551,6 @@ inline bool _enqueuecommand(const char* cmd, bool say_ok=false) {
   return true;
 }
 
-<<<<<<< HEAD
-#ifdef __SAM3X8E__
-  #if MB(ALLIGATOR)
-    void setup_alligator_board() {
-      // Init Expansion Port Voltage logic Selector
-      SET_OUTPUT(EXP_VOLTAGE_LEVEL_PIN);
-      WRITE(EXP_VOLTAGE_LEVEL_PIN, UI_VOLTAGE_LEVEL);
-      ExternalDac::begin(); //initialize ExternalDac
-      #if HAS_BUZZER
-        buzz(10,10);
-      #endif
-    }
-  #endif
-#endif
-=======
 /**
  * Enqueue with Serial Echo
  */
@@ -579,7 +564,20 @@ bool enqueue_and_echo_command(const char* cmd, bool say_ok/*=false*/) {
   }
   return false;
 }
->>>>>>> refs/remotes/MarlinFirmware/RCBugFix
+
+#ifdef __SAM3X8E__
+  #if MB(ALLIGATOR)
+    void setup_alligator_board() {
+      // Init Expansion Port Voltage logic Selector
+      SET_OUTPUT(EXP_VOLTAGE_LEVEL_PIN);
+      WRITE(EXP_VOLTAGE_LEVEL_PIN, UI_VOLTAGE_LEVEL);
+      ExternalDac::begin(); //initialize ExternalDac
+      #if HAS_BUZZER
+        buzz(10,10);
+      #endif
+    }
+  #endif
+#endif
 
 void setup_killpin() {
   #if HAS_KILL
