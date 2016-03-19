@@ -4331,14 +4331,6 @@ inline void gcode_M140() {
 inline void gcode_M81() {
   disable_all_heaters();
   finishAndDisableSteppers();
-<<<<<<< HEAD
-  fanSpeed = 0;
-  #ifdef __SAM3X8E__
-    delay_ms(1000); // Wait 1 second before switching off
-  #else
-    delay(1000); // Wait 1 second before switching off
-  #endif
-=======
   #if FAN_COUNT > 0
     #if FAN_COUNT > 1
       for (uint8_t i = 0; i < FAN_COUNT; i++) fanSpeeds[i] = 0;
@@ -4346,8 +4338,11 @@ inline void gcode_M81() {
       fanSpeeds[0] = 0;
     #endif
   #endif
-  delay(1000); // Wait 1 second before switching off
->>>>>>> refs/remotes/MarlinFirmware/RCBugFix
+  #ifdef __SAM3X8E__
+    delay_ms(1000); // Wait 1 second before switching off
+  #else
+    delay(1000); // Wait 1 second before switching off
+  #endif
   #if HAS_SUICIDE
     st_synchronize();
     suicide();

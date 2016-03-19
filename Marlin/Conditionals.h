@@ -604,18 +604,6 @@
       #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
     #endif
   #endif
-<<<<<<< HEAD
-  #if HAS_FAN
-    #ifdef __SAM3X8E__
-      #if ENABLED(INVERTED_FAN_PINS)
-        #define WRITE_FAN(v) WRITE(FAN_PIN, !v)
-      #else
-        #define WRITE_FAN(v) WRITE(FAN_PIN, v)
-      #endif
-    #else
-      #define WRITE_FAN(v) WRITE(FAN_PIN, v)
-    #endif
-=======
 
   /**
    * Up to 3 PWM fans
@@ -630,17 +618,34 @@
     #define FAN_COUNT 0
   #endif
 
-  #if HAS_FAN0
-    #define WRITE_FAN(v) WRITE(FAN_PIN, v)
-    #define WRITE_FAN0(v) WRITE_FAN(v)
-  #endif
-  #if HAS_FAN1
-    #define WRITE_FAN1(v) WRITE(FAN1_PIN, v)
-  #endif
-  #if HAS_FAN2
-    #define WRITE_FAN2(v) WRITE(FAN2_PIN, v)
->>>>>>> refs/remotes/MarlinFirmware/RCBugFix
-  #endif
+  #ifdef __SAM3X8E__
+    #if ENABLED(INVERTED_FAN_PINS)
+      #define _WRITE_FAN(pin, v) WRITE(pin, !v)
+    #else
+      #define _WRITE_FAN(pin, v) WRITE(pin, v)
+    #endif
+    #if HAS_FAN0
+      #define WRITE_FAN(v) _WRITE_FAN(FAN_PIN, v)
+      #define WRITE_FAN0(v) WRITE_FAN(v)
+    #endif
+    #if HAS_FAN1
+      #define WRITE_FAN1(v) _WRITE_FAN(FAN1_PIN, v)
+    #endif
+    #if HAS_FAN2
+      #define WRITE_FAN2(v) _WRITE_FAN(FAN2_PIN, v)
+    #endif
+  #else //__SAM3X8E__
+    #if HAS_FAN0
+      #define WRITE_FAN(v) WRITE(FAN_PIN, v)
+      #define WRITE_FAN0(v) WRITE_FAN(v)
+    #endif
+    #if HAS_FAN1
+      #define WRITE_FAN1(v) WRITE(FAN1_PIN, v)
+    #endif
+    #if HAS_FAN2
+      #define WRITE_FAN2(v) WRITE(FAN2_PIN, v)
+    #endif
+  #endif //__SAM3X8E__
   #define WRITE_FAN_N(n, v) WRITE_FAN##n(v)
 
   #define HAS_BUZZER (PIN_EXISTS(BEEPER) || defined(LCD_USE_I2C_BUZZER))
