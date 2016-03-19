@@ -271,6 +271,17 @@
   #define Z_MAX_LENGTH (Z_MAX_POS - (Z_MIN_POS))
 
   /**
+   * CoreXY and CoreXZ
+   */
+  #if ENABLED(COREXY)
+    #define CORE_AXIS_2 B_AXIS
+    #define CORE_AXIS_3 Z_AXIS
+  #elif ENABLED(COREXZ)
+    #define CORE_AXIS_2 C_AXIS
+    #define CORE_AXIS_3 Y_AXIS
+  #endif
+
+  /**
    * SCARA
    */
   #if ENABLED(SCARA)
@@ -314,6 +325,13 @@
    */
   #if ENABLED(Z_PROBE_SLED)
     #define Z_SAFE_HOMING
+  #endif
+
+  /**
+   * Avoid double-negatives for enabling features
+   */
+  #if DISABLED(DISABLE_HOST_KEEPALIVE)
+    #define HOST_KEEPALIVE_FEATURE
   #endif
 
   /**
