@@ -7,6 +7,27 @@
 #include "stepper.h"
 #include "configuration_store.h"
 
+/**
+ * REVERSE_MENU_DIRECTION
+ *
+ * To reverse the menu direction we need a general way to reverse
+ * the direction of the encoder everywhere. So encoderDirection is
+ * added to allow the encoder to go the other way.
+ *
+ * This behavior is limited to scrolling Menus and SD card listings,
+ * and is disabled in other contexts.
+ */
+#if ENABLED(REVERSE_MENU_DIRECTION)
+  int8_t encoderDirection = 1;
+  #define ENCODER_DIRECTION_NORMAL() (encoderDirection = 1)
+  #define ENCODER_DIRECTION_MENUS() (encoderDirection = -1)
+#else
+  #define ENCODER_DIRECTION_NORMAL() ;
+  #define ENCODER_DIRECTION_MENUS() ;
+#endif
+
+uint8_t blink = 0; // Variable for animation
+
 int8_t encoderDiff; // updated from interrupt context and added to encoderPosition every LCD update
 
 bool encoderRateMultiplierEnabled;
@@ -135,6 +156,7 @@ static void lcd_status_screen();
   /**
    * START_MENU generates the init code for a menu function
    */
+<<<<<<< HEAD
   #ifdef __SAM3X8E__
     #if ENABLED(BTN_BACK) && BTN_BACK > 0
       #define START_MENU(last_menu) do { \
@@ -173,6 +195,18 @@ static void lcd_status_screen();
       for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
         _menuItemNr = 0;
   #endif //__SAM3X8E__
+=======
+  #define START_MENU() do { \
+    ENCODER_DIRECTION_MENUS(); \
+    encoderRateMultiplierEnabled = false; \
+    if (encoderPosition > 0x8000) encoderPosition = 0; \
+    uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+    NOMORE(currentMenuViewOffset, encoderLine); \
+    uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+    bool wasClicked = LCD_CLICKED, itemSelected; \
+    for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+      _menuItemNr = 0;
+>>>>>>> refs/remotes/MarlinFirmware/RCBugFix
 
   /**
    * MENU_ITEM generates draw & handler code for a menu item, potentially calling:
@@ -244,7 +278,7 @@ static void lcd_status_screen();
     #define MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(type, label, args...) MENU_ITEM(setting_edit_callback_ ## type, label, PSTR(label), ## args)
   #endif //!ENCODER_RATE_MULTIPLIER
   #define END_MENU() \
-      if (encoderLine >= _menuItemNr) { encoderPosition = _menuItemNr * (ENCODER_STEPS_PER_MENU_ITEM) - 1; encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; }\
+      if (encoderLine >= _menuItemNr) { encoderPosition = _menuItemNr * (ENCODER_STEPS_PER_MENU_ITEM) - 1; encoderLine = _menuItemNr - 1; }\
       if (encoderLine >= currentMenuViewOffset + LCD_HEIGHT) { currentMenuViewOffset = encoderLine - (LCD_HEIGHT) + 1; lcdDrawUpdate = 1; _lineNr = currentMenuViewOffset - 1; _drawLineNr = -1; } \
       } } while(0)
 
@@ -315,6 +349,7 @@ static void lcd_goto_previous_menu() { lcd_goto_menu(prevMenu, true, prevEncoder
  */
 
 static void lcd_status_screen() {
+  ENCODER_DIRECTION_NORMAL();
   encoderRateMultiplierEnabled = false;
 
   #if ENABLED(LCD_PROGRESS_BAR)
@@ -499,12 +534,13 @@ void lcd_set_home_offsets() {
 #if ENABLED(BABYSTEPPING)
 
   static void _lcd_babystep(int axis, const char* msg) {
+    ENCODER_DIRECTION_NORMAL(); 
     if (encoderPosition != 0) {
       babystepsTodo[axis] += (BABYSTEP_MULTIPLICATOR) * (int)encoderPosition;
       encoderPosition = 0;
       lcdDrawUpdate = 1;
     }
-    if (lcdDrawUpdate) lcd_implementation_drawedit(msg, "");
+    if (lcdDrawUpdate) lcd_implementation_drawedit(msg, (char*)"");
     if (LCD_CLICKED) lcd_goto_previous_menu();
   }
   static void lcd_babystep_x() { _lcd_babystep(X_AXIS, PSTR(MSG_BABYSTEPPING_X)); }
@@ -863,6 +899,7 @@ float move_menu_scale;
 static void lcd_move_menu_axis();
 
 static void _lcd_move(const char* name, AxisEnum axis, int min, int max) {
+  ENCODER_DIRECTION_NORMAL(); 
   if ((encoderPosition != 0) && (movesplanned() <= 3)) {
     refresh_cmd_timeout();
     current_position[axis] += float((int)encoderPosition) * move_menu_scale;
@@ -890,6 +927,7 @@ static void lcd_move_e(
     uint8_t e
   #endif
 ) {
+  ENCODER_DIRECTION_NORMAL(); 
   #if EXTRUDERS > 1
     unsigned short original_active_extruder = active_extruder;
     active_extruder = e;
@@ -1307,6 +1345,7 @@ static void lcd_control_volumetric_menu() {
  */
 #if ENABLED(HAS_LCD_CONTRAST)
   static void lcd_set_contrast() {
+    ENCODER_DIRECTION_NORMAL();
     if (encoderPosition != 0) {
       #if ENABLED(U8GLIB_LM6059_AF)
         lcd_contrast += encoderPosition;
@@ -1375,6 +1414,7 @@ static void lcd_control_volumetric_menu() {
    *
    */
   void lcd_sdcard_menu() {
+    ENCODER_DIRECTION_MENUS();
     if (lcdDrawUpdate == 0 && LCD_CLICKED == 0) return; // nothing to do (so don't thrash the SD card)
     uint16_t fileCnt = card.getnrfilenames();
     START_MENU();
@@ -1415,9 +1455,31 @@ static void lcd_control_volumetric_menu() {
  *
  * Functions for editing single values
  *
+ * The "menu_edit_type" macro generates the functions needed to edit a numerical value.
+ *
+ * For example, menu_edit_type(int, int3, itostr3, 1) expands into these functions:
+ *
+ *   bool _menu_edit_int3();
+ *   void menu_edit_int3(); // edit int (interactively)
+ *   void menu_edit_callback_int3(); // edit int (interactively) with callback on completion
+ *   static void _menu_action_setting_edit_int3(const char* pstr, int* ptr, int minValue, int maxValue);
+ *   static void menu_action_setting_edit_int3(const char* pstr, int* ptr, int minValue, int maxValue);
+ *   static void menu_action_setting_edit_callback_int3(const char* pstr, int* ptr, int minValue, int maxValue, menuFunc_t callback); // edit int with callback
+ *
+ * You can then use one of the menu macros to present the edit interface:
+ *   MENU_ITEM_EDIT(int3, MSG_SPEED, &feedrate_multiplier, 10, 999)
+ *
+ * This expands into a more primitive menu item:
+ *   MENU_ITEM(setting_edit_int3, MSG_SPEED, PSTR(MSG_SPEED), &feedrate_multiplier, 10, 999)
+ *
+ *
+ * Also: MENU_MULTIPLIER_ITEM_EDIT, MENU_ITEM_EDIT_CALLBACK, and MENU_MULTIPLIER_ITEM_EDIT_CALLBACK
+ *     
+ *       menu_action_setting_edit_int3(PSTR(MSG_SPEED), &feedrate_multiplier, 10, 999)
  */
 #define menu_edit_type(_type, _name, _strFunc, scale) \
   bool _menu_edit_ ## _name () { \
+    ENCODER_DIRECTION_NORMAL(); \
     bool isClicked = LCD_CLICKED; \
     if ((int32_t)encoderPosition < 0) encoderPosition = 0; \
     if ((int32_t)encoderPosition > maxEditValue) encoderPosition = maxEditValue; \
@@ -2017,28 +2079,25 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
       buttons = ~newbutton; //invert it, because a pressed switch produces a logical 0
     #endif //!NEWPANEL
 
+    #if ENABLED(REVERSE_MENU_DIRECTION)
+      #define ENCODER_DIFF_CW  (encoderDiff += encoderDirection)
+      #define ENCODER_DIFF_CCW (encoderDiff -= encoderDirection)
+    #else
+      #define ENCODER_DIFF_CW  (encoderDiff++)
+      #define ENCODER_DIFF_CCW (encoderDiff--)
+    #endif
+    #define ENCODER_SPIN(_E1, _E2) switch (lastEncoderBits) { case _E1: ENCODER_DIFF_CW; break; case _E2: ENCODER_DIFF_CCW; }
+
     //manage encoder rotation
     uint8_t enc = 0;
     if (buttons & EN_A) enc |= B01;
     if (buttons & EN_B) enc |= B10;
     if (enc != lastEncoderBits) {
       switch (enc) {
-        case encrot0:
-          if (lastEncoderBits == encrot3) encoderDiff++;
-          else if (lastEncoderBits == encrot1) encoderDiff--;
-          break;
-        case encrot1:
-          if (lastEncoderBits == encrot0) encoderDiff++;
-          else if (lastEncoderBits == encrot2) encoderDiff--;
-          break;
-        case encrot2:
-          if (lastEncoderBits == encrot1) encoderDiff++;
-          else if (lastEncoderBits == encrot3) encoderDiff--;
-          break;
-        case encrot3:
-          if (lastEncoderBits == encrot2) encoderDiff++;
-          else if (lastEncoderBits == encrot0) encoderDiff--;
-          break;
+        case encrot0: ENCODER_SPIN(encrot3, encrot1); break;
+        case encrot1: ENCODER_SPIN(encrot0, encrot2); break;
+        case encrot2: ENCODER_SPIN(encrot1, encrot3); break;
+        case encrot3: ENCODER_SPIN(encrot2, encrot0); break;
       }
     }
     lastEncoderBits = enc;
@@ -2343,6 +2402,7 @@ char* ftostr52(const float& x) {
    *   - Click saves the Z and goes to the next mesh point
    */
   static void _lcd_level_bed() {
+    ENCODER_DIRECTION_NORMAL(); 
     if ((encoderPosition != 0) && (movesplanned() <= 3)) {
       refresh_cmd_timeout();
       current_position[Z_AXIS] += float((int)encoderPosition) * (MBL_Z_STEP);
@@ -2391,7 +2451,7 @@ char* ftostr52(const float& x) {
    * MBL Move to mesh starting point
    */
   static void _lcd_level_bed_homing() {
-    if (lcdDrawUpdate) lcd_implementation_drawedit(PSTR("XYZ"), "Homing");
+    if (lcdDrawUpdate) lcd_implementation_drawedit(PSTR("XYZ"), (char*)"Homing");
     if (axis_known_position[X_AXIS] && axis_known_position[Y_AXIS] && axis_known_position[Z_AXIS]) {
       current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
       plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
