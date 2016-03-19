@@ -156,10 +156,10 @@ static void lcd_status_screen();
   /**
    * START_MENU generates the init code for a menu function
    */
-<<<<<<< HEAD
   #ifdef __SAM3X8E__
     #if ENABLED(BTN_BACK) && BTN_BACK > 0
       #define START_MENU(last_menu) do { \
+        ENCODER_DIRECTION_MENUS(); \
         encoderRateMultiplierEnabled = false; \
         if (encoderPosition > 0x8000) encoderPosition = 0; \
         uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
@@ -175,6 +175,7 @@ static void lcd_status_screen();
           _menuItemNr = 0;
     #else
       #define START_MENU(last_menu) do { \
+        ENCODER_DIRECTION_MENUS(); \
         encoderRateMultiplierEnabled = false; \
         if (encoderPosition > 0x8000) encoderPosition = 0; \
         uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
@@ -186,6 +187,7 @@ static void lcd_status_screen();
     #endif
   #else
     #define START_MENU() do { \
+      ENCODER_DIRECTION_MENUS(); \
       encoderRateMultiplierEnabled = false; \
       if (encoderPosition > 0x8000) encoderPosition = 0; \
       uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
@@ -195,18 +197,6 @@ static void lcd_status_screen();
       for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
         _menuItemNr = 0;
   #endif //__SAM3X8E__
-=======
-  #define START_MENU() do { \
-    ENCODER_DIRECTION_MENUS(); \
-    encoderRateMultiplierEnabled = false; \
-    if (encoderPosition > 0x8000) encoderPosition = 0; \
-    uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
-    NOMORE(currentMenuViewOffset, encoderLine); \
-    uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
-    bool wasClicked = LCD_CLICKED, itemSelected; \
-    for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
-      _menuItemNr = 0;
->>>>>>> refs/remotes/MarlinFirmware/RCBugFix
 
   /**
    * MENU_ITEM generates draw & handler code for a menu item, potentially calling:
