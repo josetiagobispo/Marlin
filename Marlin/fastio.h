@@ -6,14 +6,7 @@
 #ifndef _FASTIO_ARDUINO_H
 #define _FASTIO_ARDUINO_H
 
-#ifdef __SAM3X8E__
-  #ifndef HIGH
-    #define HIGH 1
-  #endif
-  #ifndef LOW
-    #define LOW 0
-  #endif
-#else
+#ifndef __SAM3X8E__
   #include <avr/io.h>
 #endif
 
