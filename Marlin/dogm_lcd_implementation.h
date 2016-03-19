@@ -169,7 +169,7 @@ char lcd_print(char c) {
   }
 }
 
-char lcd_print(char* str) {
+char lcd_print(const char* str) {
   char c;
   int i = 0;
   char n = 0;
@@ -287,7 +287,7 @@ static void lcd_implementation_status_screen() {
   u8g.setColorIndex(1); // black on white
 
   // Symbols menu graphics, animated fan
-  u8g.drawBitmapP(9,1,STATUS_SCREENBYTEWIDTH,STATUS_SCREENHEIGHT, (blink % 2) && fanSpeed ? status_screen0_bmp : status_screen1_bmp);
+  u8g.drawBitmapP(9,1,STATUS_SCREENBYTEWIDTH,STATUS_SCREENHEIGHT, (blink % 2) && fanSpeeds[0] ? status_screen0_bmp : status_screen1_bmp);
 
   #if ENABLED(SDSUPPORT)
     // SD Card Symbol
@@ -328,8 +328,8 @@ static void lcd_implementation_status_screen() {
   // Fan
   lcd_setFont(FONT_STATUSMENU);
   u8g.setPrintPos(104, 27);
-  #if HAS_FAN
-    int per = ((fanSpeed + 1) * 100) / 256;
+  #if HAS_FAN0
+    int per = ((fanSpeeds[0] + 1) * 100) / 256;
     if (per) {
       lcd_print(itostr3(per));
       lcd_print('%');
@@ -518,7 +518,7 @@ static void _drawmenu_setting_edit_generic(bool isSelected, uint8_t row, const c
 #define lcd_implementation_drawmenu_setting_edit_callback_long5(sel, row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(sel, row, pstr, ftostr5(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_callback_bool(sel, row, pstr, pstr2, data, callback) lcd_implementation_drawmenu_setting_edit_generic_P(sel, row, pstr, (*(data))?PSTR(MSG_ON):PSTR(MSG_OFF))
 
-void lcd_implementation_drawedit(const char* pstr, char* value) {
+void lcd_implementation_drawedit(const char* pstr, const char* value) {
   uint8_t rows = 1;
   uint8_t lcd_width = LCD_WIDTH, char_width = DOG_CHAR_WIDTH;
   uint8_t vallen = lcd_strlen(value);
