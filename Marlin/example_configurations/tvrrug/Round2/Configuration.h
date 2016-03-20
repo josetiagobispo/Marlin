@@ -270,16 +270,15 @@ Here are some standard links for getting your machine calibrated:
 //===========================================================================
 
 /**
- * Thermal Runaway Protection protects your printer from damage and fire if a
+ * Thermal Protection protects your printer from damage and fire if a
  * thermistor falls out or temperature sensors fail in any way.
  *
  * The issue: If a thermistor falls out or a temperature sensor fails,
  * Marlin can no longer sense the actual temperature. Since a disconnected
  * thermistor reads as a low temperature, the firmware will keep the heater on.
  *
- * The solution: Once the temperature reaches the target, start observing.
- * If the temperature stays too far below the target (hysteresis) for too long,
- * the firmware will halt as a safety precaution.
+ * If you get "Thermal Runaway" or "Heating failed" errors the
+ * details can be tuned in Configuration_adv.h
  */
 
 #define THERMAL_PROTECTION_HOTENDS // Enable thermal protection for all extruders
@@ -668,7 +667,7 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
 // @section lcd
 
 // Define your display language below. Replace (en) with your language code and uncomment.
-// en, pl, fr, de, es, ru, bg, it, pt, pt-br, fi, an, nl, ca, eu, kana, kana_utf8, cn, test
+// en, pl, fr, de, es, ru, bg, it, pt, pt-br, fi, an, nl, ca, eu, kana, kana_utf8, cn, cz, test
 // See also language.h
 //#define LANGUAGE_INCLUDE GENERATE_LANGUAGE_INCLUDE(en)
 
@@ -756,6 +755,8 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
  */
 
 //#define LCD_I2C_SAINSMART_YWROBOT
+
+//#define LCM1602 // LCM1602 Adapter for 16x2 LCD
 
 // PANELOLU2 LCD with status LEDs, separate encoder and click inputs
 //
