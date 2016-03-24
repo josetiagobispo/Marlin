@@ -358,6 +358,9 @@
   #ifdef HEATER_0_USES_MAX6675
     #error HEATER_0_USES_MAX6675 is not supported by ARM platform yet.
   #endif
+  #ifdef MAX6675_IS_MAX31855
+    #error MAX6675_IS_MAX31855 is not supported by ARM platform yet.
+  #endif
   #ifdef M100_FREE_MEMORY_WATCHER
     #error M100_FREE_MEMORY_WATCHER is not supported by ARM platform yet.
   #endif

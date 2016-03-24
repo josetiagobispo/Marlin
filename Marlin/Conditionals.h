@@ -668,6 +668,8 @@
 
   #ifdef __SAM3X8E__
     #undef M100_FREE_MEMORY_WATCHER
+    #undef HEATER_0_USES_MAX6675
+    #undef MAX6675_IS_MAX31855
     #undef FAST_PWM_FAN
     #undef WATCHDOG_RESET_MANUAL
     #undef ADVANCE
