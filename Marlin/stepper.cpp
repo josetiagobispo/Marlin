@@ -35,6 +35,7 @@
 #include "language.h"
 #include "cardreader.h"
 #include "speed_lookuptable.h"
+
 #if HAS_DIGIPOTSS
   #include <SPI.h>
 #endif
@@ -44,6 +45,9 @@
 //===========================================================================
 block_t* current_block;  // A pointer to the block currently being traced
 
+#if ENABLED(HAS_Z_MIN_PROBE)
+  volatile bool z_probe_is_active = false;
+#endif
 
 //===========================================================================
 //============================= private variables ===========================
@@ -107,6 +111,13 @@ static volatile char endstop_hit_bits = 0; // use X_MIN, Y_MIN, Z_MIN and Z_MIN_
 #endif
 
 static bool check_endstops = true;
+static bool check_endstops_global =
+  #if ENABLED(ENDSTOPS_ONLY_FOR_HOMING)
+    false
+  #else
+    true
+  #endif
+;
 
 volatile long count_position[NUM_AXIS] = { 0 }; // Positions of stepper motors, in step units
 volatile signed char count_direction[NUM_AXIS] = { 1 };
@@ -268,9 +279,13 @@ volatile signed char count_direction[NUM_AXIS] = { 1 };
   #define DISABLE_STEPPER_DRIVER_INTERRUPT() CBI(TIMSK1, OCIE1A)
 #endif
 
-void endstops_hit_on_purpose() {
-  endstop_hit_bits = 0;
-}
+void enable_endstops(bool check) { check_endstops = check; }
+
+void enable_endstops_globally(bool check) { check_endstops_global = check_endstops = check; }
+
+void endstops_not_homing() { check_endstops = check_endstops_global; }
+
+void endstops_hit_on_purpose() { endstop_hit_bits = 0; }
 
 void checkHitEndstops() {
   if (endstop_hit_bits) {
@@ -308,8 +323,6 @@ void checkHitEndstops() {
     #endif
   }
 }
-
-void enable_endstops(bool check) { check_endstops = check; }
 
 // Check endstops - Called from ISR!
 inline void update_endstops() {
@@ -445,17 +458,18 @@ inline void update_endstops() {
             }
           #else // !Z_DUAL_ENDSTOPS
 
-            UPDATE_ENDSTOP(Z, MIN);
-
+            #if ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN) && ENABLED(HAS_Z_MIN_PROBE)
+              if (z_probe_is_active) UPDATE_ENDSTOP(Z, MIN);
+            #else
+              UPDATE_ENDSTOP(Z, MIN);
+            #endif
           #endif // !Z_DUAL_ENDSTOPS
-        #endif // Z_MIN_PIN
+        #endif
 
-        #if ENABLED(Z_MIN_PROBE_ENDSTOP)
-          UPDATE_ENDSTOP(Z, MIN_PROBE);
-
-          if (TEST_ENDSTOP(Z_MIN_PROBE)) {
-            endstops_trigsteps[Z_AXIS] = count_position[Z_AXIS];
-            SBI(endstop_hit_bits, Z_MIN_PROBE);
+        #if ENABLED(Z_MIN_PROBE_ENDSTOP) && DISABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN) && ENABLED(HAS_Z_MIN_PROBE)
+          if (z_probe_is_active) {
+            UPDATE_ENDSTOP(Z, MIN_PROBE);
+            if (TEST_ENDSTOP(Z_MIN_PROBE)) endstop_hit_bits |= _BV(Z_MIN_PROBE);
           }
         #endif
       }
@@ -725,7 +739,11 @@ FORCE_INLINE void trapezoid_generator_reset() {
   if (current_block != NULL) {
 
     // Update endstops state, if enabled
-    if (check_endstops) update_endstops();
+    #if ENABLED(HAS_Z_MIN_PROBE)
+      if (check_endstops || z_probe_is_active) update_endstops();
+    #else
+      if (check_endstops) update_endstops();
+    #endif
 
     // Take multiple steps per interrupt (For high speed moves)
     for (int8_t i = 0; i < step_loops; i++) {
@@ -1349,9 +1367,10 @@ void quickStop() {
 
 #endif //BABYSTEPPING
 
-// From Arduino DigitalPotControl example
-void digitalPotWrite(int address, int value) {
-  #if HAS_DIGIPOTSS
+#if HAS_DIGIPOTSS
+
+  // From Arduino DigitalPotControl example
+  void digitalPotWrite(int address, int value) {
     digitalWrite(DIGIPOTSS_PIN, LOW); // take the SS pin low to select the chip
     SPI.transfer(address); //  send in the address and value via SPI:
     SPI.transfer(value);
@@ -1363,11 +1382,9 @@ void digitalPotWrite(int address, int value) {
       //delay(10);
     #endif
     */
-  #else
-    UNUSED(address);
-    UNUSED(value);
-  #endif
-}
+  }
+
+#endif //HAS_DIGIPOTSS
 
 // Initialize Digipot Motor Current
 void digipot_init() {
@@ -1416,7 +1433,7 @@ void digipot_current(uint8_t driver, int current) {
   #else
     UNUSED(driver);
     UNUSED(current);
-#endif
+  #endif
 }
 
 void microstep_init() {

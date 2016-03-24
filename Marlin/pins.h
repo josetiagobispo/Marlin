@@ -77,6 +77,8 @@
   #include "pins_RUMBA.h"
 #elif MB(PRINTRBOARD)
   #include "pins_PRINTRBOARD.h"
+#elif MB(PRINTRBOARD_REVF)
+  #include "pins_PRINTRBOARD_REVF.h"
 #elif MB(BRAINWAVE)
   #include "pins_BRAINWAVE.h"
 #elif MB(BRAINWAVE_PRO)
@@ -265,6 +267,7 @@
 #endif
 
 #if ENABLED(DISABLE_YMAX_ENDSTOP)
+  #undef Y_MAX_PIN
   #define Y_MAX_PIN          -1
 #endif
 

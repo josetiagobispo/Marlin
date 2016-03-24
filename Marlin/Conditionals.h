@@ -379,6 +379,22 @@
     #undef SD_DETECT_INVERTED
   #endif
 
+  /**
+   * Set defaults for missing (newer) options
+   */
+  #ifndef DISABLE_INACTIVE_X
+    #define DISABLE_INACTIVE_X DISABLE_X
+  #endif
+  #ifndef DISABLE_INACTIVE_Y
+    #define DISABLE_INACTIVE_Y DISABLE_Y
+  #endif
+  #ifndef DISABLE_INACTIVE_Z
+    #define DISABLE_INACTIVE_Z DISABLE_Z
+  #endif
+  #ifndef DISABLE_INACTIVE_E
+    #define DISABLE_INACTIVE_E DISABLE_E
+  #endif
+
   // Power Signal Control Definitions
   // By default use ATX definition
   #ifndef POWER_SUPPLY
@@ -664,6 +680,11 @@
       #define HAS_SERVO_ENDSTOPS true
       #define SERVO_ENDSTOP_IDS { X_ENDSTOP_SERVO_NR, Y_ENDSTOP_SERVO_NR, Z_ENDSTOP_SERVO_NR }
     #endif
+  #endif
+
+  #if ( (HAS_Z_MIN && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)) || HAS_Z_PROBE ) && \
+    ( ENABLED(FIX_MOUNTED_PROBE) || defined(Z_ENDSTOP_SERVO_NR) || ENABLED(Z_PROBE_ALLEN_KEY) || ENABLED(Z_PROBE_SLED) )
+    #define HAS_Z_MIN_PROBE
   #endif
 
   #ifdef __SAM3X8E__

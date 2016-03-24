@@ -2,7 +2,7 @@
  * Spanish
  *
  * LCD Menu Messages
- * See also documentation/LCDLanguageFont.md
+ * See also https://github.com/MarlinFirmware/Marlin/wiki/LCD-Language
  *
  */
 #ifndef LANGUAGE_ES_H
@@ -39,6 +39,7 @@
 #define MSG_EXTRUDE                         "Extruir"
 #define MSG_RETRACT                         "Retraer"
 #define MSG_MOVE_AXIS                       "Mover ejes"
+#define MSG_LEVEL_BED                       "Nivelar cama"
 #define MSG_MOVE_X                          "Mover X"
 #define MSG_MOVE_Y                          "Mover Y"
 #define MSG_MOVE_Z                          "Mover Z"

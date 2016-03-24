@@ -2,7 +2,7 @@
  * Portuguese (Brazil)
  *
  * LCD Menu Messages
- * See also documentation/LCDLanguageFont.md
+ * See also https://github.com/MarlinFirmware/Marlin/wiki/LCD-Language
  *
  */
 #ifndef LANGUAGE_PT_BR_H
@@ -26,7 +26,7 @@
 #define MSG_PREHEAT_PLA                     "Pre-aquecer PLA"
 #define MSG_PREHEAT_PLA_N                   "Pre-aquecer PLA"
 #define MSG_PREHEAT_PLA_ALL                 "Pre-aq.Todo PLA"
-#define MSG_PREHEAT_PLA_BEDONLY             "Pre-aq. PLA "LCD_STR_THERMOMETER "Base"
+#define MSG_PREHEAT_PLA_BEDONLY             "Pre-aq. PLA " LCD_STR_THERMOMETER "Base"
 #define MSG_PREHEAT_PLA_SETTINGS            "Ajustar PLA"
 #define MSG_PREHEAT_ABS                     "Pre-aquecer ABS"
 #define MSG_PREHEAT_ABS_N                   "Pre-aquecer ABS"
