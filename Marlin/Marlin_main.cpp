@@ -44,7 +44,7 @@
 #include "planner.h"
 #ifdef __SAM3X8E__
   #if MB(ALLIGATOR)
-    #include "module/external_dac.h"
+    #include "external_dac.h"
   #endif
 #endif
 #include "stepper.h"
