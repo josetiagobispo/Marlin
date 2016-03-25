@@ -596,6 +596,8 @@
     #define HAS_BTN_BACK (PIN_EXISTS(BTN_BACK))
   #endif
 
+  #define HAS_MOTOR_CURRENT_PWM (PIN_EXISTS(MOTOR_CURRENT_PWM_XY) || PIN_EXISTS(MOTOR_CURRENT_PWM_Z) || PIN_EXISTS(MOTOR_CURRENT_PWM_E))
+
   /**
    * Helper Macros for heaters and extruder fan
    */

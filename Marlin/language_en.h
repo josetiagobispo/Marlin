@@ -169,6 +169,9 @@
 #ifndef MSG_SPEED
   #define MSG_SPEED                           "Speed"
 #endif
+#ifndef MSG_BED_Z
+  #define MSG_BED_Z                           "Bed Z"
+#endif
 #ifndef MSG_NOZZLE
   #define MSG_NOZZLE                          "Nozzle"
 #endif
@@ -415,8 +418,8 @@
 #ifndef MSG_ZPROBE_OUT
   #define MSG_ZPROBE_OUT                      "Z probe out. bed"
 #endif
-#ifndef MSG_POSITION_UNKNOWN
-  #define MSG_POSITION_UNKNOWN                "Home X/Y before Z"
+#ifndef MSG_YX_UNHOMED
+  #define MSG_YX_UNHOMED                      "Home X/Y before Z"
 #endif
 #ifndef MSG_ZPROBE_ZOFFSET
   #define MSG_ZPROBE_ZOFFSET                  "Z Offset"
