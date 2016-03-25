@@ -10,32 +10,32 @@ This branch is compatible with both Arduino MEGA and Due.
 __Not for production use – use with caution!__
 
 ## Recent Changes
-RC4 - 24 Mar 2016
-      Second release<br>
-	  based on [original Marlin RCBugFix 1.1.0-RC4](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
-      Due part was ported [from Marlinkimbra4due 4.2.4 - 4.2.8 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
+- RC4 - 24 Mar 2016
+  - Second release<br>
+  - based on [original Marlin RCBugFix 1.1.0-RC4](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
+  - Due part was ported [from Marlinkimbra4due 4.2.4 - 4.2.8 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
 
-RC3 - 05 Feb 2016<br>
-      First release<br>
-	  based on [original Marlin RCBugFix 1.1.0-RC3](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
-      Due part was ported [from Marlinkimbra4due 4.2.4 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
+- RC3 - 01 Dec 2015
+  - First release<br>
+  - based on [original Marlin RCBugFix 1.1.0-RC3](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
+  - Due part was ported [from Marlinkimbra4due 4.2.4 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
 
 ## Current Status: Experimental
 
 ### known issues
-* HEATER_0_USES_MAX6675 does not work on Due
-* MAX6675_IS_MAX31855 does not work on Due
-* M100_FREE_MEMORY_WATCHER does not work on Due
-* FAST_PWM_FAN does not work on Due
-* WATCHDOG_RESET_MANUAL does not work on Due
-* ADVANCE does not work on Due
-* Makefile needs update
+ - HEATER_0_USES_MAX6675 does not work on Due
+ - MAX6675_IS_MAX31855 does not work on Due
+ - M100_FREE_MEMORY_WATCHER does not work on Due
+ - FAST_PWM_FAN does not work on Due
+ - WATCHDOG_RESET_MANUAL does not work on Due
+ - ADVANCE does not work on Due
+ - Makefile needs update
 
 ### Special thanks
-* [MagoKimbra](https://github.com/MagoKimbra)
-* [Wurstnase](https://github.com/Wurstnase)
-* [bobc](https://github.com/bobc)
-* [developers of original Marlin](https://github.com/MarlinFirmware)
+ - [MagoKimbra](https://github.com/MagoKimbra)
+ - [Wurstnase](https://github.com/Wurstnase)
+ - [bobc](https://github.com/bobc)
+ - [developers of original Marlin](https://github.com/MarlinFirmware)
 
 ## License
 
