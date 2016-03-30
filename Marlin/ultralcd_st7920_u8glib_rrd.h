@@ -47,10 +47,12 @@ static void ST7920_SWSPI_SND_8BIT(uint8_t val) {
   uint8_t i;
   for (i = 0; i < 8; i++) {
     #ifdef __SAM3X8E__
-      WRITE_VAR(ST7920_CLK_PIN,0);
-      WRITE_VAR(ST7920_DAT_PIN,val&0x80); 
+      WRITE(ST7920_CLK_PIN,0);
+	  HAL::delayMicroseconds(2);
+      WRITE(ST7920_DAT_PIN,val&0x80); 
       val<<=1;
-      WRITE_VAR(ST7920_CLK_PIN,1);
+      WRITE(ST7920_CLK_PIN,1);
+	  HAL::delayMicroseconds(2);
     #else
       WRITE(ST7920_CLK_PIN,0);
       #if F_CPU == 20000000
@@ -67,8 +69,8 @@ static void ST7920_SWSPI_SND_8BIT(uint8_t val) {
 }
 
 #ifdef __SAM3X8E__
-  #define ST7920_CS()              {WRITE_VAR(ST7920_CS_PIN,1);u8g_10MicroDelay();}
-  #define ST7920_NCS()             {WRITE_VAR(ST7920_CS_PIN,0);}
+  #define ST7920_CS()              {WRITE(ST7920_CS_PIN,1);u8g_10MicroDelay();}
+  #define ST7920_NCS()             {WRITE(ST7920_CS_PIN,0);}
 #else
   #define ST7920_CS()              {WRITE(ST7920_CS_PIN,1);u8g_10MicroDelay();}
   #define ST7920_NCS()             {WRITE(ST7920_CS_PIN,0);}
