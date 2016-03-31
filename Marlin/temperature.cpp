@@ -102,7 +102,7 @@ unsigned char soft_pwm_bed;
   volatile int babystepsTodo[3] = { 0 };
 #endif
 
-#if ENABLED(FILAMENT_SENSOR)
+#if ENABLED(FILAMENT_WIDTH_SENSOR)
   int current_raw_filwidth = 0;  //Holds measured filament diameter - one extruder only
 #endif
 
@@ -218,7 +218,7 @@ static void updateTemperaturesFromRawValues();
   #define SOFT_PWM_SCALE 0
 #endif
 
-#if ENABLED(FILAMENT_SENSOR)
+#if ENABLED(FILAMENT_WIDTH_SENSOR)
   static int meas_shift_index;  //used to point to a delayed sample in buffer for filament width sensor
 #endif
 
@@ -712,7 +712,7 @@ void manage_heater() {
   #endif
 
   // Control the extruder rate based on the width sensor
-  #if ENABLED(FILAMENT_SENSOR)
+  #if ENABLED(FILAMENT_WIDTH_SENSOR)
     if (filament_sensor) {
       meas_shift_index = delay_index1 - meas_delay_cm;
       if (meas_shift_index < 0) meas_shift_index += MAX_MEASUREMENT_DELAY + 1;  //loop around buffer if needed
@@ -724,7 +724,7 @@ void manage_heater() {
       NOLESS(vm, 0.01);
       volumetric_multiplier[FILAMENT_SENSOR_EXTRUDER_NUM] = vm;
     }
-  #endif //FILAMENT_SENSOR
+  #endif //FILAMENT_WIDTH_SENSOR
 
   #if DISABLED(PIDTEMPBED)
     if (ms < next_bed_check_ms) return;
@@ -870,7 +870,7 @@ static void updateTemperaturesFromRawValues() {
   #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
     redundant_temperature = analog2temp(redundant_temperature_raw, 1);
   #endif
-  #if HAS_FILAMENT_SENSOR
+  #if ENABLED(FILAMENT_WIDTH_SENSOR)
     filament_width_meas = analog2widthFil();
   #endif
 
@@ -885,7 +885,7 @@ static void updateTemperaturesFromRawValues() {
 }
 
 
-#if ENABLED(FILAMENT_SENSOR)
+#if ENABLED(FILAMENT_WIDTH_SENSOR)
 
   // Convert raw Filament Width to millimeters
   float analog2widthFil() {
@@ -1052,7 +1052,7 @@ void tp_init() {
     #if HAS_TEMP_BED
       ANALOG_SELECT(TEMP_BED_PIN);
     #endif
-    #if HAS_FILAMENT_SENSOR
+    #if ENABLED(FILAMENT_WIDTH_SENSOR)
       ANALOG_SELECT(FILWIDTH_PIN);
     #endif
   #endif
@@ -1431,7 +1431,7 @@ enum TempState {
     ISR_STATICS(BED);
   #endif
 
-  #if HAS_FILAMENT_SENSOR
+  #if ENABLED(FILAMENT_WIDTH_SENSOR)
     static unsigned long raw_filwidth_value = 0;
   #endif
 
@@ -1780,7 +1780,7 @@ enum TempState {
       break;
 
     case Prepare_FILWIDTH:
-      #if HAS_FILAMENT_SENSOR
+      #if ENABLED(FILAMENT_WIDTH_SENSOR)
         #ifdef __SAM3X8E__
           // nothing todo for Due
         #else
@@ -1791,7 +1791,7 @@ enum TempState {
       temp_state = Measure_FILWIDTH;
       break;
     case Measure_FILWIDTH:
-      #if HAS_FILAMENT_SENSOR
+      #if ENABLED(FILAMENT_WIDTH_SENSOR)
         // raw_filwidth_value += ADC;  //remove to use an IIR filter approach
         if (ADC > 102) { //check that ADC is reading a voltage > 0.5 volts, otherwise don't take in the data.
           raw_filwidth_value -= (raw_filwidth_value >> 7); //multiply raw_filwidth_value by 127/128
@@ -1863,7 +1863,7 @@ enum TempState {
   #endif
 
     // Filament Sensor - can be read any time since IIR filtering is used
-    #if HAS_FILAMENT_SENSOR
+    #if ENABLED(FILAMENT_WIDTH_SENSOR)
       current_raw_filwidth = raw_filwidth_value >> 10;  // Divide to get to 0-16384 range since we used 1/128 IIR filter approach
     #endif
 

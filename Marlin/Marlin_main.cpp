@@ -410,7 +410,7 @@ static uint8_t target_extruder;
   float axis_scaling[3] = { 1, 1, 1 };    // Build size scaling, default to 1
 #endif
 
-#if ENABLED(FILAMENT_SENSOR)
+#if ENABLED(FILAMENT_WIDTH_SENSOR)
   //Variables for Filament Sensor input
   float filament_width_nominal = DEFAULT_NOMINAL_FILAMENT_DIA;  //Set nominal filament width, can be changed with M404
   bool filament_sensor = false;  //M405 turns on filament_sensor control, M406 turns it off
@@ -4158,6 +4158,9 @@ inline void gcode_M104() {
   if (setTargetedHotend(104)) return;
   if (DEBUGGING(DRYRUN)) return;
 
+  // Start hook must happen before setTargetHotend()
+  print_job_start();
+
   if (code_seen('S')) {
     float temp = code_value();
     setTargetHotend(temp, target_extruder);
@@ -4165,9 +4168,11 @@ inline void gcode_M104() {
       if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && target_extruder == 0)
         setTargetHotend1(temp == 0.0 ? 0.0 : temp + duplicate_extruder_temp_offset);
     #endif
+
+    if (temp > degHotend(target_extruder)) LCD_MESSAGEPGM(MSG_HEATING);
   }
 
-  print_job_stop();
+  if (print_job_stop()) LCD_MESSAGEPGM(WELCOME_MSG);
 }
 
 #if HAS_TEMP_0 || HAS_TEMP_BED || ENABLED(HEATER_0_USES_MAX6675)
@@ -4292,11 +4297,11 @@ inline void gcode_M105() {
 inline void gcode_M109() {
   bool no_wait_for_cooling = true;
 
-  // Start hook must happen before setTargetHotend()
-  print_job_start();
-
   if (setTargetedHotend(109)) return;
   if (DEBUGGING(DRYRUN)) return;
+
+  // Start hook must happen before setTargetHotend()
+  print_job_start();
 
   no_wait_for_cooling = code_seen('S');
   if (no_wait_for_cooling || code_seen('R')) {
@@ -4332,7 +4337,7 @@ inline void gcode_M109() {
     #define TEMP_CONDITIONS (residency_start_ms < 0 || now < residency_start_ms + (TEMP_RESIDENCY_TIME) * 1000UL)
   #else
     // Loop until the temperature is very close target
-    #define TEMP_CONDITIONS (fabs(degHotend(target_extruder) - degTargetHotend(target_extruder)) < 0.75f)
+    #define TEMP_CONDITIONS (isHeatingHotend(target_extruder))
   #endif //TEMP_RESIDENCY_TIME
 
   cancel_heatup = false;
@@ -4392,7 +4397,7 @@ inline void gcode_M109() {
 
     cancel_heatup = false;
     millis_t now = millis(), next_temp_ms = now + 1000UL;
-    while (!cancel_heatup && fabs(degTargetBed() - degBed()) < 0.75f) {
+    while (!cancel_heatup && isHeatingBed()) {
       millis_t now = millis();
       if (now > next_temp_ms) { //Print Temp Reading every 1 second while heating up.
         next_temp_ms = now + 1000UL;
@@ -5529,21 +5534,19 @@ inline void gcode_M400() { st_synchronize(); }
 
 #endif // AUTO_BED_LEVELING_FEATURE && (HAS_SERVO_ENDSTOPS || Z_PROBE_ALLEN_KEY) && !Z_PROBE_SLED
 
-#if ENABLED(FILAMENT_SENSOR)
+#if ENABLED(FILAMENT_WIDTH_SENSOR)
 
   /**
    * M404: Display or set the nominal filament width (3mm, 1.75mm ) W<3.0>
    */
   inline void gcode_M404() {
-    #if HAS_FILWIDTH
-      if (code_seen('W')) {
-        filament_width_nominal = code_value();
-      }
-      else {
-        SERIAL_PROTOCOLPGM("Filament dia (nominal mm):");
-        SERIAL_PROTOCOLLN(filament_width_nominal);
-      }
-    #endif
+    if (code_seen('W')) {
+      filament_width_nominal = code_value();
+    }
+    else {
+      SERIAL_PROTOCOLPGM("Filament dia (nominal mm):");
+      SERIAL_PROTOCOLLN(filament_width_nominal);
+    }
   }
 
   /**
@@ -5583,7 +5586,7 @@ inline void gcode_M400() { st_synchronize(); }
     SERIAL_PROTOCOLLN(filament_width_meas);
   }
 
-#endif // FILAMENT_SENSOR
+#endif // FILAMENT_WIDTH_SENSOR
 
 /**
  * M410: Quickstop - Abort all planned moves
@@ -6629,7 +6632,7 @@ void process_next_command() {
           break;
       #endif // AUTO_BED_LEVELING_FEATURE && (HAS_SERVO_ENDSTOPS || Z_PROBE_ALLEN_KEY) && !Z_PROBE_SLED
 
-      #if ENABLED(FILAMENT_SENSOR)
+      #if ENABLED(FILAMENT_WIDTH_SENSOR)
         case 404:  //M404 Enter the nominal filament width (3mm, 1.75mm ) N<3.0> or display nominal filament width
           gcode_M404();
           break;
@@ -6642,7 +6645,7 @@ void process_next_command() {
         case 407:   //M407 Display measured filament diameter
           gcode_M407();
           break;
-      #endif // FILAMENT_SENSOR
+      #endif // ENABLED(FILAMENT_WIDTH_SENSOR)
 
       case 410: // M410 quickstop - Abort all the planned moves.
         gcode_M410();
@@ -7801,17 +7804,6 @@ bool print_job_start(millis_t t /* = 0 */) {
 }
 
 /**
- * Output the print job timer in seconds
- *
- * @return the number of seconds
- */
-millis_t print_job_timer() {
-  if (!print_job_start_ms) return 0;
-  return (((print_job_stop_ms > print_job_start_ms)
-    ? print_job_stop_ms : millis()) - print_job_start_ms) / 1000;
-}
-
-/**
  * Check if the running print job has finished and stop the timer
  *
  * When the target temperature for all extruders is zero then we assume that the
@@ -7828,4 +7820,15 @@ bool print_job_stop(bool force /* = false */) {
   if (!force) for (int i = 0; i < EXTRUDERS; i++) if (degTargetHotend(i) > 0) return false;
   print_job_stop_ms = millis();
   return true;
+}
+
+/**
+ * Output the print job timer in seconds
+ *
+ * @return the number of seconds
+ */
+millis_t print_job_timer() {
+  if (!print_job_start_ms) return 0;
+  return (((print_job_stop_ms > print_job_start_ms)
+    ? print_job_stop_ms : millis()) - print_job_start_ms) / 1000;
 }
