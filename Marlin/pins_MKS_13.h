@@ -21,16 +21,15 @@
  */
 
 /**
- * This file is a placeholder for a file which could be distributed in an archive
- * It takes the place of an automatically created "_Version.h" which is generated during the build process
+ * Arduino Mega with RAMPS v1.4 adjusted pin assignments
+ *
+ *  MKS v1.3  (Extruder, Fan, Bed)
+ *  MKS v1.3  (Extruder, Extruder, Fan, Bed)
+ *  MKS v1.4  (Extruder, Fan, Bed)
+ *  MKS v1.4  (Extruder, Extruder, Fan, Bed)
  */
 
-// #error "You must specify the following parameters related to your distribution"
+#include "pins_RAMPS_14_EFB.h"
 
-#if true
-#define SHORT_BUILD_VERSION "1.1.0-RC5"
-#define DETAILED_BUILD_VERSION "1.1.0-RC5 From Archive"
-#define STRING_DISTRIBUTION_DATE "2016-04-01 12:00"
-// It might also be appropriate to define a location where additional information can be found
-// #define SOURCE_CODE_URL  "http:// ..."
-#endif
+#undef HEATER_1_PIN
+#define HEATER_1_PIN        7 // EXTRUDER 2 (-1 on RAMPS 1.4)

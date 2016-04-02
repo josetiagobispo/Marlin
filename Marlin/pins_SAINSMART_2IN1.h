@@ -21,16 +21,16 @@
  */
 
 /**
- * This file is a placeholder for a file which could be distributed in an archive
- * It takes the place of an automatically created "_Version.h" which is generated during the build process
+ *  Sainsmart 2-in-1 pin assignments
  */
 
-// #error "You must specify the following parameters related to your distribution"
+#include "pins_RAMPS_14_EFB.h"
 
-#if true
-#define SHORT_BUILD_VERSION "1.1.0-RC5"
-#define DETAILED_BUILD_VERSION "1.1.0-RC5 From Archive"
-#define STRING_DISTRIBUTION_DATE "2016-04-01 12:00"
-// It might also be appropriate to define a location where additional information can be found
-// #define SOURCE_CODE_URL  "http:// ..."
-#endif
+#undef FAN_PIN
+#define FAN_PIN             7 // PART FAN in front of board next to Extruder heat
+
+#undef HEATER_0_PIN
+#define HEATER_0_PIN        9   // EXTRUDER 1
+
+#undef HEATER_1_PIN
+#define HEATER_1_PIN       10   // EXTRUDER 2

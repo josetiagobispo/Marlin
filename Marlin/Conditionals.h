@@ -27,13 +27,22 @@
 
 #ifndef CONDITIONALS_H
 
+/**
+* Miscellaneous
+*/
 #ifndef M_PI
   #define M_PI 3.1415926536
 #endif
 
-#ifndef CONFIGURATION_LCD // Get the LCD defines which are needed first
+/**
+ * This value is used by M109 when tying to calculate a ballpark safe margin
+ * to prevent wait-forever situation.
+ */
+#ifndef EXTRUDE_MINTEMP
+ #define EXTRUDE_MINTEMP 170
+#endif
 
-  #define PIN_EXISTS(PN) (defined(PN##_PIN) && PN##_PIN >= 0)
+#ifndef CONFIGURATION_LCD // Get the LCD defines which are needed first
 
   #define CONFIGURATION_LCD
 

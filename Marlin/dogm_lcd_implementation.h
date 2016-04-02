@@ -382,7 +382,7 @@ static void lcd_implementation_status_screen() {
   u8g.setColorIndex(0); // white on black
   u8g.setPrintPos(2, XYZ_BASELINE);
   if (blink)
-    lcd_printPGM(PSTR("X"));
+    lcd_printPGM(PSTR(MSG_X));
   else {
     if (!axis_homed[X_AXIS])
       lcd_printPGM(PSTR("?"));
@@ -392,7 +392,7 @@ static void lcd_implementation_status_screen() {
           lcd_printPGM(PSTR(" "));
         else
       #endif
-      lcd_printPGM(PSTR("X"));
+      lcd_printPGM(PSTR(MSG_X));
     }
   }
   u8g.drawPixel(8, XYZ_BASELINE - 5);
@@ -402,7 +402,7 @@ static void lcd_implementation_status_screen() {
 
   u8g.setPrintPos(43, XYZ_BASELINE);
   if (blink)
-    lcd_printPGM(PSTR("Y"));
+    lcd_printPGM(PSTR(MSG_Y));
   else {
     if (!axis_homed[Y_AXIS])
       lcd_printPGM(PSTR("?"));
@@ -412,7 +412,7 @@ static void lcd_implementation_status_screen() {
           lcd_printPGM(PSTR(" "));
         else
       #endif
-      lcd_printPGM(PSTR("Y"));
+      lcd_printPGM(PSTR(MSG_Y));
     }
   }
   u8g.drawPixel(49, XYZ_BASELINE - 5);
@@ -422,7 +422,7 @@ static void lcd_implementation_status_screen() {
 
   u8g.setPrintPos(83, XYZ_BASELINE);
   if (blink)
-    lcd_printPGM(PSTR("Z"));
+    lcd_printPGM(PSTR(MSG_Z));
   else {
     if (!axis_homed[Z_AXIS])
       lcd_printPGM(PSTR("?"));
@@ -432,7 +432,7 @@ static void lcd_implementation_status_screen() {
           lcd_printPGM(PSTR(" "));
         else
       #endif
-      lcd_printPGM(PSTR("Z"));
+      lcd_printPGM(PSTR(MSG_Z));
     }
   }
   u8g.drawPixel(89, XYZ_BASELINE - 5);
@@ -572,9 +572,11 @@ void lcd_implementation_drawedit(const char* pstr, const char* value) {
 
   u8g.setPrintPos(0, rowHeight + kHalfChar);
   lcd_printPGM(pstr);
-  lcd_print(':');
-  u8g.setPrintPos((lcd_width - 1 - vallen) * char_width, rows * rowHeight + kHalfChar);
-  lcd_print(value);
+  if (value != NULL) {
+    lcd_print(':');
+    u8g.setPrintPos((lcd_width - 1 - vallen) * char_width, rows * rowHeight + kHalfChar);
+    lcd_print(value);
+  }
 }
 
 #if ENABLED(SDSUPPORT)
