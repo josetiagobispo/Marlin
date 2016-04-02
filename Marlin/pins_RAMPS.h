@@ -358,3 +358,18 @@
   #endif // NEWPANEL
 
 #endif // ULTRA_LCD
+
+
+// For test
+
+//
+// Heaters / Fans
+//
+#define HEATER_1_PIN        5
+#define HEATER_2_PIN        6
+
+//
+// LCD / Controller
+//
+#define STAT_LED_RED_PIN   57
+#define STAT_LED_BLUE_PIN  58
