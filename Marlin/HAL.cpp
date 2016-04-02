@@ -108,6 +108,7 @@ int freeMemory() {
   }
 
   void spiInit(uint8_t spiRate) {
+    UNUSED(spiRate);
     WRITE(SDSS, HIGH);
     WRITE(MOSI_PIN, HIGH);
     WRITE(SCK_PIN, LOW);
@@ -132,6 +133,7 @@ int freeMemory() {
   void spiSend(uint8_t b) {
     WRITE(SDSS, LOW);
     uint8_t response = spiTransfer(b);
+    UNUSED(response);
     WRITE(SDSS, HIGH);
   }
 
@@ -142,6 +144,7 @@ int freeMemory() {
     for (uint16_t i = 0; i < n; i++) {
       response = spiTransfer(buf[i]);
     }
+    UNUSED(response);
     WRITE(SDSS, HIGH);
   }
 
@@ -154,6 +157,7 @@ int freeMemory() {
     for (uint16_t i = 0; i < 512; i++) {
       response = spiTransfer(buf[i]);
     }
+    UNUSED(response);
     WRITE(SDSS, HIGH);
   }
 
@@ -305,6 +309,7 @@ int freeMemory() {
     while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 1)
       spirec_tmp =  SPI0->SPI_RDR;
+      UNUSED(spirec_tmp);
 
     // write dummy byte with address and end transmission flag
     SPI0->SPI_TDR = 0x000000FF | SPI_PCS(chan) | SPI_TDR_LASTXFER;
