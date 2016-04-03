@@ -48,7 +48,7 @@ static void ST7920_SWSPI_SND_8BIT(uint8_t val) {
   for (i = 0; i < 8; i++) {
     WRITE(ST7920_CLK_PIN,0);
     #ifdef __SAM3X8E__
-	  HAL::delayMicroseconds(1);
+      HAL::delayMicroseconds(1);
     #else
       #if F_CPU == 20000000
         __asm__("nop\n\t");
@@ -58,7 +58,7 @@ static void ST7920_SWSPI_SND_8BIT(uint8_t val) {
     val<<=1;
     WRITE(ST7920_CLK_PIN,1);
     #ifdef __SAM3X8E__
-	  HAL::delayMicroseconds(1);
+      HAL::delayMicroseconds(1);
     #else
       #if F_CPU == 20000000
         __asm__("nop\n\t""nop\n\t");
