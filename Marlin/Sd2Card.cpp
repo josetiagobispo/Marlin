@@ -375,11 +375,13 @@ bool Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
   chipSelectHigh();
 
   #ifdef __SAM3X8E__
+    UNUSED(sckRateID);
     return true;
   #else
     #if DISABLED(SOFTWARE_SPI)
       return setSckRate(sckRateID);
     #else  // SOFTWARE_SPI
+      UNUSED(sckRateID);
       return true;
     #endif  // SOFTWARE_SPI
   #endif
