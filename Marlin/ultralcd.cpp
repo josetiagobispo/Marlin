@@ -174,7 +174,7 @@ static void lcd_status_screen();
    * START_MENU generates the init code for a menu function
    */
   #ifdef __SAM3X8E__
-    #if ENABLED(BTN_BACK) && BTN_BACK > 0
+    #if HAS_BTN_BACK
       #define START_MENU() do { \
         ENCODER_DIRECTION_MENUS(); \
         encoderRateMultiplierEnabled = false; \
@@ -2009,6 +2009,13 @@ void lcd_init() {
       #endif
     #endif
 
+    #ifdef __SAM3X8E__
+      #if BUTTON_EXISTS(BACK)
+        SET_INPUT(BTN_BACK);
+        PULLUP(BTN_BACK, HIGH);
+      #endif
+    #endif
+
     #if ENABLED(REPRAPWORLD_KEYPAD)
       pinMode(SHIFT_CLK, OUTPUT);
       pinMode(SHIFT_LD, OUTPUT);
@@ -2423,7 +2430,7 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
       #if BUTTON_EXISTS(ENC)
         if (now > next_button_update_ms && BUTTON_PRESSED(ENC)) newbutton |= EN_C;
         #ifdef __SAM3X8E__
-          #if ENABLED(BTN_BACK) && BTN_BACK > 0
+          #if HAS_BTN_BACK
             if (now > next_button_update_ms && BUTTON_PRESSED(BTN_BACK) == 0) newbutton |= EN_D;
           #endif
         #endif

@@ -51,7 +51,7 @@ extern volatile uint8_t buttons;  //an extended version of the last checked butt
   #endif
 
   #ifdef __SAM3X8E__
-    #if ENABLED(BTN_BACK) && BTN_BACK > 0
+    #if HAS_BTN_BACK
       #define BLEN_D 3
       #define EN_D BIT(BLEN_D)
     #endif
