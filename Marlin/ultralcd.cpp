@@ -590,7 +590,7 @@ void lcd_set_home_offsets() {
 
   static void _lcd_babystep(const int axis, const char* msg) {
     ENCODER_DIRECTION_NORMAL();
-    if (encoderPosition != 0) {
+    if (encoderPosition) {
       int distance =  (int)encoderPosition * BABYSTEP_MULTIPLICATOR;
       encoderPosition = 0;
       lcdDrawUpdate = LCD_DRAW_UPDATE_CALL_REDRAW;
@@ -1161,7 +1161,7 @@ float move_menu_scale;
 
 static void _lcd_move(const char* name, AxisEnum axis, float min, float max) {
   ENCODER_DIRECTION_NORMAL();
-  if ((encoderPosition != 0) && (movesplanned() <= 3)) {
+  if (encoderPosition && movesplanned() <= 3) {
     refresh_cmd_timeout();
     current_position[axis] += float((int)encoderPosition) * move_menu_scale;
     if (min_software_endstops) NOLESS(current_position[axis], min);
@@ -1193,7 +1193,7 @@ static void lcd_move_e(
     unsigned short original_active_extruder = active_extruder;
     active_extruder = e;
   #endif
-  if ((encoderPosition != 0) && (movesplanned() <= 3)) {
+  if (encoderPosition && movesplanned() <= 3) {
     current_position[E_AXIS] += float((int)encoderPosition) * move_menu_scale;
     encoderPosition = 0;
     line_to_current(E_AXIS);
@@ -1240,13 +1240,22 @@ static void lcd_move_e(
  *
  */
 
+#if ENABLED(DELTA) || ENABLED(SCARA)
+  #define _MOVE_XYZ_ALLOWED (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
+#else
+  #define _MOVE_XYZ_ALLOWED true
+#endif
+
 static void _lcd_move_menu_axis() {
   START_MENU();
   MENU_ITEM(back, MSG_MOVE_AXIS);
-  MENU_ITEM(submenu, MSG_MOVE_X, lcd_move_x);
-  MENU_ITEM(submenu, MSG_MOVE_Y, lcd_move_y);
+
+  if (_MOVE_XYZ_ALLOWED) {
+    MENU_ITEM(submenu, MSG_MOVE_X, lcd_move_x);
+    MENU_ITEM(submenu, MSG_MOVE_Y, lcd_move_y);
+  }
   if (move_menu_scale < 10.0) {
-    MENU_ITEM(submenu, MSG_MOVE_Z, lcd_move_z);
+    if (_MOVE_XYZ_ALLOWED) MENU_ITEM(submenu, MSG_MOVE_Z, lcd_move_z);
     #if EXTRUDERS == 1
       MENU_ITEM(submenu, MSG_MOVE_E, lcd_move_e);
     #else
@@ -1285,7 +1294,10 @@ static void lcd_move_menu_01mm() {
 static void lcd_move_menu() {
   START_MENU();
   MENU_ITEM(back, MSG_PREPARE);
-  MENU_ITEM(submenu, MSG_MOVE_10MM, lcd_move_menu_10mm);
+
+  if (_MOVE_XYZ_ALLOWED)
+    MENU_ITEM(submenu, MSG_MOVE_10MM, lcd_move_menu_10mm);
+
   MENU_ITEM(submenu, MSG_MOVE_1MM, lcd_move_menu_1mm);
   MENU_ITEM(submenu, MSG_MOVE_01MM, lcd_move_menu_01mm);
   //TODO:X,Y,Z,E
@@ -1675,7 +1687,7 @@ static void lcd_control_volumetric_menu() {
 #if ENABLED(HAS_LCD_CONTRAST)
   static void lcd_set_contrast() {
     ENCODER_DIRECTION_NORMAL();
-    if (encoderPosition != 0) {
+    if (encoderPosition) {
       #if ENABLED(U8GLIB_LM6059_AF)
         lcd_contrast += encoderPosition;
         lcd_contrast &= 0xFF;
@@ -1891,7 +1903,7 @@ menu_edit_type(unsigned long, long5, ftostr5, 0.01);
     lcd_move_y();
   }
   static void reprapworld_keypad_move_home() {
-    enqueue_and_echo_commands_P((PSTR("G28"))); // move all axis home
+    enqueue_and_echo_commands_P(PSTR("G28")); // move all axes home
   }
 #endif // REPRAPWORLD_KEYPAD
 
@@ -2175,13 +2187,22 @@ void lcd_update() {
     #if ENABLED(ULTIPANEL)
 
       #if ENABLED(REPRAPWORLD_KEYPAD)
-        if (REPRAPWORLD_KEYPAD_MOVE_Z_UP)     reprapworld_keypad_move_z_up();
-        if (REPRAPWORLD_KEYPAD_MOVE_Z_DOWN)   reprapworld_keypad_move_z_down();
-        if (REPRAPWORLD_KEYPAD_MOVE_X_LEFT)   reprapworld_keypad_move_x_left();
-        if (REPRAPWORLD_KEYPAD_MOVE_X_RIGHT)  reprapworld_keypad_move_x_right();
-        if (REPRAPWORLD_KEYPAD_MOVE_Y_DOWN)   reprapworld_keypad_move_y_down();
-        if (REPRAPWORLD_KEYPAD_MOVE_Y_UP)     reprapworld_keypad_move_y_up();
-        if (REPRAPWORLD_KEYPAD_MOVE_HOME)     reprapworld_keypad_move_home();
+
+        #if ENABLED(DELTA) || ENABLED(SCARA)
+          #define _KEYPAD_MOVE_ALLOWED (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
+        #else
+          #define _KEYPAD_MOVE_ALLOWED true
+        #endif
+
+        if (REPRAPWORLD_KEYPAD_MOVE_HOME)       reprapworld_keypad_move_home();
+        if (_KEYPAD_MOVE_ALLOWED) {
+          if (REPRAPWORLD_KEYPAD_MOVE_Z_UP)     reprapworld_keypad_move_z_up();
+          if (REPRAPWORLD_KEYPAD_MOVE_Z_DOWN)   reprapworld_keypad_move_z_down();
+          if (REPRAPWORLD_KEYPAD_MOVE_X_LEFT)   reprapworld_keypad_move_x_left();
+          if (REPRAPWORLD_KEYPAD_MOVE_X_RIGHT)  reprapworld_keypad_move_x_right();
+          if (REPRAPWORLD_KEYPAD_MOVE_Y_DOWN)   reprapworld_keypad_move_y_down();
+          if (REPRAPWORLD_KEYPAD_MOVE_Y_UP)     reprapworld_keypad_move_y_up();
+        }
       #endif
 
       bool encoderPastThreshold = (abs(encoderDiff) >= ENCODER_PULSES_PER_STEP);

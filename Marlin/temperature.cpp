@@ -714,7 +714,7 @@ void manage_heater() {
   // Control the extruder rate based on the width sensor
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     if (filament_sensor) {
-      meas_shift_index = delay_index1 - meas_delay_cm;
+      meas_shift_index = filwidth_delay_index1 - meas_delay_cm;
       if (meas_shift_index < 0) meas_shift_index += MAX_MEASUREMENT_DELAY + 1;  //loop around buffer if needed
 
       // Get the delayed info and add 100 to reconstitute to a percent of
@@ -1234,7 +1234,7 @@ void disable_all_heaters() {
   setTargetBed(0);
 
   // If all heaters go down then for sure our print job has stopped
-  print_job_stop(true);
+  print_job_timer.stop();
 
   #define DISABLE_HEATER(NR) { \
     setTargetHotend(NR, 0); \

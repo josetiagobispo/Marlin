@@ -105,31 +105,8 @@ extern volatile uint8_t buttons;  //an extended version of the last checked butt
     #endif
 
   #elif ENABLED(REPRAPWORLD_KEYPAD)
-    // define register bit values, don't change it
-    #define BLEN_REPRAPWORLD_KEYPAD_F3 0
-    #define BLEN_REPRAPWORLD_KEYPAD_F2 1
-    #define BLEN_REPRAPWORLD_KEYPAD_F1 2
-    #define BLEN_REPRAPWORLD_KEYPAD_UP 6
-    #define BLEN_REPRAPWORLD_KEYPAD_RIGHT 4
-    #define BLEN_REPRAPWORLD_KEYPAD_MIDDLE 5
-    #define BLEN_REPRAPWORLD_KEYPAD_DOWN 3
-    #define BLEN_REPRAPWORLD_KEYPAD_LEFT 7
 
-    #define REPRAPWORLD_BTN_OFFSET 0 // bit offset into buttons for shift register values
-
-    #define EN_REPRAPWORLD_KEYPAD_F3 (_BV(BLEN_REPRAPWORLD_KEYPAD_F3+REPRAPWORLD_BTN_OFFSET))
-    #define EN_REPRAPWORLD_KEYPAD_F2 (_BV(BLEN_REPRAPWORLD_KEYPAD_F2+REPRAPWORLD_BTN_OFFSET))
-    #define EN_REPRAPWORLD_KEYPAD_F1 (_BV(BLEN_REPRAPWORLD_KEYPAD_F1+REPRAPWORLD_BTN_OFFSET))
-    #define EN_REPRAPWORLD_KEYPAD_UP (_BV(BLEN_REPRAPWORLD_KEYPAD_UP+REPRAPWORLD_BTN_OFFSET))
-    #define EN_REPRAPWORLD_KEYPAD_RIGHT (_BV(BLEN_REPRAPWORLD_KEYPAD_RIGHT+REPRAPWORLD_BTN_OFFSET))
-    #define EN_REPRAPWORLD_KEYPAD_MIDDLE (_BV(BLEN_REPRAPWORLD_KEYPAD_MIDDLE+REPRAPWORLD_BTN_OFFSET))
-    #define EN_REPRAPWORLD_KEYPAD_DOWN (_BV(BLEN_REPRAPWORLD_KEYPAD_DOWN+REPRAPWORLD_BTN_OFFSET))
-    #define EN_REPRAPWORLD_KEYPAD_LEFT (_BV(BLEN_REPRAPWORLD_KEYPAD_LEFT+REPRAPWORLD_BTN_OFFSET))
-
-    //#define LCD_CLICKED ((buttons&EN_C) || (buttons&EN_REPRAPWORLD_KEYPAD_F1))
-    //#define REPRAPWORLD_KEYPAD_MOVE_Y_DOWN (buttons&EN_REPRAPWORLD_KEYPAD_DOWN)
-    //#define REPRAPWORLD_KEYPAD_MOVE_Y_UP (buttons&EN_REPRAPWORLD_KEYPAD_UP)
-    //#define REPRAPWORLD_KEYPAD_MOVE_HOME (buttons&EN_REPRAPWORLD_KEYPAD_MIDDLE)
+    // REPRAPWORLD_KEYPAD defined in ultralcd.h
 
   #elif ENABLED(NEWPANEL)
     #define LCD_CLICKED (buttons&EN_C)
@@ -766,9 +743,9 @@ static void lcd_implementation_status_screen() {
 
     lcd.setCursor(LCD_WIDTH - 6, 2);
     lcd.print(LCD_STR_CLOCK[0]);
-    if (print_job_start_ms != 0) {
-      uint16_t time = (((print_job_stop_ms > print_job_start_ms)
-                       ? print_job_stop_ms : millis()) - print_job_start_ms) / 60000;
+
+    uint16_t time = print_job_timer.duration() / 60;
+    if (time != 0) {
       lcd.print(itostr2(time / 60));
       lcd.print(':');
       lcd.print(itostr2(time % 60));
