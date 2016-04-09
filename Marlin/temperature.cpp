@@ -44,7 +44,7 @@
 #include "ultralcd.h"
 #ifdef __SAM3X8E__
   #if MB(ALLIGATOR)
-    #include "external_dac.h"
+    #include "dac_dac084s085.h"
   #endif
 #endif
 #include "temperature.h"

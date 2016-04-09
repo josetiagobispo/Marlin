@@ -49,7 +49,7 @@
 #include "planner.h"
 #ifdef __SAM3X8E__
   #if MB(ALLIGATOR)
-    #include "external_dac.h"
+    #include "dac_dac084s085.h"
   #endif
 #endif
 #include "temperature.h"
@@ -1442,7 +1442,7 @@ void digipot_init() {
       unsigned int digipot_motor = 0;
       for (uint8_t i = 0; i < 3 + EXTRUDERS; i++) {
         digipot_motor = 255 * (motor_current[i] / 2.5);
-        ExternalDac::setValue(i, digipot_motor);
+        dac084s085::setValue(i, digipot_motor);
       }
     #endif//MB(ALLIGATOR)
   #endif

@@ -49,7 +49,7 @@
 #include "planner.h"
 #ifdef __SAM3X8E__
   #if MB(ALLIGATOR)
-    #include "external_dac.h"
+    #include "dac_dac084s085.h"
   #endif
 #endif
 #include "stepper.h"
@@ -593,7 +593,7 @@ bool enqueue_and_echo_command(const char* cmd, bool say_ok/*=false*/) {
       // Init Expansion Port Voltage logic Selector
       SET_OUTPUT(EXP_VOLTAGE_LEVEL_PIN);
       WRITE(EXP_VOLTAGE_LEVEL_PIN, UI_VOLTAGE_LEVEL);
-      ExternalDac::begin(); //initialize ExternalDac
+      dac084s085::begin(); //initialize ExternalDac
       #if HAS_BUZZER
         buzz(10,10);
       #endif

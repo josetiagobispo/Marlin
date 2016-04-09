@@ -1,19 +1,19 @@
 /***************************************************************
  *
- * Externa DAC for Alligator Board
+ * External DAC for Alligator Board
  *
  ****************************************************************/
 #include "Marlin.h"
 
 #if MB(ALLIGATOR)
   #include "stepper.h"
-  #include "external_dac.h"
+  #include "dac_dac084s085.h"
 
-  ExternalDac::ExternalDac() {
+  dac084s085::dac084s085() {
     return ;
   }
 
-  void ExternalDac::begin() {
+  void dac084s085::begin() {
     uint8_t externalDac_buf[2] = {0x20,0x00};//all off
 
     // All SPI chip-select HIGH
@@ -56,7 +56,7 @@
     return;
   }
 
-  void ExternalDac::setValue(uint8_t channel, uint8_t value) {
+  void dac084s085::setValue(uint8_t channel, uint8_t value) {
     if(channel >= 7) // max channel (X,Y,Z,E0,E1,E2,E3)
       return;
     if(value > 255) value = 255;
