@@ -82,6 +82,10 @@
   #include "stepper_dac.h"
 #endif
 
+#if ENABLED(EXPERIMENTAL_I2CBUS)
+  #include "twibus.h"
+#endif
+
 /**
  * Look here for descriptions of G-codes:
  *  - http://linuxcnc.org/handbook/gcode/g-code.html
@@ -156,6 +160,7 @@
  * M110 - Set the current line number
  * M111 - Set debug flags with S<mask>. See flag bits defined in Marlin.h.
  * M112 - Emergency stop
+ * M113 - Get or set the timeout interval for Host Keepalive "busy" messages
  * M114 - Output current position to serial port
  * M115 - Capabilities string
  * M117 - Display a message on the controller screen
@@ -251,6 +256,10 @@
 
 #if ENABLED(SDSUPPORT)
   CardReader card;
+#endif
+
+#if ENABLED(EXPERIMENTAL_I2CBUS)
+  TWIBus i2c;
 #endif
 
 bool Running = true;
@@ -453,6 +462,7 @@ static bool send_ok[BUFSIZE];
 
   static MarlinBusyState busy_state = NOT_BUSY;
   static millis_t next_busy_signal_ms = -1;
+  uint8_t host_keepalive_interval = DEFAULT_KEEPALIVE_INTERVAL;
   #define KEEPALIVE_STATE(n) do{ busy_state = n; }while(0)
 #else
   #define host_keepalive() ;
@@ -1278,7 +1288,10 @@ static void set_axis_is_at_home(AxisEnum axis) {
       if (axis == Z_AXIS) {
         current_position[Z_AXIS] -= zprobe_zoffset;
         #if ENABLED(DEBUG_LEVELING_FEATURE)
-          if (DEBUGGING(LEVELING)) SERIAL_ECHOPAIR("> zprobe_zoffset==", zprobe_zoffset);
+          if (DEBUGGING(LEVELING)) {
+            SERIAL_ECHOPAIR("> zprobe_zoffset==", zprobe_zoffset);
+            SERIAL_EOL;
+          }
         #endif
       }
     #endif
@@ -1324,10 +1337,16 @@ inline void line_to_destination() {
   line_to_destination(feedrate);
 }
 inline void sync_plan_position() {
+  #if ENABLED(DEBUG_LEVELING_FEATURE)
+    if (DEBUGGING(LEVELING)) DEBUG_POS("sync_plan_position", current_position);
+  #endif
   plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
 }
 #if ENABLED(DELTA) || ENABLED(SCARA)
   inline void sync_plan_position_delta() {
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (DEBUGGING(LEVELING)) DEBUG_POS("sync_plan_position_delta", current_position);
+    #endif
     calculate_delta(current_position);
     plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
   }
@@ -1368,13 +1387,17 @@ static void setup_for_endstop_move() {
     #if DISABLED(DELTA)
 
       static void set_bed_level_equation_lsq(double* plane_equation_coefficients) {
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
+          if (DEBUGGING(LEVELING)) DEBUG_POS("BEFORE set_bed_level_equation_lsq", current_position);
+        #endif
+
         vector_3 planeNormal = vector_3(-plane_equation_coefficients[0], -plane_equation_coefficients[1], 1);
-        planeNormal.debug("planeNormal");
+        // planeNormal.debug("planeNormal");
         plan_bed_level_matrix = matrix_3x3::create_look_at(planeNormal);
         //bedLevel.debug("bedLevel");
 
         //plan_bed_level_matrix.debug("bed level before");
-        //vector_3 uncorrected_position = plan_get_position_mm();
+        //vector_3 uncorrected_position = plan_get_position();
         //uncorrected_position.debug("position before");
 
         vector_3 corrected_position = plan_get_position();
@@ -1384,7 +1407,7 @@ static void setup_for_endstop_move() {
         current_position[Z_AXIS] = corrected_position.z;
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
-          if (DEBUGGING(LEVELING)) DEBUG_POS("set_bed_level_equation_lsq", current_position);
+          if (DEBUGGING(LEVELING)) DEBUG_POS("AFTER set_bed_level_equation_lsq", current_position);
         #endif
 
         sync_plan_position();
@@ -2312,7 +2335,7 @@ void unknown_command_error() {
           break;
       }
     }
-    next_busy_signal_ms = ms + 10000UL; // "busy: ..." message every 10s
+    next_busy_signal_ms = host_keepalive_interval ? ms + 1000UL * host_keepalive_interval : -1;
   }
 
 #endif //HOST_KEEPALIVE_FEATURE
@@ -3062,22 +3085,20 @@ inline void gcode_G28() {
 
     #endif // AUTO_BED_LEVELING_GRID
 
-    #if ENABLED(Z_PROBE_SLED)
-      dock_sled(false); // engage (un-dock) the Z probe
-    #elif ENABLED(Z_PROBE_ALLEN_KEY) || (ENABLED(DELTA) && SERVO_LEVELING)
-      deploy_z_probe();
-    #endif
-
-    st_synchronize();
-
     if (!dryrun) {
+
       // make sure the bed_level_rotation_matrix is identity or the planner will get it wrong
       plan_bed_level_matrix.set_to_identity();
 
       #if ENABLED(DELTA)
         reset_bed_level();
       #else //!DELTA
-        //vector_3 corrected_position = plan_get_position_mm();
+
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
+          if (DEBUGGING(LEVELING)) DEBUG_POS("BEFORE matrix.set_to_identity", current_position);
+        #endif
+
+        //vector_3 corrected_position = plan_get_position();
         //corrected_position.debug("position before G29");
         vector_3 uncorrected_position = plan_get_position();
         //uncorrected_position.debug("position during G29");
@@ -3085,8 +3106,21 @@ inline void gcode_G28() {
         current_position[Y_AXIS] = uncorrected_position.y;
         current_position[Z_AXIS] = uncorrected_position.z;
         sync_plan_position();
+
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
+          if (DEBUGGING(LEVELING)) DEBUG_POS("AFTER matrix.set_to_identity", current_position);
+        #endif
+
       #endif // !DELTA
     }
+
+    #if ENABLED(Z_PROBE_SLED)
+      dock_sled(false); // engage (un-dock) the Z probe
+    #elif ENABLED(Z_PROBE_ALLEN_KEY) || (ENABLED(DELTA) && SERVO_LEVELING)
+      deploy_z_probe();
+    #endif
+
+    st_synchronize();
 
     setup_for_endstop_move();
 
@@ -4330,7 +4364,7 @@ inline void gcode_M109() {
   #ifdef TEMP_RESIDENCY_TIME
     long residency_start_ms = -1;
     // Loop until the temperature has stabilized
-    #define TEMP_CONDITIONS (residency_start_ms < 0 || now < residency_start_ms + (TEMP_RESIDENCY_TIME) * 1000UL)
+    #define TEMP_CONDITIONS (residency_start_ms == -1 || now < residency_start_ms + (TEMP_RESIDENCY_TIME) * 1000UL)
   #else
     // Loop until the temperature is very close target
     #define TEMP_CONDITIONS (isHeatingHotend(target_extruder))
@@ -4347,7 +4381,7 @@ inline void gcode_M109() {
       #endif
       #ifdef TEMP_RESIDENCY_TIME
         SERIAL_PROTOCOLPGM(" W:");
-        if (residency_start_ms >= 0) {
+        if (residency_start_ms != -1) {
           long rem = (((TEMP_RESIDENCY_TIME) * 1000UL) - (now - residency_start_ms)) / 1000UL;
           SERIAL_PROTOCOLLN(rem);
         }
@@ -4363,10 +4397,18 @@ inline void gcode_M109() {
     refresh_cmd_timeout(); // to prevent stepper_inactive_time from running out
 
     #ifdef TEMP_RESIDENCY_TIME
-      // Start the TEMP_RESIDENCY_TIME timer when we reach target temp for the first time.
-      // Restart the timer whenever the temperature falls outside the hysteresis.
-      if (labs(degHotend(target_extruder) - degTargetHotend(target_extruder)) > ((residency_start_ms < 0) ? TEMP_WINDOW : TEMP_HYSTERESIS))
+
+      float temp_diff = labs(degHotend(target_extruder) - degTargetHotend(target_extruder));
+
+      if (residency_start_ms == -1) {
+        // Start the TEMP_RESIDENCY_TIME timer when we reach target temp for the first time.
+        if (temp_diff < TEMP_WINDOW) residency_start_ms = millis();
+      }
+      else if (temp_diff > TEMP_HYSTERESIS) {
+        // Restart the timer whenever the temperature falls outside the hysteresis.
         residency_start_ms = millis();
+      }
+
     #endif //TEMP_RESIDENCY_TIME
 
   } // while(!cancel_heatup && TEMP_CONDITIONS)
@@ -4458,6 +4500,27 @@ inline void gcode_M111() {
  * M112: Emergency Stop
  */
 inline void gcode_M112() { kill(PSTR(MSG_KILLED)); }
+
+#if ENABLED(HOST_KEEPALIVE_FEATURE)
+
+  /**
+   * M113: Get or set Host Keepalive interval (0 to disable)
+   *
+   *   S<seconds> Optional. Set the keepalive interval.
+   */
+  inline void gcode_M113() {
+    if (code_seen('S')) {
+      host_keepalive_interval = (uint8_t)code_value_short();
+      NOMORE(host_keepalive_interval, 60);
+    }
+    else {
+      SERIAL_ECHO_START;
+      SERIAL_ECHOPAIR("M113 S", (unsigned long)host_keepalive_interval);
+      SERIAL_EOL;
+    }
+  }
+
+#endif
 
 #if ENABLED(BARICUDA)
 
@@ -4822,6 +4885,57 @@ inline void gcode_M121() { enable_endstops_globally(false); }
   }
 
 #endif // BLINKM
+
+#if ENABLED(EXPERIMENTAL_I2CBUS)
+
+  /**
+   * M155: Send data to a I2C slave device
+   *
+   * This is a PoC, the formating and arguments for the GCODE will
+   * change to be more compatible, the current proposal is:
+   *
+   *  M155 A<slave device address base 10> ; Sets the I2C slave address the data will be sent to
+   *
+   *  M155 B<byte-1 value in base 10>
+   *  M155 B<byte-2 value in base 10>
+   *  M155 B<byte-3 value in base 10>
+   *
+   *  M155 S1 ; Send the buffered data and reset the buffer
+   *  M155 R1 ; Reset the buffer without sending data
+   *
+   */
+  inline void gcode_M155() {
+    // Set the target address
+    if (code_seen('A'))
+      i2c.address((uint8_t) code_value_short());
+
+    // Add a new byte to the buffer
+    else if (code_seen('B'))
+      i2c.addbyte((int) code_value_short());
+
+    // Flush the buffer to the bus
+    else if (code_seen('S')) i2c.send();
+
+    // Reset and rewind the buffer
+    else if (code_seen('R')) i2c.reset();
+  }
+
+  /**
+   * M156: Request X bytes from I2C slave device
+   *
+   * Usage: M156 A<slave device address base 10> B<number of bytes>
+   */
+  inline void gcode_M156() {
+    uint8_t addr = code_seen('A') ? code_value_short() : 0;
+    int bytes    = code_seen('B') ? code_value_short() : 0;
+
+    if (addr && bytes) {
+      i2c.address(addr);
+      i2c.reqbytes(bytes);
+    }
+  }
+
+#endif //EXPERIMENTAL_I2CBUS
 
 /**
  * M200: Set filament diameter and set E axis units to cubic millimeters
@@ -6498,6 +6612,18 @@ void process_next_command() {
           break;
 
       #endif //BLINKM
+
+      #if ENABLED(EXPERIMENTAL_I2CBUS)
+
+        case 155:
+          gcode_M155();
+          break;
+
+        case 156:
+          gcode_M156();
+          break;
+
+      #endif //EXPERIMENTAL_I2CBUS
 
       case 200: // M200 D<millimeters> set filament diameter and set E axis units to cubic millimeters (use S0 to set back to millimeters).
         gcode_M200();
