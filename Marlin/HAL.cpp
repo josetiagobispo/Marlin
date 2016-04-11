@@ -61,6 +61,11 @@ HAL::~HAL() {
   // dtor
 }
 
+void delay_ms(millis_t ms) {
+  ms += millis();
+  while (PENDING(millis(), ms)) idle();
+}
+
 // return free memory between end of heap (or end bss) and whatever is current
 int freeMemory() {
   int free_memory;

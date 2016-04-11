@@ -134,6 +134,8 @@
     }
   }
 
+  void delay_ms(millis_t ms);
+
   int freeMemory(void);
   void eeprom_write_byte(unsigned char* pos, unsigned char value);
   unsigned char eeprom_read_byte(unsigned char* pos);
