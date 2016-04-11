@@ -478,7 +478,7 @@ static bool send_ok[BUFSIZE];
 #ifdef __SAM3X8E__
   void delay_ms(millis_t ms) {
     ms += millis();
-    while (millis() < ms) idle();
+    while (PENDING(millis(), ms)) idle();
   }
 #endif
 
