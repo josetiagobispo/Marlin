@@ -327,16 +327,16 @@ static uint8_t target_extruder;
 // Extruder offsets
 #if EXTRUDERS > 1
   #ifndef EXTRUDER_OFFSET_X
-    #define EXTRUDER_OFFSET_X { 0 }
+    #define EXTRUDER_OFFSET_X { 0 } // X offsets for each extruder
   #endif
   #ifndef EXTRUDER_OFFSET_Y
-    #define EXTRUDER_OFFSET_Y { 0 }
+    #define EXTRUDER_OFFSET_Y { 0 } // Y offsets for each extruder
   #endif
   float extruder_offset[][EXTRUDERS] = {
     EXTRUDER_OFFSET_X,
     EXTRUDER_OFFSET_Y
     #if ENABLED(DUAL_X_CARRIAGE)
-      , { 0 } // supports offsets in XYZ plane
+      , { 0 } // Z offsets for each extruder
     #endif
   };
 #endif
@@ -489,6 +489,16 @@ void serial_echopair_P(const char* s_P, double v)        { serialprintPGM(s_P); 
 void serial_echopair_P(const char* s_P, unsigned long v) { serialprintPGM(s_P); SERIAL_ECHO(v); }
 
 void gcode_M114();
+
+#if ENABLED(DELTA) || ENABLED(SCARA)
+  inline void sync_plan_position_delta() {
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (DEBUGGING(LEVELING)) DEBUG_POS("sync_plan_position_delta", current_position);
+    #endif
+    calculate_delta(current_position);
+    plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
+  }
+#endif
 
 #if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
   float extrude_min_temp = EXTRUDE_MINTEMP;
@@ -732,6 +742,11 @@ void setup() {
     #if MB(ALLIGATOR)
       setup_alligator_board();// Initialize Alligator Board
     #endif
+  #endif
+
+  #if ENABLED(DELTA) || ENABLED(SCARA)
+    // Vital to init kinematic equivalent for X0 Y0 Z0
+    sync_plan_position_delta();
   #endif
 
   #ifdef DISABLE_JTAG
@@ -1335,15 +1350,6 @@ inline void sync_plan_position() {
   #endif
   plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
 }
-#if ENABLED(DELTA) || ENABLED(SCARA)
-  inline void sync_plan_position_delta() {
-    #if ENABLED(DEBUG_LEVELING_FEATURE)
-      if (DEBUGGING(LEVELING)) DEBUG_POS("sync_plan_position_delta", current_position);
-    #endif
-    calculate_delta(current_position);
-    plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
-  }
-#endif
 inline void set_current_to_destination() { memcpy(current_position, destination, sizeof(current_position)); }
 inline void set_destination_to_current() { memcpy(destination, current_position, sizeof(destination)); }
 
@@ -1380,8 +1386,14 @@ static void setup_for_endstop_move() {
     #if DISABLED(DELTA)
 
       static void set_bed_level_equation_lsq(double* plane_equation_coefficients) {
+
         #if ENABLED(DEBUG_LEVELING_FEATURE)
-          if (DEBUGGING(LEVELING)) DEBUG_POS("BEFORE set_bed_level_equation_lsq", current_position);
+          plan_bed_level_matrix.set_to_identity();
+          if (DEBUGGING(LEVELING)) {
+            vector_3 uncorrected_position = plan_get_position();
+            DEBUG_POS(">>> set_bed_level_equation_lsq", uncorrected_position);
+            DEBUG_POS(">>> set_bed_level_equation_lsq", current_position);
+          }
         #endif
 
         vector_3 planeNormal = vector_3(-plane_equation_coefficients[0], -plane_equation_coefficients[1], 1);
@@ -1400,7 +1412,7 @@ static void setup_for_endstop_move() {
         current_position[Z_AXIS] = corrected_position.z;
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
-          if (DEBUGGING(LEVELING)) DEBUG_POS("AFTER set_bed_level_equation_lsq", current_position);
+          if (DEBUGGING(LEVELING)) DEBUG_POS("<<< set_bed_level_equation_lsq", current_position);
         #endif
 
         sync_plan_position();
@@ -2870,7 +2882,7 @@ inline void gcode_G28() {
         }
         if (probe_point == 0) {
           // Set Z to a positive value before recording the first Z.
-          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z + home_offset[Z_AXIS];
           sync_plan_position();
         }
         else {
@@ -2879,7 +2891,7 @@ inline void gcode_G28() {
           iy = (probe_point - 1) / (MESH_NUM_X_POINTS);
           if (iy & 1) ix = (MESH_NUM_X_POINTS - 1) - ix; // zig-zag
           mbl.set_z(ix, iy, current_position[Z_AXIS]);
-          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z + home_offset[Z_AXIS];
           plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[X_AXIS] / 60, active_extruder);
           st_synchronize();
         }
@@ -2888,8 +2900,8 @@ inline void gcode_G28() {
           ix = probe_point % (MESH_NUM_X_POINTS);
           iy = probe_point / (MESH_NUM_X_POINTS);
           if (iy & 1) ix = (MESH_NUM_X_POINTS - 1) - ix; // zig-zag
-          current_position[X_AXIS] = mbl.get_x(ix);
-          current_position[Y_AXIS] = mbl.get_y(iy);
+          current_position[X_AXIS] = mbl.get_x(ix) + home_offset[X_AXIS];
+          current_position[Y_AXIS] = mbl.get_y(iy) + home_offset[Y_AXIS];
           plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[X_AXIS] / 60, active_extruder);
           st_synchronize();
           probe_point++;
@@ -3088,7 +3100,11 @@ inline void gcode_G28() {
       #else //!DELTA
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
-          if (DEBUGGING(LEVELING)) DEBUG_POS("BEFORE matrix.set_to_identity", current_position);
+          if (DEBUGGING(LEVELING)) {
+            vector_3 corrected_position = plan_get_position();
+            DEBUG_POS("BEFORE matrix.set_to_identity", corrected_position);
+            DEBUG_POS("BEFORE matrix.set_to_identity", current_position);
+          }
         #endif
 
         //vector_3 corrected_position = plan_get_position();
@@ -3098,11 +3114,12 @@ inline void gcode_G28() {
         current_position[X_AXIS] = uncorrected_position.x;
         current_position[Y_AXIS] = uncorrected_position.y;
         current_position[Z_AXIS] = uncorrected_position.z;
-        sync_plan_position();
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
-          if (DEBUGGING(LEVELING)) DEBUG_POS("AFTER matrix.set_to_identity", current_position);
+          if (DEBUGGING(LEVELING)) DEBUG_POS("AFTER matrix.set_to_identity", uncorrected_position);
         #endif
+
+        sync_plan_position();
 
       #endif // !DELTA
     }
@@ -3173,7 +3190,7 @@ inline void gcode_G28() {
 
           // raise extruder
           float measured_z,
-                z_before = probePointCounter ? Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS] : Z_RAISE_BEFORE_PROBING;
+                z_before = probePointCounter ? Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS] : Z_RAISE_BEFORE_PROBING + home_offset[Z_AXIS];
 
           if (probePointCounter) {
             #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -3186,7 +3203,7 @@ inline void gcode_G28() {
           else {
             #if ENABLED(DEBUG_LEVELING_FEATURE)
               if (DEBUGGING(LEVELING)) {
-                SERIAL_ECHOPAIR("z_before = (before) ", Z_RAISE_BEFORE_PROBING);
+                SERIAL_ECHOPAIR("z_before = (before) ", Z_RAISE_BEFORE_PROBING + home_offset[Z_AXIS]);
                 SERIAL_EOL;
               }
             #endif
@@ -3347,9 +3364,18 @@ inline void gcode_G28() {
         p1 = ProbeDeploy, p2 = ProbeStay, p3 = ProbeStow;
 
       // Probe at 3 arbitrary points
-      float z_at_pt_1 = probe_pt(ABL_PROBE_PT_1_X, ABL_PROBE_PT_1_Y, Z_RAISE_BEFORE_PROBING, p1, verbose_level),
-            z_at_pt_2 = probe_pt(ABL_PROBE_PT_2_X, ABL_PROBE_PT_2_Y, current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS, p2, verbose_level),
-            z_at_pt_3 = probe_pt(ABL_PROBE_PT_3_X, ABL_PROBE_PT_3_Y, current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS, p3, verbose_level);
+      float z_at_pt_1 = probe_pt( ABL_PROBE_PT_1_X + home_offset[X_AXIS],
+                                  ABL_PROBE_PT_1_Y + home_offset[Y_AXIS],
+                                  Z_RAISE_BEFORE_PROBING + home_offset[Z_AXIS],
+                                  p1, verbose_level),
+            z_at_pt_2 = probe_pt( ABL_PROBE_PT_2_X + home_offset[X_AXIS],
+                                  ABL_PROBE_PT_2_Y + home_offset[Y_AXIS],
+                                  current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS,
+                                  p2, verbose_level),
+            z_at_pt_3 = probe_pt( ABL_PROBE_PT_3_X + home_offset[X_AXIS],
+                                  ABL_PROBE_PT_3_Y + home_offset[Y_AXIS],
+                                  current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS,
+                                  p3, verbose_level);
       clean_up_after_endstop_move();
       if (!dryrun) set_bed_level_equation_3pts(z_at_pt_1, z_at_pt_2, z_at_pt_3);
 
@@ -4307,12 +4333,11 @@ inline void gcode_M105() {
  *       Rxxx Wait for extruder(s) to reach temperature. Waits when heating and cooling.
  */
 inline void gcode_M109() {
-  bool no_wait_for_cooling = true;
 
   if (setTargetedHotend(109)) return;
   if (DEBUGGING(DRYRUN)) return;
 
-  no_wait_for_cooling = code_seen('S');
+  bool no_wait_for_cooling = code_seen('S');
   if (no_wait_for_cooling || code_seen('R')) {
     float temp = code_value();
     setTargetHotend(temp, target_extruder);
@@ -4347,12 +4372,14 @@ inline void gcode_M109() {
     if (code_seen('B')) autotemp_max = code_value();
   #endif
 
-  // Exit if the temperature is above target and not waiting for cooling
-  if (no_wait_for_cooling && !isHeatingHotend(target_extruder)) return;
+  bool wants_to_cool = isCoolingHotend(target_extruder);
+
+  // Exit if S<lower>, continue if S<higher>, R<lower>, or R<higher>
+  if (no_wait_for_cooling && wants_to_cool) return;
 
   // Prevents a wait-forever situation if R is misused i.e. M109 R0
   // Try to calculate a ballpark safe margin by halving EXTRUDE_MINTEMP
-  if (degTargetHotend(target_extruder) < (EXTRUDE_MINTEMP)/2) return;
+  if (wants_to_cool && degTargetHotend(target_extruder) < (EXTRUDE_MINTEMP)/2) return;
 
   #ifdef TEMP_RESIDENCY_TIME
     millis_t residency_start_ms = 0;
@@ -4360,12 +4387,12 @@ inline void gcode_M109() {
     #define TEMP_CONDITIONS (!residency_start_ms || PENDING(now, residency_start_ms + (TEMP_RESIDENCY_TIME) * 1000UL))
   #else
     // Loop until the temperature is very close target
-    #define TEMP_CONDITIONS (isHeatingHotend(target_extruder))
+    #define TEMP_CONDITIONS (wants_to_cool ? isCoolingHotend(target_extruder) : isHeatingHotend(target_extruder))
   #endif //TEMP_RESIDENCY_TIME
 
   cancel_heatup = false;
-  millis_t now = millis(), next_temp_ms = now + 1000UL;
-  while (!cancel_heatup && TEMP_CONDITIONS) {
+  millis_t now, next_temp_ms = 0;
+  do {
     now = millis();
     if (ELAPSED(now, next_temp_ms)) { //Print temp & remaining time every 1s while waiting
       next_temp_ms = now + 1000UL;
@@ -4391,7 +4418,7 @@ inline void gcode_M109() {
 
     #ifdef TEMP_RESIDENCY_TIME
 
-      float temp_diff = labs(degHotend(target_extruder) - degTargetHotend(target_extruder));
+      float temp_diff = fabs(degTargetHotend(target_extruder) - degHotend(target_extruder));
 
       if (!residency_start_ms) {
         // Start the TEMP_RESIDENCY_TIME timer when we reach target temp for the first time.
@@ -4404,7 +4431,7 @@ inline void gcode_M109() {
 
     #endif //TEMP_RESIDENCY_TIME
 
-  } // while(!cancel_heatup && TEMP_CONDITIONS)
+  } while (!cancel_heatup && TEMP_CONDITIONS);
 
   LCD_MESSAGEPGM(MSG_HEATING_COMPLETE);
 }
@@ -4420,15 +4447,18 @@ inline void gcode_M109() {
 
     LCD_MESSAGEPGM(MSG_BED_HEATING);
     bool no_wait_for_cooling = code_seen('S');
-    if (no_wait_for_cooling || code_seen('R'))
-      setTargetBed(code_value());
+    if (no_wait_for_cooling || code_seen('R')) setTargetBed(code_value());
 
-    // Exit if the temperature is above target and not waiting for cooling
-    if (no_wait_for_cooling && !isHeatingBed()) return;
+    bool wants_to_cool = isCoolingBed();
+
+    // Exit if S<lower>, continue if S<higher>, R<lower>, or R<higher>
+    if (no_wait_for_cooling && wants_to_cool) return;
 
     cancel_heatup = false;
-    millis_t now = millis(), next_temp_ms = now + 1000UL;
-    while (!cancel_heatup && isHeatingBed()) {
+    millis_t next_temp_ms = 0;
+
+    // Wait for temperature to come close enough
+    do {
       millis_t now = millis();
       if (ELAPSED(now, next_temp_ms)) { //Print Temp Reading every 1 second while heating up.
         next_temp_ms = now + 1000UL;
@@ -4437,7 +4467,7 @@ inline void gcode_M109() {
       }
       idle();
       refresh_cmd_timeout(); // to prevent stepper_inactive_time from running out
-    }
+    } while (!cancel_heatup && (wants_to_cool ? isCoolingBed() : isHeatingBed()));
     LCD_MESSAGEPGM(MSG_BED_DONE);
   }
 
@@ -5044,19 +5074,26 @@ inline void gcode_M205() {
   if (code_seen('E')) max_e_jerk = code_value();
 }
 
+static void set_home_offset(AxisEnum axis, float v) {
+  min_pos[axis] = base_min_pos(axis) + v;
+  max_pos[axis] = base_max_pos(axis) + v;
+  current_position[axis] += v - home_offset[axis];
+  home_offset[axis] = v;
+}
+
 /**
  * M206: Set Additional Homing Offset (X Y Z). SCARA aliases T=X, P=Y
  */
 inline void gcode_M206() {
-  for (int8_t i = X_AXIS; i <= Z_AXIS; i++) {
-    if (code_seen(axis_codes[i])) {
-      home_offset[i] = code_value();
-    }
-  }
+  for (int8_t i = X_AXIS; i <= Z_AXIS; i++)
+    if (code_seen(axis_codes[i]))
+      set_home_offset((AxisEnum)i, code_value());
+
   #if ENABLED(SCARA)
-    if (code_seen('T')) home_offset[X_AXIS] = code_value(); // Theta
-    if (code_seen('P')) home_offset[Y_AXIS] = code_value(); // Psi
+    if (code_seen('T')) set_home_offset(X_AXIS, code_value()); // Theta
+    if (code_seen('P')) set_home_offset(Y_AXIS, code_value()); // Psi
   #endif
+  sync_plan_position();
 }
 
 #if ENABLED(DELTA)
@@ -5182,7 +5219,12 @@ inline void gcode_M206() {
 #if EXTRUDERS > 1
 
   /**
-   * M218 - set hotend offset (in mm), T<extruder_number> X<offset_on_X> Y<offset_on_Y>
+   * M218 - set hotend offset (in mm)
+   *
+   *   T<tool>
+   *   X<xoffset>
+   *   Y<yoffset>
+   *   Z<zoffset> - Available with DUAL_X_CARRIAGE
    */
   inline void gcode_M218() {
     if (setTargetedHotend(218)) return;
@@ -5747,16 +5789,12 @@ inline void gcode_M410() { quickStop(); }
  */
 inline void gcode_M428() {
   bool err = false;
-  float new_offs[3], new_pos[3];
-  memcpy(new_pos, current_position, sizeof(new_pos));
-  memcpy(new_offs, home_offset, sizeof(new_offs));
   for (int8_t i = X_AXIS; i <= Z_AXIS; i++) {
     if (axis_homed[i]) {
-      float base = (new_pos[i] > (min_pos[i] + max_pos[i]) / 2) ? base_home_pos(i) : 0,
-            diff = new_pos[i] - base;
+      float base = (current_position[i] > (min_pos[i] + max_pos[i]) / 2) ? base_home_pos(i) : 0,
+            diff = current_position[i] - base;
       if (diff > -20 && diff < 20) {
-        new_offs[i] -= diff;
-        new_pos[i] = base;
+        set_home_offset((AxisEnum)i, home_offset[i] - diff);
       }
       else {
         SERIAL_ERROR_START;
@@ -5772,8 +5810,6 @@ inline void gcode_M428() {
   }
 
   if (!err) {
-    memcpy(current_position, new_pos, sizeof(new_pos));
-    memcpy(home_offset, new_offs, sizeof(new_offs));
     sync_plan_position();
     LCD_ALERTMESSAGEPGM(MSG_HOME_OFFSETS_APPLIED);
     #if HAS_BUZZER
@@ -6230,15 +6266,36 @@ inline void gcode_T(uint8_t tmp_extruder) {
             // Offset extruder, make sure to apply the bed level rotation matrix
             vector_3 tmp_offset_vec = vector_3(extruder_offset[X_AXIS][tmp_extruder],
                                                extruder_offset[Y_AXIS][tmp_extruder],
-                                               extruder_offset[Z_AXIS][tmp_extruder]),
+                                               0),
                      act_offset_vec = vector_3(extruder_offset[X_AXIS][active_extruder],
                                                extruder_offset[Y_AXIS][active_extruder],
-                                               extruder_offset[Z_AXIS][active_extruder]),
+                                               0),
                      offset_vec = tmp_offset_vec - act_offset_vec;
+
+            #if ENABLED(DEBUG_LEVELING_FEATURE)
+              if (DEBUGGING(LEVELING)) {
+                SERIAL_ECHOLNPGM(">>> gcode_T");
+                tmp_offset_vec.debug("tmp_offset_vec");
+                act_offset_vec.debug("act_offset_vec");
+                offset_vec.debug("offset_vec (BEFORE)");
+                DEBUG_POS("BEFORE rotation", current_position);
+              }
+            #endif
+
             offset_vec.apply_rotation(plan_bed_level_matrix.transpose(plan_bed_level_matrix));
+
             current_position[X_AXIS] += offset_vec.x;
             current_position[Y_AXIS] += offset_vec.y;
             current_position[Z_AXIS] += offset_vec.z;
+
+            #if ENABLED(DEBUG_LEVELING_FEATURE)
+              if (DEBUGGING(LEVELING)) {
+                offset_vec.debug("offset_vec (AFTER)");
+                DEBUG_POS("AFTER rotation", current_position);
+                SERIAL_ECHOLNPGM("<<< gcode_T");
+              }
+            #endif
+
           #else // !AUTO_BED_LEVELING_FEATURE
             // Offset extruder (only by XY)
             for (int i=X_AXIS; i<=Y_AXIS; i++)
@@ -7046,10 +7103,10 @@ void mesh_plan_buffer_line(float x, float y, float z, const float e, float feed_
     set_current_to_destination();
     return;
   }
-  int pix = mbl.select_x_index(current_position[X_AXIS]);
-  int piy = mbl.select_y_index(current_position[Y_AXIS]);
-  int ix = mbl.select_x_index(x);
-  int iy = mbl.select_y_index(y);
+  int pix = mbl.select_x_index(current_position[X_AXIS] - home_offset[X_AXIS]);
+  int piy = mbl.select_y_index(current_position[Y_AXIS] - home_offset[Y_AXIS]);
+  int ix = mbl.select_x_index(x - home_offset[X_AXIS]);
+  int iy = mbl.select_y_index(y - home_offset[Y_AXIS]);
   pix = min(pix, MESH_NUM_X_POINTS - 2);
   piy = min(piy, MESH_NUM_Y_POINTS - 2);
   ix = min(ix, MESH_NUM_X_POINTS - 2);
@@ -7062,7 +7119,7 @@ void mesh_plan_buffer_line(float x, float y, float z, const float e, float feed_
   }
   float nx, ny, nz, ne, normalized_dist;
   if (ix > pix && TEST(x_splits, ix)) {
-    nx = mbl.get_x(ix);
+    nx = mbl.get_x(ix) + home_offset[X_AXIS];
     normalized_dist = (nx - current_position[X_AXIS]) / (x - current_position[X_AXIS]);
     ny = current_position[Y_AXIS] + (y - current_position[Y_AXIS]) * normalized_dist;
     nz = current_position[Z_AXIS] + (z - current_position[Z_AXIS]) * normalized_dist;
@@ -7070,7 +7127,7 @@ void mesh_plan_buffer_line(float x, float y, float z, const float e, float feed_
     CBI(x_splits, ix);
   }
   else if (ix < pix && TEST(x_splits, pix)) {
-    nx = mbl.get_x(pix);
+    nx = mbl.get_x(pix) + home_offset[X_AXIS];
     normalized_dist = (nx - current_position[X_AXIS]) / (x - current_position[X_AXIS]);
     ny = current_position[Y_AXIS] + (y - current_position[Y_AXIS]) * normalized_dist;
     nz = current_position[Z_AXIS] + (z - current_position[Z_AXIS]) * normalized_dist;
@@ -7078,7 +7135,7 @@ void mesh_plan_buffer_line(float x, float y, float z, const float e, float feed_
     CBI(x_splits, pix);
   }
   else if (iy > piy && TEST(y_splits, iy)) {
-    ny = mbl.get_y(iy);
+    ny = mbl.get_y(iy) + home_offset[Y_AXIS];
     normalized_dist = (ny - current_position[Y_AXIS]) / (y - current_position[Y_AXIS]);
     nx = current_position[X_AXIS] + (x - current_position[X_AXIS]) * normalized_dist;
     nz = current_position[Z_AXIS] + (z - current_position[Z_AXIS]) * normalized_dist;
@@ -7086,7 +7143,7 @@ void mesh_plan_buffer_line(float x, float y, float z, const float e, float feed_
     CBI(y_splits, iy);
   }
   else if (iy < piy && TEST(y_splits, piy)) {
-    ny = mbl.get_y(piy);
+    ny = mbl.get_y(piy) + home_offset[Y_AXIS];
     normalized_dist = (ny - current_position[Y_AXIS]) / (y - current_position[Y_AXIS]);
     nx = current_position[X_AXIS] + (x - current_position[X_AXIS]) * normalized_dist;
     nz = current_position[Z_AXIS] + (z - current_position[Z_AXIS]) * normalized_dist;
