@@ -4464,14 +4464,14 @@ inline void gcode_M109() {
   // Try to calculate a ballpark safe margin by halving EXTRUDE_MINTEMP
   if (wants_to_cool && degTargetHotend(target_extruder) < (EXTRUDE_MINTEMP)/2) return;
 
-  #ifdef TEMP_RESIDENCY_TIME
+  #if TEMP_RESIDENCY_TIME > 0
     millis_t residency_start_ms = 0;
     // Loop until the temperature has stabilized
     #define TEMP_CONDITIONS (!residency_start_ms || PENDING(now, residency_start_ms + (TEMP_RESIDENCY_TIME) * 1000UL))
   #else
     // Loop until the temperature is very close target
     #define TEMP_CONDITIONS (wants_to_cool ? isCoolingHotend(target_extruder) : isHeatingHotend(target_extruder))
-  #endif //TEMP_RESIDENCY_TIME
+  #endif //TEMP_RESIDENCY_TIME > 0
 
   cancel_heatup = false;
   millis_t now, next_temp_ms = 0;
@@ -4482,7 +4482,7 @@ inline void gcode_M109() {
       #if HAS_TEMP_HOTEND || HAS_TEMP_BED
         print_heaterstates();
       #endif
-      #ifdef TEMP_RESIDENCY_TIME
+      #if TEMP_RESIDENCY_TIME > 0
         SERIAL_PROTOCOLPGM(" W:");
         if (residency_start_ms) {
           long rem = (((TEMP_RESIDENCY_TIME) * 1000UL) - (now - residency_start_ms)) / 1000UL;
@@ -4499,7 +4499,7 @@ inline void gcode_M109() {
     idle();
     refresh_cmd_timeout(); // to prevent stepper_inactive_time from running out
 
-    #ifdef TEMP_RESIDENCY_TIME
+    #if TEMP_RESIDENCY_TIME > 0
 
       float temp_diff = fabs(degTargetHotend(target_extruder) - degHotend(target_extruder));
 
@@ -4512,7 +4512,7 @@ inline void gcode_M109() {
         residency_start_ms = millis();
       }
 
-    #endif //TEMP_RESIDENCY_TIME
+    #endif //TEMP_RESIDENCY_TIME > 0
 
   } while (!cancel_heatup && TEMP_CONDITIONS);
 
@@ -4537,20 +4537,57 @@ inline void gcode_M109() {
     // Exit if S<lower>, continue if S<higher>, R<lower>, or R<higher>
     if (no_wait_for_cooling && wants_to_cool) return;
 
+    #if TEMP_BED_RESIDENCY_TIME > 0
+      millis_t residency_start_ms = 0;
+      // Loop until the temperature has stabilized
+      #define TEMP_BED_CONDITIONS (!residency_start_ms || PENDING(now, residency_start_ms + (TEMP_BED_RESIDENCY_TIME) * 1000UL))
+    #else
+      // Loop until the temperature is very close target
+      #define TEMP_BED_CONDITIONS (wants_to_cool ? isCoolingBed() : isHeatingBed())
+    #endif //TEMP_BED_RESIDENCY_TIME > 0
+
     cancel_heatup = false;
-    millis_t next_temp_ms = 0;
+    millis_t now, next_temp_ms = 0;
 
     // Wait for temperature to come close enough
     do {
-      millis_t now = millis();
+      now = millis();
       if (ELAPSED(now, next_temp_ms)) { //Print Temp Reading every 1 second while heating up.
         next_temp_ms = now + 1000UL;
         print_heaterstates();
-        SERIAL_EOL;
+        #if TEMP_BED_RESIDENCY_TIME > 0
+          SERIAL_PROTOCOLPGM(" W:");
+          if (residency_start_ms) {
+            long rem = (((TEMP_BED_RESIDENCY_TIME) * 1000UL) - (now - residency_start_ms)) / 1000UL;
+            SERIAL_PROTOCOLLN(rem);
+          }
+          else {
+            SERIAL_PROTOCOLLNPGM("?");
+          }
+        #else
+          SERIAL_EOL;
+        #endif
       }
+
       idle();
       refresh_cmd_timeout(); // to prevent stepper_inactive_time from running out
-    } while (!cancel_heatup && (wants_to_cool ? isCoolingBed() : isHeatingBed()));
+
+      #if TEMP_BED_RESIDENCY_TIME > 0
+
+        float temp_diff = fabs(degBed() - degTargetBed());
+
+        if (!residency_start_ms) {
+          // Start the TEMP_BED_RESIDENCY_TIME timer when we reach target temp for the first time.
+          if (temp_diff < TEMP_BED_WINDOW) residency_start_ms = millis();
+        }
+        else if (temp_diff > TEMP_BED_HYSTERESIS) {
+          // Restart the timer whenever the temperature falls outside the hysteresis.
+          residency_start_ms = millis();
+        }
+
+      #endif //TEMP_BED_RESIDENCY_TIME > 0
+
+    } while (!cancel_heatup && TEMP_BED_CONDITIONS);
     LCD_MESSAGEPGM(MSG_BED_DONE);
   }
 
@@ -5887,7 +5924,7 @@ inline void gcode_M428() {
 
   if (!err) {
     sync_plan_position();
-    LCD_ALERTMESSAGEPGM(MSG_HOME_OFFSETS_APPLIED);
+    LCD_MESSAGEPGM(MSG_HOME_OFFSETS_APPLIED);
     #if HAS_BUZZER
       buzz(200, 659);
       buzz(200, 698);
@@ -7438,7 +7475,7 @@ void plan_arc(
 
   // Make a circle if the angular rotation is 0
   if (angular_travel == 0 && current_position[X_AXIS] == target[X_AXIS] && current_position[Y_AXIS] == target[Y_AXIS])
-    angular_travel == RADIANS(360);
+    angular_travel += RADIANS(360);
 
   float mm_of_travel = hypot(angular_travel * radius, fabs(linear_travel));
   if (mm_of_travel < 0.001) return;
