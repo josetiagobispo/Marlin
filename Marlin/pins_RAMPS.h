@@ -363,3 +363,42 @@
   #endif // NEWPANEL
 
 #endif // ULTRA_LCD
+
+
+// for my machine
+
+//
+// Limit Switches
+//
+#undef X_MIN_PIN
+#define X_MIN_PIN          -1 // unused for deltabot, was 3
+
+#undef Y_MIN_PIN
+#define Y_MIN_PIN          -1 // unused for deltabot, was 14
+
+//
+// Heaters / Fans
+//
+#undef FAN_PIN
+#define FAN_PIN             5 // (Sprinter config), was 9
+
+#undef FAN1_PIN
+#define FAN1_PIN            6
+
+#undef FAN2_PIN
+#define FAN2_PIN            9
+
+//
+// Misc. Functions
+//
+#undef PS_ON_PIN
+#define PS_ON_PIN          11 // was 12
+
+//
+// LCD / Controller
+//
+#undef BEEPER_PIN
+#define BEEPER_PIN         -1
+
+#define STAT_LED_RED_PIN   57
+#define STAT_LED_BLUE_PIN  58
