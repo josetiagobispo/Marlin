@@ -1,0 +1,217 @@
+/**
+ * Marlin 3D Printer Firmware
+ * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ *
+ * Based on Sprinter and grbl.
+ * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * Japanese (Kanji and Kana)
+ *
+ * LCD Menu Messages
+ * See also https://github.com/MarlinFirmware/Marlin/wiki/LCD-Language
+ *
+ */
+
+#ifndef LANGUAGE_KANJI_AND_KANA_H
+#define LANGUAGE_KANJI_AND_KANA_H
+#define DISPLAY_CHARSET_ISO10646_KANJI_AND_KANA
+
+// 漢字仮名交じり表示定義
+#define WELCOME_MSG                         MACHINE_NAME ""// "準備完了"         // " ready."
+#define MSG_SD_INSERTED                     ""// "カードが挿入されました"        // "Card inserted"
+#define MSG_SD_REMOVED                      ""// "カードがありません"               // "Card removed"
+#define MSG_LCD_ENDSTOPS                    ""//  エンドストップ"                  // "Endstops" // Max length 8 characters
+#define MSG_MAIN                            ""// "メイン"                       // "Main"
+#define MSG_AUTOSTART                       ""// "自動開始"                   // "Autostart"
+#define MSG_DISABLE_STEPPERS                ""// "モーター電源オフ"            // "Disable steppers"
+#define MSG_AUTO_HOME                       ""// "原点復帰"                // "Auto home"
+#define MSG_AUTO_HOME_X                     ""// "X軸 原点復帰"           // "Home X"
+#define MSG_AUTO_HOME_Y                     ""// "Y軸 原点復帰"           // "Home Y"
+#define MSG_AUTO_HOME_Z                     ""// "Z軸 原点復帰"           // "Home Z"
+#define MSG_LEVEL_BED_HOMING                ""// "原点復帰中"                // "Homing XYZ"
+#define MSG_LEVEL_BED_WAITING               ""// "レベリング開始"                //"Click to Begin"
+#define MSG_LEVEL_BED_NEXT_POINT            ""// "次の測定点へ"             // "Next Point"
+#define MSG_LEVEL_BED_DONE                  ""// "レベリング完了"              //"Leveling Done!"
+#define MSG_LEVEL_BED_CANCEL                ""// "取止"                      //"Cancel"
+#define MSG_SET_HOME_OFFSETS                ""// "基準オフセット設定"         // "Set home offsets"
+#define MSG_HOME_OFFSETS_APPLIED            ""// "オフセットが適用されました"       //"Offsets applied"
+#define MSG_SET_ORIGIN                      ""// "基準セット"                 // "Set origin"
+#define MSG_PREHEAT_1                       ""// "PLA 予熱"                   // "Preheat PLA"
+#define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 " "
+#define MSG_PREHEAT_1_ALL                   ""// "PLA 全て予熱"           // " All"
+#define MSG_PREHEAT_1_BEDONLY               ""// "PLA ベッド予熱"           // "Bed"
+#define MSG_PREHEAT_1_SETTINGS              MSG_PREHEAT_1 "" // "設定"     // "conf"
+#define MSG_PREHEAT_2                       ""// "ABS 予熱"                  // "Preheat ABS"
+#define MSG_PREHEAT_2_N                     MSG_PREHEAT_2 " "
+#define MSG_PREHEAT_2_ALL                   ""// "ABS 全て予熱"     // " All"
+#define MSG_PREHEAT_2_BEDONLY               ""// "ABS ベッド予熱"     // "Bed"
+#define MSG_PREHEAT_2_SETTINGS              MSG_PREHEAT_2 "" // "設定"    // "conf"
+#define MSG_COOLDOWN                        ""// "加熱停止"                  // "Cooldown"
+#define MSG_SWITCH_PS_ON                    ""// "電源オン"                 // "Switch power on"
+#define MSG_SWITCH_PS_OFF                   ""// "電源オフ"                 // "Switch power off"
+#define MSG_EXTRUDE                         ""// "押出"                     // "Extrude"
+#define MSG_RETRACT                         ""// "引込設定"                // "Retract"
+#define MSG_MOVE_AXIS                       ""// "軸移動"                    // "Move axis"
+#define MSG_LEVEL_BED                       ""// "ベッドレベリング"                // "Level bed"
+#define MSG_MOVE_X                          ""// "X軸移動"                  // "Move X"
+#define MSG_MOVE_Y                          ""// "Y軸移動"                  // "Move Y"
+#define MSG_MOVE_Z                          ""// "Z軸移動"                  // "Move Z"
+#define MSG_MOVE_E                          ""// "エクストルーダー"                // "Extruder"
+#define MSG_MOVE_01MM                       ""// "0.1mm移動"                 // "Move 0.1mm"
+#define MSG_MOVE_1MM                        ""// "  1mm移動"                 // "Move 1mm"
+#define MSG_MOVE_10MM                       ""// " 10mm移動"                 // "Move 10mm"
+#define MSG_SPEED                           ""// "スピード"                     // "Speed"
+#define MSG_BED_Z                           ""// "Zオフセット"                   // "Bed Z"
+#define MSG_NOZZLE                          ""// "ノズル"                       // "Nozzle"
+#define MSG_BED                             ""// "ベッド"                       // "Bed"
+#define MSG_FAN_SPEED                       ""// "ファン速度"                    // "Fan speed"
+#define MSG_FLOW                            ""// "吐出量"                     // "Flow"
+#define MSG_CONTROL                         ""// "制御"                       // "Control"
+#define MSG_MIN                             LCD_STR_THERMOMETER "" // " 最低" // " Min"
+#define MSG_MAX                             LCD_STR_THERMOMETER "" // " 最高" // " Max"
+#define MSG_FACTOR                          LCD_STR_THERMOMETER "" // " ファクター" // " Fact"
+#define MSG_AUTOTEMP                        ""// "自動温度制御"                 // "Autotemp"
+#define MSG_ON                              ""// "オン "                         // "On "
+#define MSG_OFF                             ""// "オフ "                         // "Off"
+#define MSG_PID_P                           ""// "PID-P"
+#define MSG_PID_I                           ""// "PID-I"
+#define MSG_PID_D                           ""// "PID-D"
+#define MSG_PID_C                           ""// "PID-C"
+#define MSG_ACC                             ""// "加速度 mm/s^2"              // "Accel"
+#define MSG_VXY_JERK                        ""// "XY軸躍度 mm/s"            // "Vxy-jerk"
+#define MSG_VZ_JERK                         ""// "Z軸躍度 mm/s"             // "Vz-jerk"
+#define MSG_VE_JERK                         ""// "エクストルーダー躍度"          // "Ve-jerk"
+#define MSG_VMAX                            ""// "最大送り速度 "             // "Vmax "
+#define MSG_X                               "X"
+#define MSG_Y                               "Y"
+#define MSG_Z                               "Z"
+#define MSG_E                               "E"
+#define MSG_VMIN                            ""// "最小送り速度"              // "Vmin"
+#define MSG_VTRAV_MIN                       ""// "最小移動速度"             // "VTrav min"
+#define MSG_AMAX                            ""// "最大加速度 "              // "Amax "
+#define MSG_A_RETRACT                       ""// "引込加速度"               // "A-retract"
+#define MSG_A_TRAVEL                        ""// "移動加速度"               // "A-travel"
+#define MSG_XSTEPS                          "Xsteps/mm"
+#define MSG_YSTEPS                          "Ysteps/mm"
+#define MSG_ZSTEPS                          "Zsteps/mm"
+#define MSG_ESTEPS                          "Esteps/mm"
+#define MSG_TEMPERATURE                     ""// "温度"                      // "Temperature"
+#define MSG_MOTION                          ""// "動き設定"                // "Motion"
+#define MSG_VOLUMETRIC                      ""// "フィラメント"                   // "Filament"
+#define MSG_VOLUMETRIC_ENABLED              "E in mm3"
+#define MSG_FILAMENT_DIAM                   ""// "フィラメント直径"            // "Fil. Dia."
+#define MSG_CONTRAST                        ""// "LCDコントラスト"               // "LCD contrast"
+#define MSG_STORE_EPROM                     ""// "メモリへ格納"               // "Store memory"
+#define MSG_LOAD_EPROM                      ""// "メモリから読み込み"               // "Load memory"
+#define MSG_RESTORE_FAILSAFE                ""// "設定リセット"               // "Restore failsafe"
+#define MSG_REFRESH                         ""// "リフレッシュ"                  // "Refresh"
+#define MSG_WATCH                           ""// "情報画面"                     // "Info screen"
+#define MSG_PREPARE                         ""// "準備設定"               // "Prepare"
+#define MSG_TUNE                            ""// "調整"                    // "Tune"
+#define MSG_PAUSE_PRINT                     ""// "一時停止"                  // "Pause print"
+#define MSG_RESUME_PRINT                    ""// "プリント再開"                // "Resume print"
+#define MSG_STOP_PRINT                      ""// "プリント停止"                 // "Stop print"
+#define MSG_CARD_MENU                       ""// "SDカードからプリント"            // "Print from SD"
+#define MSG_NO_CARD                         ""// "SDカードがありません"            // "No SD card"
+#define MSG_DWELL                           ""// "休止"                     // "Sleep..."
+#define MSG_USERWAIT                        ""// "暫くお待ち下さい"           // "Wait for user..."
+#define MSG_RESUMING                        ""// "プリント再開"                // "Resuming print"
+#define MSG_PRINT_ABORTED                   ""// "プリントが中止されました"          // "Print aborted"
+#define MSG_NO_MOVE                         ""// "動きません"                  // "No move."
+#define MSG_KILLED                          ""// "非常停止"                  // "KILLED. "
+#define MSG_STOPPED                         ""// "停止しました"                  // "STOPPED. "
+#define MSG_CONTROL_RETRACT                 ""// "引込量 mm"                // "Retract mm"
+#define MSG_CONTROL_RETRACT_SWAP            ""// "交換時引込量 mm"               // "Swap Re.mm"
+#define MSG_CONTROL_RETRACTF                ""// "引込速度 mm/s"             // "Retract  V"
+#define MSG_CONTROL_RETRACT_ZLIFT           ""// "ノズル退避量 mm"                // "Hop mm"
+#define MSG_CONTROL_RETRACT_RECOVER         ""// "補償量 +mm"                 // "UnRet +mm"
+#define MSG_CONTROL_RETRACT_RECOVER_SWAP    ""// "交換時補償量 +mm"                // "S UnRet+mm"
+#define MSG_CONTROL_RETRACT_RECOVERF        ""// "補償速度 mm/s"            // "UnRet  V"
+#define MSG_AUTORETRACT                     ""// "自動引込"                 // "AutoRetr."
+#define MSG_FILAMENTCHANGE                  ""// "フィラメント交換"              // "Change filament"
+#define MSG_INIT_SDCARD                     ""// "SDカード再読込"             // "Init. SD card"
+#define MSG_CNG_SDCARD                      ""// "SDカード交換"               // "Change SD card"
+#define MSG_ZPROBE_OUT                      ""// "Zプローブ ベッド外"            // "Z probe out. bed"
+#define MSG_HOME                            ""// "先に"                      // "Home" // Used as MSG_HOME " " MSG_X MSG_Y MSG_Z " " MSG_FIRST
+#define MSG_FIRST                           ""// "を復帰させて下さい"           // "first"
+#define MSG_ZPROBE_ZOFFSET                  ""// "Zオフセット"                   // "Z Offset"
+#define MSG_BABYSTEP_X                      ""// "X軸微動"                  // "Babystep X"
+#define MSG_BABYSTEP_Y                      ""// "Y軸微動"                  // "Babystep Y"
+#define MSG_BABYSTEP_Z                      ""// "Z軸微動"                  // "Babystep Z"
+#define MSG_ENDSTOP_ABORT                   ""// "移動限界検出機能"         // "Endstop abort"
+#define MSG_HEATING_FAILED_LCD              ""// "加熱失敗"                 // "Heating failed"
+#define MSG_ERR_REDUNDANT_TEMP              ""// "エラー:冗長サーミスター機能"  // "Err: REDUNDANT TEMP"
+#define MSG_THERMAL_RUNAWAY                 ""// "熱暴走"                   // "THERMAL RUNAWAY"
+#define MSG_ERR_MAXTEMP                     ""// "エラー:設定最高温度超過"         // "Err: MAXTEMP"
+#define MSG_ERR_MINTEMP                     ""// "エラー:設定最低温度未満"          // "Err: MINTEMP"
+#define MSG_ERR_MAXTEMP_BED                 ""// "エラー:ベッド設定最高温度超過"    // "Err: MAXTEMP BED"
+#define MSG_ERR_MINTEMP_BED                 ""// "エラー:ベッド設定最低温度未満"     // "Err: MINTEMP BED"
+#define MSG_HALTED                          ""// "プリンターは停止しました"         // "PRINTER HALTED"
+#define MSG_PLEASE_RESET                    ""// "リセットして下さい"              // "Please reset"
+#define MSG_SHORT_DAY                       "d"                              // One character only
+#define MSG_SHORT_HOUR                      "h"                              // One character only
+#define MSG_SHORT_MINUTE                    "m"                              // One character only
+#define MSG_PRINT_TIME                      ""// "プリント時間"                  // "Print time"
+#define MSG_HEATING                         ""// "加熱中"                   // "Heating..."
+#define MSG_HEATING_COMPLETE                ""// "加熱完了"                 // "Heating done."
+#define MSG_BED_HEATING                     ""// "ベッド加熱中"              // "Bed Heating."
+#define MSG_BED_DONE                        ""// "ベッド加熱完了"            // "Bed done."
+#define MSG_DELTA_CALIBRATE                 ""// "デルタ較正"                // "Delta Calibration"
+#define MSG_DELTA_CALIBRATE_X               ""// "X軸較正"                 // "Calibrate X"
+#define MSG_DELTA_CALIBRATE_Y               ""// "Y軸較正"                 // "Calibrate Y"
+#define MSG_DELTA_CALIBRATE_Z               ""// "Z軸較正"                 // "Calibrate Z"
+#define MSG_DELTA_CALIBRATE_CENTER          ""// "中心較正"              // "Calibrate Center"
+#define MSG_INFO_MENU                       ""// "このプリンターについて"             // "About Printer"
+#define MSG_INFO_PRINTER_MENU               ""// "プリンター情報"              // "Printer Info"
+#define MSG_INFO_STATS_MENU                 ""// "プリント状況"              // "Printer Stats"
+#define MSG_INFO_BOARD_MENU                 ""// "制御系情報"            // "Board Info"
+#define MSG_INFO_THERMISTOR_MENU            ""// "サーミスター"                   // "Thermistors"
+#define MSG_INFO_EXTRUDERS                  ""// "エクストルーダー数"             // "Extruders"
+#define MSG_INFO_BAUDRATE                   ""// "ボーレート"                    // "Baud"
+#define MSG_INFO_PROTOCOL                   ""// "プロトコル"                    // "Protocol"
+#define MSG_INFO_PRINT_COUNT                ""// "プリント数"                  // "Print Count "
+#define MSG_INFO_COMPLETED_PRINTS           ""// "完了数  "                  // "Finished    "
+#define MSG_INFO_PRINT_TIME                 ""// "合計時間 "                 // "Total Time  "
+#define MSG_INFO_MIN_TEMP                   ""// "設定最低温度"              // "Min Temp"
+#define MSG_INFO_MAX_TEMP                   ""// "設定最高温度"              // "Max Temp"
+#define MSG_INFO_PSU                        ""// "電源種別"                // "Power Supply"
+#define MSG_FILAMENT_CHANGE_HEADER          ""// "フィラメント交換"              // "CHANGE FILAMENT"
+#define MSG_FILAMENT_CHANGE_OPTION_HEADER   ""// "動作を選択して下さい"        // "CHANGE OPTIONS:"
+#define MSG_FILAMENT_CHANGE_OPTION_EXTRUDE  ""// "更に押出す"                 // "Extrude more"
+#define MSG_FILAMENT_CHANGE_OPTION_RESUME   ""// "プリント再開"                // "Resume print"
+#define MSG_FILAMENT_CHANGE_INIT_1          ""// "交換を開始します"            // "Wait for start"
+#define MSG_FILAMENT_CHANGE_INIT_2          ""// "暫くお待ち下さい"            // "of the filament"
+#define MSG_FILAMENT_CHANGE_INIT_3          ""                           // "change"
+#define MSG_FILAMENT_CHANGE_UNLOAD_1        ""// "フィラメント抜出中"          // "Wait for"
+#define MSG_FILAMENT_CHANGE_UNLOAD_2        ""// "暫くお待ち下さい"            // "filament unload"
+#define MSG_FILAMENT_CHANGE_UNLOAD_3        ""
+#define MSG_FILAMENT_CHANGE_INSERT_1        ""// "フィラメントを挿入し、"         // "Insert filament"
+#define MSG_FILAMENT_CHANGE_INSERT_2        ""// "クリックすると続行します"         // "and press button"
+#define MSG_FILAMENT_CHANGE_INSERT_3        ""                           // "to continue..."
+#define MSG_FILAMENT_CHANGE_LOAD_1          ""// "フィラメント装填中"          // "Wait for"
+#define MSG_FILAMENT_CHANGE_LOAD_2          ""// "暫くお待ち下さい"            // "filament load"
+#define MSG_FILAMENT_CHANGE_LOAD_3          ""
+#define MSG_FILAMENT_CHANGE_EXTRUDE_1       ""// "フィラメント押出中"          // "Wait for"
+#define MSG_FILAMENT_CHANGE_EXTRUDE_2       ""// "暫くお待ち下さい"            // "filament extrude"
+#define MSG_FILAMENT_CHANGE_EXTRUDE_3       ""
+#define MSG_FILAMENT_CHANGE_RESUME_1        ""// "プリントを再開します"           // "Wait for print"
+#define MSG_FILAMENT_CHANGE_RESUME_2        ""// "暫くお待ち下さい"            // "to resume"
+#define MSG_FILAMENT_CHANGE_RESUME_3        ""
+
+#endif // LANGUAGE_KANJI_AND_KANA_H
