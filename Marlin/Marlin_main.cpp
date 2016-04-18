@@ -2980,7 +2980,11 @@ inline void gcode_G28() {
         }
         else {
           // One last "return to the bed" (as originally coded) at completion
-          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
+            #if MIN_Z_HEIGHT_FOR_HOMING > 0
+              + MIN_Z_HEIGHT_FOR_HOMING
+            #endif
+          ;
           line_to_current_position();
           st_synchronize();
 
@@ -3627,13 +3631,14 @@ inline void gcode_G92() {
 
       current_position[i] = v;
 
-      position_shift[i] += v - p; // Offset the coordinate space
-      update_software_endstops((AxisEnum)i);
-
       if (i == E_AXIS)
         plan_set_e_position(v);
-      else
+      else {
+        position_shift[i] += v - p; // Offset the coordinate space
+        update_software_endstops((AxisEnum)i);
+		  
         didXYZ = true;
+	  }
     }
   }
   if (didXYZ) {
