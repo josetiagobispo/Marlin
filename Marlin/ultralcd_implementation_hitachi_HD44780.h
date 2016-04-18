@@ -526,16 +526,29 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
 
     #define LCD_EXTRA_SPACE (LCD_WIDTH-8)
 
-    #define CENTER_OR_SCROLL(STRING,DELAY) \
-      lcd_erase_line(3); \
-      if (strlen(STRING) <= LCD_WIDTH) { \
-        lcd.setCursor((LCD_WIDTH - lcd_strlen_P(PSTR(STRING))) / 2, 3); \
-        lcd_printPGM(PSTR(STRING)); \
-        delay(DELAY); \
-      } \
-      else { \
-        lcd_scroll(0, 3, PSTR(STRING), LCD_WIDTH, DELAY); \
-      }
+    #ifdef __SAM3X8E__
+      #define CENTER_OR_SCROLL(STRING,DELAY) \
+        lcd_erase_line(3); \
+        if (strlen(STRING) <= LCD_WIDTH) { \
+          lcd.setCursor((LCD_WIDTH - lcd_strlen_P(PSTR(STRING))) / 2, 3); \
+          lcd_printPGM(PSTR(STRING)); \
+          _delay_ms(DELAY); \
+        } \
+        else { \
+          lcd_scroll(0, 3, PSTR(STRING), LCD_WIDTH, DELAY); \
+        }
+    #else
+      #define CENTER_OR_SCROLL(STRING,DELAY) \
+        lcd_erase_line(3); \
+        if (strlen(STRING) <= LCD_WIDTH) { \
+          lcd.setCursor((LCD_WIDTH - lcd_strlen_P(PSTR(STRING))) / 2, 3); \
+          lcd_printPGM(PSTR(STRING)); \
+          delay(DELAY); \
+        } \
+        else { \
+          lcd_scroll(0, 3, PSTR(STRING), LCD_WIDTH, DELAY); \
+        }
+    #endif
 
     #ifdef STRING_SPLASH_LINE1
       //
