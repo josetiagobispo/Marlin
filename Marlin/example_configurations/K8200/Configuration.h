@@ -897,12 +897,16 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 //
 //#define ULTIMAKERCONTROLLER
 
-//Display Voltage Logic Selector on Alligator Board
+//
+// Display Voltage Logic Selector on Alligator Board
+//
 //#define UI_VOLTAGE_LEVEL 0 // 3.3 V
 #define UI_VOLTAGE_LEVEL 1   // 5 V
 
-// Original RADDS Display from Willy
-// http://max3dshop.org/index.php/default/elektronik/radds-lcd-sd-display-with-reset-and-back-buttom.html
+//
+// RADDS LCD-Display
+// http://doku.radds.org/dokumentation/lcd-display/
+//
 //#define RADDS_DISPLAY
 
 //
