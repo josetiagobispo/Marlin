@@ -183,6 +183,13 @@
   int HAL_timer_get_count (uint8_t timer_num);
   //
 
+  extern TcChannel *stepperChannel;
+  static FORCE_INLINE void HAL_timer_stepper_count(uint32_t count) {
+    uint32_t counter_value = stepperChannel->TC_CV + 42;  // we need time for other stuff!
+    //if(count < 105) count = 105;
+    stepperChannel->TC_RC = (counter_value <= count) ? count : counter_value;
+  }
+
   void tone(uint8_t pin, int frequency);
   void noTone(uint8_t pin);
   //void tone(uint8_t pin, int frequency, long duration);

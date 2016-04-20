@@ -103,6 +103,7 @@ static long acceleration_time, deceleration_time;
   static char step_loops;
   static unsigned short step_loops_nominal;
   static unsigned long OCR1A_nominal;
+  TcChannel *stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL);
 #else
   static unsigned short acc_step_rate; // needed for deceleration start point
   static uint8_t step_loops;
@@ -652,18 +653,6 @@ void set_stepper_direction() {
 
 // Initializes the trapezoid generator from the current block. Called whenever a new
 // block begins.
-
-#ifdef __SAM3X8E__
-  TcChannel *stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL);
-
-  FORCE_INLINE
-  void HAL_timer_stepper_count(uint32_t count) {
-
-    uint32_t counter_value = stepperChannel->TC_CV + 42;  // we need time for other stuff!
-    //if(count < 105) count = 105;
-    stepperChannel->TC_RC = (counter_value <= count) ? count : counter_value;
-  }
-#endif
 
 FORCE_INLINE void trapezoid_generator_reset() {
 
