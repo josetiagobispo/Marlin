@@ -61,7 +61,7 @@ HAL::~HAL() {
   // dtor
 }
 
-void delay_ms(millis_t ms) {
+void delay_ms(unsigned long ms) {
   ms += millis();
   while (PENDING(millis(), ms)) idle();
 }
