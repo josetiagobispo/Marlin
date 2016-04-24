@@ -23,6 +23,7 @@ __Not for production use – use with caution!__
 ## Current Status: Experimental
 
 ### known issues
+ - MOTOR_CURRENT_PWM (_XY, _Z, _E) does not work on Due
  - HEATER_0_USES_MAX6675 does not work on Due
  - MAX6675_IS_MAX31855 does not work on Due
  - M100_FREE_MEMORY_WATCHER does not work on Due
