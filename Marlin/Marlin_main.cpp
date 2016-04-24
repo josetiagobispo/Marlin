@@ -4856,7 +4856,7 @@ inline void gcode_M81() {
     #endif
   #endif
   #ifdef __SAM3X8E__
-    delay_ms(1000); // Wait 1 second before switching off
+    _delay_ms(1000); // Wait 1 second before switching off
   #else
     delay(1000); // Wait 1 second before switching off
   #endif
@@ -6146,7 +6146,7 @@ inline void gcode_M503() {
     disable_e2();
     disable_e3();
     #ifdef __SAM3X8E__
-      delay_ms(100);
+      _delay_ms(100);
     #else
       delay(100);
     #endif
