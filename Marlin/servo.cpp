@@ -455,7 +455,7 @@ void Servo::move(int value) {
     this->write(value);
     #if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE)
       #ifdef __SAM3X8E__
-        _delay_ms(SERVO_DEACTIVATION_DELAY);
+        HAL_delay(SERVO_DEACTIVATION_DELAY);
       #else
         delay(SERVO_DEACTIVATION_DELAY);
       #endif

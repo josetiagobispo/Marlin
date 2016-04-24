@@ -272,7 +272,7 @@ static void lcd_implementation_init() {
 
     if (show_bootscreen) {
       #ifdef __SAM3X8E__
-        _delay_ms(1000);
+        HAL_delay(1000);
       #else
         delay(1000);
       #endif

@@ -181,7 +181,7 @@ uint8_t Sd2Card::cardCommand(uint8_t cmd, uint32_t arg) {
 
   #ifdef __SAM3X8E__
     // additional delay for CMD0
-    if (cmd == CMD0) _delay_ms(100);
+    if (cmd == CMD0) HAL_delay(100);
   #endif
   // skip stuff byte for stop read
   if (cmd == CMD12) spiRec();

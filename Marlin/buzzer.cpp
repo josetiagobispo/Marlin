@@ -38,9 +38,9 @@
           while (i--) {
             #ifdef __SAM3X8E__
               WRITE(BEEPER_PIN, HIGH);
-              HAL::delayMicroseconds(delay);
+              HAL_delayMicroseconds(delay);
               WRITE(BEEPER_PIN, LOW);
-              HAL::delayMicroseconds(delay);
+              HAL_delayMicroseconds(delay);
             #else
               WRITE(BEEPER_PIN, HIGH);
               delayMicroseconds(delay);
@@ -51,7 +51,7 @@
         #else // buzzer has its own resonator - needs a DC
           WRITE(BEEPER_PIN, HIGH);
           #ifdef __SAM3X8E__
-            _delay_ms(duration);
+            HAL_delay(duration);
           #else
             delay(duration);
           #endif
@@ -59,7 +59,7 @@
         #endif
       #else
         #ifdef __SAM3X8E__
-          _delay_ms(duration);
+          HAL_delay(duration);
         #else
           delay(duration);
         #endif
@@ -67,7 +67,7 @@
     }
     else {
       #ifdef __SAM3X8E__
-        _delay_ms(duration);
+        HAL_delay(duration);
       #else
         delay(duration);
       #endif

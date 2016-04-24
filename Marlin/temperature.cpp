@@ -1146,7 +1146,7 @@ void tp_init() {
 
   // Wait for temperature measurement to settle
   #ifdef __SAM3X8E__
-    _delay_ms(250);
+    HAL_delay(250);
   #else
     delay(250);
   #endif

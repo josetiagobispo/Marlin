@@ -53,14 +53,6 @@ extern "C" {
   int spiDueDividors[] = {10,21,42,84,168,255,255};
 #endif
 
-HAL::HAL() {
-  // ctor
-}
-
-HAL::~HAL() {
-  // dtor
-}
-
 // return free memory between end of heap (or end bss) and whatever is current
 int freeMemory() {
   int free_memory;
@@ -88,13 +80,13 @@ int freeMemory() {
       b <<= 1;
 
       WRITE(SCK_PIN, HIGH);
-      HAL::delayMicroseconds(5);
+      HAL_delayMicroseconds(5);
 
       if (READ(MISO_PIN)) {
         b |= 1;
       }
       WRITE(SCK_PIN, LOW);
-      HAL::delayMicroseconds(5);
+      HAL_delayMicroseconds(5);
     }
     return b;
   }
@@ -248,7 +240,7 @@ int freeMemory() {
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
     // clear status
     SPI0->SPI_RDR;
-    //HAL::delayMicroseconds(1);
+    //HAL_delayMicroseconds(1);
   }
 
   void spiSend(const uint8_t* buf, size_t n) {
@@ -258,7 +250,7 @@ int freeMemory() {
       while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       SPI0->SPI_RDR;
-      //HAL::delayMicroseconds(1);
+      //HAL_delayMicroseconds(1);
     }
     spiSend(buf[n - 1]);
   }
@@ -299,7 +291,7 @@ int freeMemory() {
     // wait for receive register
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
     // get byte from receive register
-    //HAL::delayMicroseconds(1);
+    //HAL_delayMicroseconds(1);
     return SPI0->SPI_RDR;
   }
 
@@ -329,7 +321,7 @@ int freeMemory() {
       SPI0->SPI_TDR = 0x000000FF | SPI_PCS(SPI_CHAN);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       buf[i] = SPI0->SPI_RDR;
-      // HAL::delayMicroseconds(1);
+      // HAL_delayMicroseconds(1);
     }
     buf[nbyte] = spiRec();
   }
@@ -345,7 +337,7 @@ int freeMemory() {
       while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       SPI0->SPI_RDR;
-      //HAL::delayMicroseconds(1);
+      //HAL_delayMicroseconds(1);
     }
     spiSend(buf[511]);
   }
@@ -378,7 +370,7 @@ static void eeprom_init(void) {
     digitalWrite( SPI_EEPROM1_CS, LOW );
     spiSend(SPI_CHAN_EEPROM1, eeprom_temp , 1);
     digitalWrite(SPI_EEPROM1_CS, HIGH);
-    _delay_ms(1);
+    HAL_delay(1);
 
     /*write addr*/
     eeprom_temp[0] = 2;//WRITE
@@ -389,7 +381,7 @@ static void eeprom_init(void) {
 
     spiSend(SPI_CHAN_EEPROM1 ,newvalue , 1);
     digitalWrite(SPI_EEPROM1_CS, HIGH);
-    _delay_ms(7);   // wait for page write to complete
+    HAL_delay(7);   // wait for page write to complete
   }
 
   // Read any data type from EEPROM that was previously written by eprBurnValue
@@ -430,7 +422,7 @@ void eeprom_write_byte(unsigned char *pos, unsigned char value) {
 
     // wait for write cycle to complete
     // this could be done more efficiently with "acknowledge polling"
-    _delay_ms(5);
+    HAL_delay(5);
   #endif// MB(ALLIGATOR)
 }
 

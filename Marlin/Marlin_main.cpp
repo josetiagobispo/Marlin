@@ -4115,7 +4115,7 @@ inline void gcode_M42() {
     for (uint8_t n = 0; n < n_samples; n++) {
       randomSeed(millis());
       #ifdef __SAM3X8E__
-        _delay_ms(500);
+        HAL_delay(500);
       #else
         delay(500);
       #endif
@@ -4135,7 +4135,7 @@ inline void gcode_M42() {
           SERIAL_ECHOPAIR("Starting radius: ", radius);
           SERIAL_ECHOPAIR("   angle: ", angle);
           #ifdef __SAM3X8E__
-            _delay_ms(100);
+            HAL_delay(100);
           #else
             delay(100);
           #endif
@@ -4144,7 +4144,7 @@ inline void gcode_M42() {
           else
             SERIAL_ECHO(" Direction: Clockwise \n");
           #ifdef __SAM3X8E__
-            _delay_ms(100);
+            HAL_delay(100);
           #else
             delay(100);
           #endif
@@ -4187,7 +4187,7 @@ inline void gcode_M42() {
                 SERIAL_ECHOPAIR(", ", Y_current);
                 SERIAL_EOL;
                 #ifdef __SAM3X8E__
-                  _delay_ms(50);
+                  HAL_delay(50);
                 #else
                   delay(50);
                 #endif
@@ -4201,7 +4201,7 @@ inline void gcode_M42() {
             SERIAL_ECHOPAIR("  z: ", current_position[Z_AXIS]);
             SERIAL_EOL;
             #ifdef __SAM3X8E__
-              _delay_ms(55);
+              HAL_delay(55);
             #else
               delay(55);
             #endif
@@ -4250,7 +4250,7 @@ inline void gcode_M42() {
         SERIAL_PROTOCOLPGM("   z: ");
         SERIAL_PROTOCOL_F(current_position[Z_AXIS], 6);
         #ifdef __SAM3X8E__
-          _delay_ms(50);
+          HAL_delay(50);
         #else
           delay(50);
         #endif
@@ -4263,7 +4263,7 @@ inline void gcode_M42() {
       }
       if (verbose_level > 0) SERIAL_EOL;
       #ifdef __SAM3X8E__
-        _delay_ms(50);
+        HAL_delay(50);
       #else
         delay(50);
       #endif
@@ -4277,7 +4277,7 @@ inline void gcode_M42() {
       SERIAL_PROTOCOL_F(mean, 6);
       SERIAL_EOL;
       #ifdef __SAM3X8E__
-        _delay_ms(25);
+        HAL_delay(25);
       #else
         delay(25);
       #endif
@@ -4287,7 +4287,7 @@ inline void gcode_M42() {
     SERIAL_PROTOCOL_F(sigma, 6);
     SERIAL_EOL; SERIAL_EOL;
     #ifdef __SAM3X8E__
-      _delay_ms(25);
+      HAL_delay(25);
     #else
       delay(25);
     #endif
@@ -4856,7 +4856,7 @@ inline void gcode_M81() {
     #endif
   #endif
   #ifdef __SAM3X8E__
-    _delay_ms(1000); // Wait 1 second before switching off
+    HAL_delay(1000); // Wait 1 second before switching off
   #else
     delay(1000); // Wait 1 second before switching off
   #endif
@@ -5628,20 +5628,20 @@ inline void gcode_M226() {
       const float PULSE_LENGTH = 0.01524;
       for (int i = 0; i < NUM_PULSES; i++) {
         WRITE(PHOTOGRAPH_PIN, HIGH);
-        _delay_ms(PULSE_LENGTH);
+        HAL_delay(PULSE_LENGTH);
         WRITE(PHOTOGRAPH_PIN, LOW);
-        _delay_ms(PULSE_LENGTH);
+        HAL_delay(PULSE_LENGTH);
       }
       #ifdef __SAM3X8E__
-        _delay_ms(7.33);
+        HAL_delay(7.33);
       #else
         delay(7.33);
       #endif
       for (int i = 0; i < NUM_PULSES; i++) {
         WRITE(PHOTOGRAPH_PIN, HIGH);
-        _delay_ms(PULSE_LENGTH);
+        HAL_delay(PULSE_LENGTH);
         WRITE(PHOTOGRAPH_PIN, LOW);
-        _delay_ms(PULSE_LENGTH);
+        HAL_delay(PULSE_LENGTH);
       }
 
     #endif // !CHDK && HAS_PHOTOGRAPH
@@ -6146,7 +6146,7 @@ inline void gcode_M503() {
     disable_e2();
     disable_e3();
     #ifdef __SAM3X8E__
-      _delay_ms(100);
+      HAL_delay(100);
     #else
       delay(100);
     #endif
@@ -8026,7 +8026,7 @@ void kill(const char* lcd_msg) {
   // FMC small patch to update the LCD before ending
   sei();   // enable interrupts
   #ifdef __SAM3X8E__
-    for (int i = 5; i--; lcd_update()) _delay_ms(200); // Wait a short time
+    for (int i = 5; i--; lcd_update()) HAL_delay(200); // Wait a short time
   #else
     for (int i = 5; i--; lcd_update()) delay(200); // Wait a short time
   #endif

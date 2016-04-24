@@ -71,27 +71,6 @@
   // Public functions
   // --------------------------------------------------------------------------
 
-  class HAL {
-    public:
-
-      HAL();
-
-      virtual ~HAL();
-
-      static FORCE_INLINE void delayMicroseconds(uint32_t usec) { // usec += 3;
-        uint32_t n = usec * (F_CPU / 3000000);
-        asm volatile(
-          "L2_%=_delayMicroseconds:"       "\n\t"
-          "subs   %0, #1"                 "\n\t"
-          "bge    L2_%=_delayMicroseconds" "\n"
-          : "+r" (n) :  
-        );
-      }
-
-    protected:
-    private:
-  };
-
   #ifdef SOFTWARE_SPI
     inline uint8_t spiTransfer(uint8_t b); // using Mode 0
     inline void spiBegin();
@@ -125,13 +104,23 @@
   // Enable interrupts
   void sei(void);
 
-  static inline void _delay_ms(uint32_t msec) {
+  static inline void HAL_delay(uint32_t msec) {
     unsigned int del;
     while (msec > 0) {
       del = msec > 100 ? 100 : msec;
       delay(del);
       msec -= del;
     }
+  }
+
+  static FORCE_INLINE void HAL_delayMicroseconds(uint32_t usec) { //usec += 3;
+    uint32_t n = usec * (F_CPU / 3000000);
+    asm volatile(
+      "L2_%=_delayMicroseconds:"       "\n\t"
+      "subs   %0, #1"                 "\n\t"
+      "bge    L2_%=_delayMicroseconds" "\n"
+      : "+r" (n) :  
+    );
   }
 
   int freeMemory(void);

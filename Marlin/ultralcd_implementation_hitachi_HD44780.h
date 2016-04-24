@@ -461,7 +461,7 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
       lcd.setCursor(col, line);
       lcd_print(tmp);
       #ifdef __SAM3X8E__
-        _delay_ms(time / max(n, 1));
+        HAL_delay(time / max(n, 1));
       #else
         delay(time / max(n, 1));
       #endif
@@ -532,7 +532,7 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
         if (strlen(STRING) <= LCD_WIDTH) { \
           lcd.setCursor((LCD_WIDTH - lcd_strlen_P(PSTR(STRING))) / 2, 3); \
           lcd_printPGM(PSTR(STRING)); \
-          _delay_ms(DELAY); \
+          HAL_delay(DELAY); \
         } \
         else { \
           lcd_scroll(0, 3, PSTR(STRING), LCD_WIDTH, DELAY); \
@@ -563,7 +563,7 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
           CENTER_OR_SCROLL(STRING_SPLASH_LINE2, 2000);
         #else
           #ifdef __SAM3X8E__
-            _delay_ms(2000);
+            HAL_delay(2000);
           #else
             delay(2000);
           #endif
@@ -592,7 +592,7 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
       if (LCD_EXTRA_SPACE >= strlen(STRING_SPLASH_LINE2) + 1) {
         logo_lines(PSTR(" " STRING_SPLASH_LINE2));
         #ifdef __SAM3X8E__
-          _delay_ms(2000);
+          HAL_delay(2000);
         #else
           delay(2000);
         #endif
@@ -607,7 +607,7 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
       //
       logo_lines(PSTR(""));
       #ifdef __SAM3X8E__
-        _delay_ms(2000);
+        HAL_delay(2000);
       #else
         delay(2000);
       #endif

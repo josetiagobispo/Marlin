@@ -1348,7 +1348,7 @@ void quickStop() {
           uint8_t old_pin = _READ_DIR(AXIS); \
           _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
           _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
-          HAL::delayMicroseconds(2); \
+          HAL_delayMicroseconds(2); \
           _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
           _APPLY_DIR(AXIS, old_pin); \
         }
@@ -1399,7 +1399,7 @@ void quickStop() {
           Y_STEP_WRITE(!INVERT_Y_STEP_PIN);
           Z_STEP_WRITE(!INVERT_Z_STEP_PIN);
           #ifdef __SAM3X8E__
-            HAL::delayMicroseconds(1U);
+            HAL_delayMicroseconds(1U);
           #else
             delayMicroseconds(2);
           #endif
@@ -1431,7 +1431,7 @@ void quickStop() {
     digitalWrite(DIGIPOTSS_PIN, HIGH); // take the SS pin high to de-select the chip:
     /*
     #ifdef __SAM3X8E__
-      //_delay_ms(10);
+      //HAL_delay(10);
     #else
       //delay(10);
     #endif
