@@ -883,9 +883,9 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 
 //
 // Display Voltage Logic Selector on Alligator Board
+// 0 = 3.3V, 1 = 5V
 //
-//#define UI_VOLTAGE_LEVEL 0 // 3.3 V
-#define UI_VOLTAGE_LEVEL 1   // 5 V
+//#define UI_VOLTAGE_LEVEL 1
 
 //
 // RADDS LCD-Display
