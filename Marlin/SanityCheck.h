@@ -418,7 +418,7 @@
 #endif
 
 #ifdef __SAM3X8E__
-  #if (PIN_EXISTS(MOTOR_CURRENT_PWM_XY) || PIN_EXISTS(MOTOR_CURRENT_PWM_Z) || PIN_EXISTS(MOTOR_CURRENT_PWM_E))
+  #if HAS_MOTOR_CURRENT_PWM
     #error MOTOR_CURRENT_PWM (_XY, _Z, _E) are not supported by ARM platform yet.
   #endif
   #if MB(ALLIGATOR)
