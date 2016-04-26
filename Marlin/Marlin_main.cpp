@@ -509,7 +509,7 @@ void serial_echopair_P(const char* s_P, float v)         { serialprintPGM(s_P); 
 void serial_echopair_P(const char* s_P, double v)        { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, unsigned long v) { serialprintPGM(s_P); SERIAL_ECHO(v); }
 
-void gcode_M114();
+static void report_current_position();
 
 #if ENABLED(DEBUG_LEVELING_FEATURE)
   void print_xyz(const char* prefix, const float x, const float y, const float z) {
@@ -2372,7 +2372,6 @@ static void homeaxis(AxisEnum axis) {
         #else
           sync_plan_position();
         #endif
-        //prepare_move();
       }
 
       feedrate = retract_recover_feedrate * 60;
@@ -2915,8 +2914,7 @@ inline void gcode_G28() {
     }
   #endif
 
-  gcode_M114(); // Send end position to RepetierHost
-
+  report_current_position();
 }
 
 #if ENABLED(MESH_BED_LEVELING)
@@ -3624,8 +3622,7 @@ inline void gcode_G28() {
       }
     #endif
 
-    gcode_M114(); // Send end position to RepetierHost
-
+    report_current_position();
   }
 
   #if DISABLED(Z_PROBE_SLED) // could be avoided
@@ -3661,7 +3658,7 @@ inline void gcode_G28() {
       #endif
       stow_z_probe(false); // Retract Z Servo endstop if available. Z_PROBE_SLED is missed here.
 
-      gcode_M114(); // Send end position to RepetierHost
+      report_current_position();
     }
 
   #endif //!Z_PROBE_SLED
@@ -4294,7 +4291,7 @@ inline void gcode_M42() {
 
     clean_up_after_endstop_move();
 
-    gcode_M114(); // Send end position to RepetierHost
+    report_current_position();
   }
 
 #endif // AUTO_BED_LEVELING_FEATURE && Z_MIN_PROBE_REPEATABILITY_TEST
@@ -4947,9 +4944,9 @@ inline void gcode_M92() {
 }
 
 /**
- * M114: Output current position to serial port
+ * Output the current position to serial
  */
-inline void gcode_M114() {
+static void report_current_position() {
   SERIAL_PROTOCOLPGM("X:");
   SERIAL_PROTOCOL(current_position[X_AXIS]);
   SERIAL_PROTOCOLPGM(" Y:");
@@ -5009,6 +5006,11 @@ inline void gcode_M114() {
     SERIAL_EOL; SERIAL_EOL;
   #endif
 }
+
+/**
+ * M114: Output current position to serial port
+ */
+inline void gcode_M114() { report_current_position(); }
 
 /**
  * M115: Capabilities string
@@ -5265,7 +5267,9 @@ inline void gcode_M206() {
     if (code_seen('T')) set_home_offset(X_AXIS, code_value()); // Theta
     if (code_seen('P')) set_home_offset(Y_AXIS, code_value()); // Psi
   #endif
+
   sync_plan_position();
+  report_current_position();
 }
 
 #if ENABLED(DELTA)
@@ -5988,6 +5992,7 @@ inline void gcode_M428() {
 
   if (!err) {
     sync_plan_position();
+    report_current_position();
     LCD_MESSAGEPGM(MSG_HOME_OFFSETS_APPLIED);
     #if HAS_BUZZER
       buzz(200, 659);
@@ -7399,12 +7404,8 @@ void mesh_plan_buffer_line(float x, float y, float z, const float e, float feed_
         adjust_delta(target);
       #endif
 
-      //SERIAL_ECHOPGM("target[X_AXIS]="); SERIAL_ECHOLN(target[X_AXIS]);
-      //SERIAL_ECHOPGM("target[Y_AXIS]="); SERIAL_ECHOLN(target[Y_AXIS]);
-      //SERIAL_ECHOPGM("target[Z_AXIS]="); SERIAL_ECHOLN(target[Z_AXIS]);
-      //SERIAL_ECHOPGM("delta[X_AXIS]="); SERIAL_ECHOLN(delta[X_AXIS]);
-      //SERIAL_ECHOPGM("delta[Y_AXIS]="); SERIAL_ECHOLN(delta[Y_AXIS]);
-      //SERIAL_ECHOPGM("delta[Z_AXIS]="); SERIAL_ECHOLN(delta[Z_AXIS]);
+      //DEBUG_POS("prepare_move_delta", target);
+      //DEBUG_POS("prepare_move_delta", delta);
 
       plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], target[E_AXIS], feedrate / 60 * feedrate_multiplier / 100.0, active_extruder);
     }
@@ -7494,13 +7495,10 @@ void prepare_move() {
     if (!prepare_move_scara(destination)) return;
   #elif ENABLED(DELTA)
     if (!prepare_move_delta(destination)) return;
-  #endif
-
-  #if ENABLED(DUAL_X_CARRIAGE)
-    if (!prepare_move_dual_x_carriage()) return;
-  #endif
-
-  #if DISABLED(DELTA) && DISABLED(SCARA)
+  #else
+    #if ENABLED(DUAL_X_CARRIAGE)
+      if (!prepare_move_dual_x_carriage()) return;
+    #endif
     if (!prepare_move_cartesian()) return;
   #endif
 
