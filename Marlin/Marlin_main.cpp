@@ -142,6 +142,10 @@
  * M33  - Get the longname version of a path
  * M42  - Change pin status via gcode Use M42 Px Sy to set pin x to value y, when omitting Px the onboard led will be used.
  * M48  - Measure Z_Probe repeatability. M48 [P # of points] [X position] [Y position] [V_erboseness #] [E_ngage Probe] [L # of legs of travel]
+ * M75  - Start the print job timer
+ * M76  - Pause the print job timer
+ * M77  - Stop the print job timer
+ * M78  - Show statistical information about the print jobs
  * M80  - Turn on Power Supply
  * M81  - Turn off Power Supply
  * M82  - Set E codes absolute (default)
@@ -332,7 +336,11 @@ static millis_t max_inactive_time = 0;
 static millis_t stepper_inactive_time = (DEFAULT_STEPPER_DEACTIVE_TIME) * 1000UL;
 
 // Print Job Timer
-Stopwatch print_job_timer = Stopwatch();
+#if ENABLED(PRINTCOUNTER)
+  PrintCounter print_job_timer = PrintCounter();
+#else
+  Stopwatch print_job_timer = Stopwatch();
+#endif
 
 static uint8_t target_extruder;
 
@@ -4317,6 +4325,15 @@ inline void gcode_M77() {
   print_job_timer.stop();
 }
 
+#if ENABLED(PRINTCOUNTER)
+  /*+
+   * M78: Show print statistics
+   */
+  inline void gcode_M78() {
+    print_job_timer.showStats();
+  }
+#endif
+
 /**
  * M104: Set hot end temperature
  */
@@ -4529,6 +4546,8 @@ inline void gcode_M109() {
     #define TEMP_CONDITIONS (wants_to_cool ? isCoolingHotend(target_extruder) : isHeatingHotend(target_extruder))
   #endif //TEMP_RESIDENCY_TIME > 0
 
+  KEEPALIVE_STATE(NOT_BUSY);
+
   cancel_heatup = false;
   millis_t now, next_temp_ms = 0;
   do {
@@ -4573,6 +4592,7 @@ inline void gcode_M109() {
   } while (!cancel_heatup && TEMP_CONDITIONS);
 
   LCD_MESSAGEPGM(MSG_HEATING_COMPLETE);
+  KEEPALIVE_STATE(IN_HANDLER);
 }
 
 #if HAS_TEMP_BED
@@ -4606,6 +4626,7 @@ inline void gcode_M109() {
     millis_t now, next_temp_ms = 0;
 
     // Wait for temperature to come close enough
+    KEEPALIVE_STATE(NOT_BUSY);
     do {
       now = millis();
       if (ELAPSED(now, next_temp_ms)) { //Print Temp Reading every 1 second while heating up.
@@ -4645,6 +4666,7 @@ inline void gcode_M109() {
 
     } while (!cancel_heatup && TEMP_BED_CONDITIONS);
     LCD_MESSAGEPGM(MSG_BED_DONE);
+    KEEPALIVE_STATE(IN_HANDLER);
   }
 
 #endif // HAS_TEMP_BED
@@ -6713,6 +6735,12 @@ void process_next_command() {
         gcode_M77();
         break;
 
+      #if ENABLED(PRINTCOUNTER)
+        case 78: // Show print statistics
+          gcode_M78();
+          break;
+      #endif
+
       #if ENABLED(M100_FREE_MEMORY_WATCHER)
         case 100:
           gcode_M100();
@@ -7833,6 +7861,9 @@ void idle(
   );
   host_keepalive();
   lcd_update();
+  #if ENABLED(PRINTCOUNTER)
+      print_job_timer.tick();
+  #endif
 }
 
 /**
