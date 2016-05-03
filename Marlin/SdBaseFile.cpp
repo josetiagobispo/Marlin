@@ -412,7 +412,7 @@ bool SdBaseFile::make83Name(const char* str, uint8_t* name, const char** ptr) {
         while ((b = pgm_read_byte(p++))) if (b == c) goto fail;
       #endif  // __SAM3X8E__
       // check size and only allow ASCII printable characters
-      if (i > n || c < 0x21 || c > 0x7E) goto fail;
+      if (i > n || c < 0x21 || c == 0x7F) goto fail;
       // only upper case allowed in 8.3 names - convert lower to upper
       name[i++] = (c < 'a' || c > 'z') ? (c) : (c + ('A' - 'a'));
     }
