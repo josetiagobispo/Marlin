@@ -232,12 +232,13 @@ class Stepper {
     #endif
     void microstep_ms(uint8_t driver, int8_t ms1, int8_t ms2);
     void digipot_current(uint8_t driver, int current);
+    void microstep_mode(uint8_t driver, uint8_t stepping);
     void microstep_readings();
 
     #if ENABLED(Z_DUAL_ENDSTOPS)
-      void set_homing_flag(bool state);
-      void set_z_lock(bool state);
-      void set_z2_lock(bool state);
+      FORCE_INLINE void set_homing_flag(bool state) { performing_homing = state; }
+      FORCE_INLINE void set_z_lock(bool state) { locked_z_motor = state; }
+      FORCE_INLINE void set_z2_lock(bool state) { locked_z2_motor = state; }
     #endif
 
     #if ENABLED(BABYSTEPPING)
@@ -259,6 +260,8 @@ class Stepper {
     FORCE_INLINE float triggered_position_mm(AxisEnum axis) {
       return endstops_trigsteps[axis] / planner.axis_steps_per_unit[axis];
     }
+
+  private:
 
     #ifdef __SAM3X8E__
       FORCE_INLINE unsigned long calc_timer(unsigned long step_rate) {
@@ -358,8 +361,6 @@ class Stepper {
       // SERIAL_ECHOLN(current_block->final_advance/256.0);
     }
 
-  private:
-    void microstep_mode(uint8_t driver, uint8_t stepping);
     void digipot_init();
     void microstep_init();
 

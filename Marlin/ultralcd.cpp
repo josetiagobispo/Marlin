@@ -1720,7 +1720,7 @@ static void lcd_control_motion_menu() {
   #endif
   MENU_ITEM_EDIT(float51, MSG_ESTEPS, &planner.axis_steps_per_unit[E_AXIS], 5, 9999);
   #if ENABLED(ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
-    MENU_ITEM_EDIT(bool, MSG_ENDSTOP_ABORT, &abort_on_endstop_hit);
+    MENU_ITEM_EDIT(bool, MSG_ENDSTOP_ABORT, &stepper.abort_on_endstop_hit);
   #endif
   #if ENABLED(SCARA)
     MENU_ITEM_EDIT(float74, MSG_XSCALE, &axis_scaling[X_AXIS], 0.5, 2);
@@ -2118,10 +2118,16 @@ void lcd_init() {
       WRITE(SHIFT_LD, HIGH);
     #endif
 
-    #ifdef RIGIDBOT_PANEL
+    #if BUTTON_EXISTS(UP)
       SET_INPUT(BTN_UP);
+    #endif
+    #if BUTTON_EXISTS(DWN)
       SET_INPUT(BTN_DWN);
+    #endif
+    #if BUTTON_EXISTS(LFT)
       SET_INPUT(BTN_LFT);
+    #endif
+    #if BUTTON_EXISTS(RT)
       SET_INPUT(BTN_RT);
     #endif
 
@@ -2509,29 +2515,42 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
       #if BUTTON_EXISTS(EN2)
         if (BUTTON_PRESSED(EN2)) newbutton |= EN_B;
       #endif
-      #if ENABLED(RIGIDBOT_PANEL) || BUTTON_EXISTS(ENC)
+      #if LCD_HAS_DIRECTIONAL_BUTTONS || BUTTON_EXISTS(ENC)
         millis_t now = millis();
       #endif
-      #if ENABLED(RIGIDBOT_PANEL)
+
+      #if LCD_HAS_DIRECTIONAL_BUTTONS
         if (ELAPSED(now, next_button_update_ms)) {
-          if (BUTTON_PRESSED(UP)) {
-            encoderDiff = -(ENCODER_STEPS_PER_MENU_ITEM);
-            next_button_update_ms = now + 300;
+          if (false) {
+            // for the else-ifs below
           }
-          else if (BUTTON_PRESSED(DWN)) {
-            encoderDiff = ENCODER_STEPS_PER_MENU_ITEM;
-            next_button_update_ms = now + 300;
-          }
-          else if (BUTTON_PRESSED(LFT)) {
-            encoderDiff = -(ENCODER_PULSES_PER_STEP);
-            next_button_update_ms = now + 300;
-          }
-          else if (BUTTON_PRESSED(RT)) {
-            encoderDiff = ENCODER_PULSES_PER_STEP;
-            next_button_update_ms = now + 300;
-          }
+          #if BUTTON_EXISTS(UP)
+            else if (BUTTON_PRESSED(UP)) {
+              encoderDiff = -(ENCODER_STEPS_PER_MENU_ITEM);
+              next_button_update_ms = now + 300;
+            }
+          #endif
+          #if BUTTON_EXISTS(DWN)
+            else if (BUTTON_PRESSED(DWN)) {
+              encoderDiff = ENCODER_STEPS_PER_MENU_ITEM;
+              next_button_update_ms = now + 300;
+            }
+          #endif
+          #if BUTTON_EXISTS(LFT)
+            else if (BUTTON_PRESSED(LFT)) {
+              encoderDiff = -(ENCODER_PULSES_PER_STEP);
+              next_button_update_ms = now + 300;
+            }
+          #endif
+          #if BUTTON_EXISTS(RT)
+            else if (BUTTON_PRESSED(RT)) {
+              encoderDiff = ENCODER_PULSES_PER_STEP;
+              next_button_update_ms = now + 300;
+            }
+          #endif
         }
       #endif
+
       #if BUTTON_EXISTS(ENC)
         if (ELAPSED(now, next_button_update_ms) && BUTTON_PRESSED(ENC)) newbutton |= EN_C;
         #ifdef __SAM3X8E__
@@ -2540,6 +2559,7 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
           #endif
         #endif
       #endif
+
       buttons = newbutton;
       #if ENABLED(LCD_HAS_SLOW_BUTTONS)
         buttons |= slow_buttons;
