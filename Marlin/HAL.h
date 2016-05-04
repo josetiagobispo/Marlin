@@ -124,8 +124,10 @@
   }
 
   int freeMemory(void);
-  void eeprom_write_byte(unsigned char* pos, unsigned char value);
-  unsigned char eeprom_read_byte(unsigned char* pos);
+  uint8_t eeprom_read_byte(uint8_t* pos);
+  void eeprom_read_block(void* pos, const void* eeprom_address, size_t n);
+  void eeprom_write_byte(uint8_t* pos, uint8_t value);
+  void eeprom_update_block (const void* pos, void* eeprom_address, size_t n);
 
   // timers
   #define STEP_TIMER_NUM 2
@@ -161,15 +163,14 @@
   void HAL_timer_enable_interrupt (uint8_t timer_num);
   void HAL_timer_disable_interrupt (uint8_t timer_num);
 
-  inline
-  void HAL_timer_isr_status (Tc* tc, uint32_t channel) {
+  inline void HAL_timer_isr_status (Tc* tc, uint32_t channel) {
     tc->TC_CHANNEL[channel].TC_SR; // clear status register
   }
 
   int HAL_timer_get_count (uint8_t timer_num);
   //
 
-  extern TcChannel *stepperChannel;
+  extern TcChannel* stepperChannel;
   static FORCE_INLINE void HAL_timer_stepper_count(uint32_t count) {
     uint32_t counter_value = stepperChannel->TC_CV + 42;  // we need time for other stuff!
     //if(count < 105) count = 105;

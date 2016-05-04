@@ -22,7 +22,9 @@
 
 #include "Marlin.h"
 #include "printcounter.h"
-#include <avr/eeprom.h>
+#ifndef __SAM3X8E__
+  #include <avr/eeprom.h>
+#endif
 
 PrintCounter::PrintCounter(): super() {
   this->loadStats();

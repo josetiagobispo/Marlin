@@ -125,7 +125,6 @@ class Stepper {
       char step_loops;
       unsigned short step_loops_nominal;
       unsigned long OCR1A_nominal;
-      TcChannel *stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL);
     #else
       unsigned short acc_step_rate; // needed for deceleration start point
       uint8_t step_loops;

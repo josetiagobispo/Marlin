@@ -405,11 +405,43 @@ static void eeprom_init(void) {
   }
 #endif
 
-void eeprom_write_byte(unsigned char *pos, unsigned char value) {
+uint8_t eeprom_read_byte(uint8_t* pos) {
+  #if MB(ALLIGATOR)
+    return eprGetValue((unsigned) pos);
+  #else
+    byte data = 0xFF;
+    unsigned eeprom_address = (unsigned) pos;
+
+    eeprom_init();
+
+    Wire.beginTransmission(eeprom_device_address);
+    Wire.write((int)(eeprom_address >> 8));   // MSB
+    Wire.write((int)(eeprom_address & 0xFF)); // LSB
+    Wire.endTransmission();
+    Wire.requestFrom(eeprom_device_address, (byte)1);
+    if (Wire.available())
+      data = Wire.read();
+    return data;
+  #endif// MB(ALLIGATOR)
+}
+
+// maybe let's not read more than 30 or 32 bytes at a time!
+void eeprom_read_block(void* pos, const void* eeprom_address, size_t n) {
+  eeprom_init();
+
+  Wire.beginTransmission(eeprom_device_address);
+  Wire.write((int)((unsigned)eeprom_address >> 8)); // MSB
+  Wire.write((int)((unsigned)eeprom_address & 0xFF)); // LSB
+  Wire.endTransmission();
+  Wire.requestFrom(eeprom_device_address, (byte)n);
+  for (byte c = 0; c < n; c++ )
+    if (Wire.available()) *(uint8_t*)(pos + c) = Wire.read();
+}
+
+void eeprom_write_byte(uint8_t* pos, uint8_t value) {
   #if MB(ALLIGATOR)
     eprBurnValue((unsigned) pos, 1, &value);
   #else
-
     unsigned eeprom_address = (unsigned) pos;
 
     eeprom_init();
@@ -426,24 +458,35 @@ void eeprom_write_byte(unsigned char *pos, unsigned char value) {
   #endif// MB(ALLIGATOR)
 }
 
-unsigned char eeprom_read_byte(unsigned char *pos) {
-  #if MB(ALLIGATOR)
-    return eprGetValue((unsigned) pos);
-  #else
-    byte data = 0xFF;
-    unsigned eeprom_address = (unsigned) pos;
+// WARNING: address is a page address, 6-bit end will wrap around
+// also, data can be maximum of about 30 bytes, because the Wire library has a buffer of 32 bytes
+void eeprom_update_block (const void* pos, void* eeprom_address, size_t n) {
+  uint8_t eeprom_temp[32] = {0};
+  uint8_t flag = 0;
 
-    eeprom_init ();
+  eeprom_init();
 
+  Wire.beginTransmission(eeprom_device_address);
+  Wire.write((int)((unsigned)eeprom_address >> 8)); // MSB
+  Wire.write((int)((unsigned)eeprom_address & 0xFF)); // LSB
+  Wire.endTransmission();
+  Wire.requestFrom(eeprom_device_address, (byte)n);
+  for (byte c = 0; c < n; c++) {
+    if (Wire.available()) eeprom_temp[c] = Wire.read();
+    flag |= (eeprom_temp[c] ^ *(uint8_t*)(pos + c));
+  }
+
+  if (flag) {
     Wire.beginTransmission(eeprom_device_address);
-    Wire.write((int)(eeprom_address >> 8));   // MSB
-    Wire.write((int)(eeprom_address & 0xFF)); // LSB
+    Wire.write((int)((unsigned)eeprom_address >> 8)); // MSB
+    Wire.write((int)((unsigned)eeprom_address & 0xFF)); // LSB
+    Wire.write((uint8_t*)(pos), n);
     Wire.endTransmission();
-    Wire.requestFrom(eeprom_device_address, (byte)1);
-    if (Wire.available())
-      data = Wire.read();
-    return data;
-  #endif// MB(ALLIGATOR)
+ 
+    // wait for write cycle to complete
+    // this could be done more efficiently with "acknowledge polling"
+    HAL_delay(5);
+  }
 }
 
 // --------------------------------------------------------------------------
