@@ -460,7 +460,7 @@ void eeprom_write_byte(uint8_t* pos, uint8_t value) {
 
 // WARNING: address is a page address, 6-bit end will wrap around
 // also, data can be maximum of about 30 bytes, because the Wire library has a buffer of 32 bytes
-void eeprom_update_block (const void* pos, void* eeprom_address, size_t n) {
+void eeprom_update_block(const void* pos, void* eeprom_address, size_t n) {
   uint8_t eeprom_temp[32] = {0};
   uint8_t flag = 0;
 
