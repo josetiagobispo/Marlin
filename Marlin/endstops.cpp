@@ -37,7 +37,13 @@
 Endstops endstops;
 
 Endstops::Endstops() {
-  enable_globally(ENABLED(ENDSTOPS_ONLY_FOR_HOMING));
+  enable_globally(
+    #if ENABLED(ENDSTOPS_ONLY_FOR_HOMING)
+      true
+    #else
+      false
+    #endif
+  );
   enable(true);
   #if ENABLED(HAS_Z_MIN_PROBE)
     enable_z_probe(false);
@@ -189,7 +195,7 @@ void Endstops::report_state() {
         card.sdprinting = false;
         card.closefile();
         stepper.quick_stop();
-        disable_all_heaters(); // switch off all heaters.
+        thermalManager.disable_all_heaters(); // switch off all heaters.
       }
     #endif
   }
