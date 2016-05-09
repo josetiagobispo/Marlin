@@ -348,6 +348,7 @@ static uint8_t target_extruder;
 #if ENABLED(AUTO_BED_LEVELING_FEATURE)
   int xy_travel_speed = XY_TRAVEL_SPEED;
   float zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
+  bool bed_leveling_in_progress = false;
 #endif
 
 #if ENABLED(Z_DUAL_ENDSTOPS) && DISABLED(DELTA)
@@ -1661,7 +1662,12 @@ static void setup_for_endstop_move() {
       destination[X_AXIS] = x;
       destination[Y_AXIS] = y;
       destination[Z_AXIS] = z;
-      prepare_move_raw(); // this will also set_current_to_destination
+
+      if (x == current_position[X_AXIS] && y == current_position[Y_AXIS])
+        prepare_move_raw(); // this will also set_current_to_destination
+      else
+        prepare_move();     // this will also set_current_to_destination
+
       stepper.synchronize();
 
     #else
@@ -1710,7 +1716,7 @@ static void setup_for_endstop_move() {
     refresh_cmd_timeout();
   }
 
-  #if ENABLED(HAS_Z_MIN_PROBE)
+  #if HAS_BED_PROBE
 
   static void deploy_z_probe() {
 
@@ -1907,7 +1913,7 @@ static void setup_for_endstop_move() {
 
     endstops.enable_z_probe(false);
   }
-  #endif // HAS_Z_MIN_PROBE
+  #endif // HAS_BED_PROBE
 
   enum ProbeAction {
     ProbeStay          = 0,
@@ -3267,6 +3273,8 @@ inline void gcode_G28() {
 
     feedrate = homing_feedrate[Z_AXIS];
 
+    bed_leveling_in_progress = true;
+
     #if ENABLED(AUTO_BED_LEVELING_GRID)
 
       // probe at the points of a lattice grid
@@ -3608,13 +3616,11 @@ inline void gcode_G28() {
         }
       #endif
       enqueue_and_echo_commands_P(PSTR(Z_PROBE_END_SCRIPT));
-      #if ENABLED(HAS_Z_MIN_PROBE)
+      #if HAS_BED_PROBE
         endstops.enable_z_probe(false);
       #endif
       stepper.synchronize();
     #endif
-
-    KEEPALIVE_STATE(IN_HANDLER);
 
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
@@ -3622,7 +3628,11 @@ inline void gcode_G28() {
       }
     #endif
 
+    bed_leveling_in_progress = false;
+
     report_current_position();
+
+    KEEPALIVE_STATE(IN_HANDLER);
   }
 
   #if DISABLED(Z_PROBE_SLED) // could be avoided
@@ -3971,7 +3981,7 @@ inline void gcode_M42() {
    *  Z_MIN_PROBE_PIN, but here for clarity.
    */
   #if ENABLED(Z_MIN_PROBE_ENDSTOP)
-    #if !HAS_Z_PROBE
+    #if !HAS_Z_MIN_PROBE_PIN
       #error You must define Z_MIN_PROBE_PIN to enable Z probe repeatability calculation.
     #endif
   #elif !HAS_Z_MIN
@@ -7382,7 +7392,7 @@ void mesh_buffer_line(float x, float y, float z, const float e, float feed_rate,
       calculate_delta(target);
 
       #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-        adjust_delta(target);
+        if (!bed_leveling_in_progress) adjust_delta(target);
       #endif
 
       //DEBUG_POS("prepare_move_delta", target);

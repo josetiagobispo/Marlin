@@ -1091,48 +1091,37 @@ void Temperature::init() {
     /**
         SERIAL_ECHO_START;
         SERIAL_ECHOPGM("Thermal Thermal Runaway Running. Heater ID: ");
-        if (heater_id < 0) SERIAL_ECHOPGM("bed"); else SERIAL_ECHOPGM(heater_id);
-        SERIAL_ECHOPGM(" ;  State:");
-        SERIAL_ECHOPGM(*state);
-        SERIAL_ECHOPGM(" ;  Timer:");
-        SERIAL_ECHOPGM(*timer);
-        SERIAL_ECHOPGM(" ;  Temperature:");
-        SERIAL_ECHOPGM(temperature);
-        SERIAL_ECHOPGM(" ;  Target Temp:");
-        SERIAL_ECHOPGM(target_temperature);
+        if (heater_id < 0) SERIAL_ECHOPGM("bed"); else SERIAL_ECHO(heater_id);
+        SERIAL_ECHOPAIR(" ;  State:", *state);
+        SERIAL_ECHOPAIR(" ;  Timer:", *timer);
+        SERIAL_ECHOPAIR(" ;  Temperature:", temperature);
+        SERIAL_ECHOPAIR(" ;  Target Temp:", target_temperature);
         SERIAL_EOL;
     */
 
     int heater_index = heater_id >= 0 ? heater_id : EXTRUDERS;
 
     // If the target temperature changes, restart
-    if (tr_target_temperature[heater_index] != target_temperature)
-      *state = TRReset;
+    if (tr_target_temperature[heater_index] != target_temperature) {
+      tr_target_temperature[heater_index] = target_temperature;
+      *state = target_temperature > 0 ? TRFirstHeating : TRInactive;
+    }
 
     switch (*state) {
-      case TRReset:
-        *timer = 0;
-        *state = TRInactive;
       // Inactive state waits for a target temperature to be set
-      case TRInactive:
-        if (target_temperature > 0) {
-          tr_target_temperature[heater_index] = target_temperature;
-          *state = TRFirstHeating;
-        }
-        break;
+      case TRInactive: break;
       // When first heating, wait for the temperature to be reached then go to Stable state
       case TRFirstHeating:
-        if (temperature >= tr_target_temperature[heater_index]) *state = TRStable;
-        break;
+        if (temperature < tr_target_temperature[heater_index]) break;
+        *state = TRStable;
       // While the temperature is stable watch for a bad temperature
       case TRStable:
-        // If the temperature is over the target (-hysteresis) restart the timer
-        if (temperature >= tr_target_temperature[heater_index] - hysteresis_degc)
-          *timer = millis();
-        // If the timer goes too long without a reset, trigger shutdown
-        else if (ELAPSED(millis(), *timer + period_seconds * 1000UL))
+        if (temperature < tr_target_temperature[heater_index] - hysteresis_degc && ELAPSED(millis(), *timer))
           *state = TRRunaway;
-        break;
+        else {
+          *timer = millis() + period_seconds * 1000UL;
+          break;
+        }
       case TRRunaway:
         _temp_error(heater_id, PSTR(MSG_T_THERMAL_RUNAWAY), PSTR(MSG_THERMAL_RUNAWAY));
     }
