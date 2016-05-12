@@ -22,9 +22,6 @@
 
 #include "Marlin.h"
 #include "printcounter.h"
-#ifndef __SAM3X8E__
-  #include <avr/eeprom.h>
-#endif
 
 PrintCounter::PrintCounter(): super() {
   this->loadStats();
@@ -125,7 +122,6 @@ void PrintCounter::tick() {
       PrintCounter::debug(PSTR("tick"));
     #endif
 
-    uint16_t t = this->duration();;
     this->data.printTime += this->deltaDuration();
     update_before = now;
   }

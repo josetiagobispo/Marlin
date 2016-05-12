@@ -3826,7 +3826,7 @@ inline void gcode_M17() {
    */
   inline void gcode_M26() {
     if (card.cardOK && code_seen('S'))
-      card.setIndex(code_value_short());
+      card.setIndex(code_value_long());
   }
 
   /**
@@ -3898,7 +3898,7 @@ inline void gcode_M31() {
       card.openFile(namestartpos, true, call_procedure);
 
       if (code_seen('S') && seen_pointer < namestartpos) // "S" (must occur _before_ the filename!)
-        card.setIndex(code_value_short());
+        card.setIndex(code_value_long());
 
       card.startFileprint();
 
@@ -5107,11 +5107,15 @@ inline void gcode_M121() { endstops.enable_globally(false); }
    */
   inline void gcode_M156() {
     uint8_t addr = code_seen('A') ? code_value_short() : 0;
-    int bytes    = code_seen('B') ? code_value_short() : 0;
+    int bytes    = code_seen('B') ? code_value_short() : 1;
 
-    if (addr && bytes) {
+    if (addr && bytes > 0 && bytes <= 32) {
       i2c.address(addr);
       i2c.reqbytes(bytes);
+    }
+    else {
+      SERIAL_ERROR_START;
+      SERIAL_ERRORLN("Bad i2c request");
     }
   }
 
