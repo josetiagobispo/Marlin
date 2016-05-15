@@ -397,10 +397,10 @@
   #endif
 
   /**
-   * Avoid double-negatives for enabling features
+   * Host keep alive
    */
-  #if DISABLED(DISABLE_HOST_KEEPALIVE)
-    #define HOST_KEEPALIVE_FEATURE
+  #ifndef DEFAULT_KEEPALIVE_INTERVAL
+    #define DEFAULT_KEEPALIVE_INTERVAL 2
   #endif
 
   /**
@@ -497,7 +497,7 @@
   #endif
 
   #if TEMP_SENSOR_1 <= -2
-    #error MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_1
+    #error "MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_1"
   #elif TEMP_SENSOR_1 == -1
     #define HEATER_1_USES_AD595
   #elif TEMP_SENSOR_1 == 0
@@ -509,7 +509,7 @@
   #endif
 
   #if TEMP_SENSOR_2 <= -2
-    #error MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_2
+    #error "MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_2"
   #elif TEMP_SENSOR_2 == -1
     #define HEATER_2_USES_AD595
   #elif TEMP_SENSOR_2 == 0
@@ -521,7 +521,7 @@
   #endif
 
   #if TEMP_SENSOR_3 <= -2
-    #error MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_3
+    #error "MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_3"
   #elif TEMP_SENSOR_3 == -1
     #define HEATER_3_USES_AD595
   #elif TEMP_SENSOR_3 == 0
@@ -533,7 +533,7 @@
   #endif
 
   #if TEMP_SENSOR_BED <= -2
-    #error MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_BED
+    #error "MAX6675 / MAX31855 Thermocouples not supported for TEMP_SENSOR_BED"
   #elif TEMP_SENSOR_BED == -1
     #define BED_USES_AD595
   #elif TEMP_SENSOR_BED == 0

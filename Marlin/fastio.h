@@ -4393,7 +4393,7 @@
 #endif
 
 #ifndef DIO0_PIN
-  #error pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please submit a pull request
+  #error "pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please submit a pull request"
 #endif
 #endif //__SAM3X8E__
 
