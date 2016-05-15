@@ -3,7 +3,7 @@
  */
 
 #ifndef __SAM3X8E__
-  #error Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu.
+  #error "Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu."
 #endif
 
 #if MB(RAMPS_FD_V1)
@@ -47,33 +47,27 @@
 #define E2_DIR_PIN         47
 #define E2_ENABLE_PIN      45
 
-#define SDPOWER                 -1
-#define SDSS                     4
-#define LED_PIN                 13
+#define SDSS                4
+#define LED_PIN            13
 
-#define BEEPER_PIN              -1
+#define BEEPER_PIN         -1
 
 #define FAN_PIN            12
 
-#define CONTROLLER_FAN_PIN      -1
-
-#define PS_ON_PIN          -1
-
-#define KILL_PIN                -1
+#define CONTROLLER_FAN_PIN -1
 
 
-#define HEATER_BED_PIN      8    // BED
+#define HEATER_BED_PIN      8 // BED
 
 #define HEATER_0_PIN        9
 #define HEATER_1_PIN       10
 #define HEATER_2_PIN       11
 
-#define TEMP_BED_PIN        0   // ANALOG NUMBERING
+#define TEMP_BED_PIN        0 // ANALOG NUMBERING
 
-#define TEMP_0_PIN          1   // ANALOG NUMBERING
-#define TEMP_1_PIN          2   // ANALOG NUMBERING
-#define TEMP_2_PIN          3   // ANALOG NUMBERING
-#define TEMP_3_PIN         -1   // ANALOG NUMBERING
+#define TEMP_0_PIN          1 // ANALOG NUMBERING
+#define TEMP_1_PIN          2 // ANALOG NUMBERING
+#define TEMP_2_PIN          3 // ANALOG NUMBERING
 
 #if NUM_SERVOS > 0
   #define SERVO0_PIN             7
@@ -108,7 +102,7 @@
       #define SD_DETECT_PIN     49
     #endif
   #endif
-#endif //ULTRA_LCD
+#endif // ULTRA_LCD
 
 // SPI for Max6675 Thermocouple
 
@@ -117,8 +111,7 @@
   #define SCK_PIN           52
   #define MISO_PIN          50
   #define MOSI_PIN          51
-  #define MAX6675_SS            53
+  #define MAX6675_SS        53
 #else
-  #define MAX6675_SS            49
+  #define MAX6675_SS        49
 #endif
-

@@ -17,7 +17,7 @@
  */
 
 #if !defined(__SAM3X8E__) && !defined(__AVR_ATmega2560__)
-  #error Oops!  Make sure you have 'Arduino Due' or 'Arduino Mega' selected from the 'Tools -> Boards' menu.
+  #error "Oops!  Make sure you have 'Arduino Due' or 'Arduino Mega' selected from the 'Tools -> Boards' menu."
 #endif
 
 #define IS_RAMPS4DUE
@@ -25,13 +25,10 @@
 #include "pins_RAMPS_14.h"
 
 #undef TEMP_0_PIN
-#define TEMP_0_PIN          9   // ANALOG NUMBERING
+#define TEMP_0_PIN          9 // ANALOG NUMBERING
 
 #undef TEMP_1_PIN
-#define TEMP_1_PIN         -1   // ANALOG NUMBERING
-
-#undef TEMP_2_PIN
-#define TEMP_2_PIN         -1   // ANALOG NUMBERING
+#define TEMP_1_PIN         -1 // ANALOG NUMBERING
 
 #undef TEMP_BED_PIN
-#define TEMP_BED_PIN       10   // ANALOG NUMBERING
+#define TEMP_BED_PIN       10 // ANALOG NUMBERING

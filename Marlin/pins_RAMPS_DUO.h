@@ -21,7 +21,7 @@
  */
 
 #if !defined(__SAM3X8E__) && !defined(__AVR_ATmega2560__)
-  #error Oops!  Make sure you have 'Arduino Due' or 'Arduino Mega' selected from the 'Tools -> Boards' menu.
+  #error "Oops!  Make sure you have 'Arduino Due' or 'Arduino Mega' selected from the 'Tools -> Boards' menu."
 #endif
 
 #define IS_RAMPS_DUO
@@ -29,52 +29,49 @@
 #include "pins_RAMPS_14.h"
 
 #undef TEMP_0_PIN
-#define TEMP_0_PIN          9   // ANALOG NUMBERING
+#define TEMP_0_PIN          9 // ANALOG NUMBERING
 
 #undef TEMP_1_PIN
-#define TEMP_1_PIN         11   // ANALOG NUMBERING
-
-#undef TEMP_2_PIN
-#define TEMP_2_PIN         -1   // ANALOG NUMBERING
+#define TEMP_1_PIN         11 // ANALOG NUMBERING
 
 #undef TEMP_BED_PIN
-#define TEMP_BED_PIN       10   // ANALOG NUMBERING
+#define TEMP_BED_PIN       10 // ANALOG NUMBERING
 
 #if ENABLED(ULTRA_LCD)
   #if ENABLED(NEWPANEL)
     #if ENABLED(PANEL_ONE)
       #undef LCD_PINS_D4
-      #define LCD_PINS_D4 68
+      #define LCD_PINS_D4  68
 
       #undef LCD_PINS_D5
-      #define LCD_PINS_D5 69
+      #define LCD_PINS_D5  69
 
       #undef LCD_PINS_D7
-      #define LCD_PINS_D7 67
+      #define LCD_PINS_D7  67
     #endif
 
     #if ENABLED(MINIPANEL)
       #undef DOGLCD_CS
-      #define DOGLCD_CS  69
+      #define DOGLCD_CS    69
 
       #undef LCD_PIN_BL
-      #define LCD_PIN_BL 68 // backlight LED on A14/D68
+      #define LCD_PIN_BL   68 // backlight LED on A14/D68
 
       #undef KILL_PIN
-      #define KILL_PIN   67
+      #define KILL_PIN     67
 
       #undef BTN_EN2
-      #define BTN_EN2    66
+      #define BTN_EN2      66
     #else
       #if ENABLED(REPRAPWORLD_KEYPAD)
         #undef BTN_EN1
-        #define BTN_EN1 67 // encoder
+        #define BTN_EN1    67 // encoder
 
         #undef BTN_ENC
-        #define BTN_ENC 66 // enter button
+        #define BTN_ENC    66 // enter button
       #elif ENABLED(PANEL_ONE)
         #undef BTN_EN2
-        #define BTN_EN2 66 // AUX2 PIN 4
+        #define BTN_EN2    66 // AUX2 PIN 4
       #endif
     #endif
   #endif // !NEWPANEL
