@@ -45,6 +45,10 @@
   #include "mesh_bed_leveling.h"
 #endif
 
+#if ENABLED(BEZIER_CURVE_SUPPORT)
+  #include "planner_bezier.h"
+#endif
+
 #include "ultralcd.h"
 #include "planner.h"
 #ifdef __SAM3X8E__
@@ -107,6 +111,7 @@
  * G2  - CW ARC
  * G3  - CCW ARC
  * G4  - Dwell S<seconds> or P<milliseconds>
+ * G5  - Cubic B-spline with
  * G10 - retract filament according to settings of M207
  * G11 - retract recover filament according to settings of M208
  * G28 - Home one or more axes
@@ -515,6 +520,10 @@ void process_next_command();
   void plan_arc(float target[NUM_AXIS], float* offset, uint8_t clockwise);
 #endif
 
+#if ENABLED(BEZIER_CURVE_SUPPORT)
+  void plan_cubic_move(const float offset[4]);
+#endif
+
 void serial_echopair_P(const char* s_P, int v)           { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, long v)          { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, float v)         { serialprintPGM(s_P); SERIAL_ECHO(v); }
@@ -572,6 +581,11 @@ static void report_current_position();
       }
     }
   #endif //!SDSUPPORT
+#endif
+
+#if ENABLED(DIGIPOT_I2C)
+  extern void digipot_i2c_set_current(int channel, float current);
+  extern void digipot_i2c_init();
 #endif
 
 /**
@@ -2083,10 +2097,17 @@ static void setup_for_endstop_move() {
 #endif // AUTO_BED_LEVELING_FEATURE
 
 #if ENABLED(Z_PROBE_SLED) || ENABLED(Z_SAFE_HOMING) || ENABLED(AUTO_BED_LEVELING_FEATURE)
-  static void axis_unhomed_error() {
-    LCD_MESSAGEPGM(MSG_YX_UNHOMED);
-    SERIAL_ECHO_START;
-    SERIAL_ECHOLNPGM(MSG_YX_UNHOMED);
+  static void axis_unhomed_error(bool xyz=false) {
+    if (xyz) {
+      LCD_MESSAGEPGM(MSG_XYZ_UNHOMED);
+      SERIAL_ECHO_START;
+      SERIAL_ECHOLNPGM(MSG_XYZ_UNHOMED);
+    }
+    else {
+      LCD_MESSAGEPGM(MSG_YX_UNHOMED);
+      SERIAL_ECHO_START;
+      SERIAL_ECHOLNPGM(MSG_YX_UNHOMED);
+    }
   }
 #endif
 
@@ -2110,8 +2131,8 @@ static void setup_for_endstop_move() {
       }
     #endif
 
-    if (!axis_homed[X_AXIS] || !axis_homed[Y_AXIS]) {
-      axis_unhomed_error();
+    if (!axis_homed[X_AXIS] || !axis_homed[Y_AXIS] || !axis_homed[Z_AXIS]) {
+      axis_unhomed_error(true);
       return;
     }
 
@@ -2538,6 +2559,43 @@ inline void gcode_G4() {
 
   while (PENDING(millis(), codenum)) idle();
 }
+
+#if ENABLED(BEZIER_CURVE_SUPPORT)
+
+  /**
+   * Parameters interpreted according to:
+   * http://linuxcnc.org/docs/2.6/html/gcode/gcode.html#sec:G5-Cubic-Spline
+   * However I, J omission is not supported at this point; all
+   * parameters can be omitted and default to zero.
+   */
+
+  /**
+   * G5: Cubic B-spline
+   */
+  inline void gcode_G5() {
+    if (IsRunning()) {
+
+      #ifdef SF_ARC_FIX
+        bool relative_mode_backup = relative_mode;
+        relative_mode = true;
+      #endif
+      gcode_get_destination();
+      #ifdef SF_ARC_FIX
+        relative_mode = relative_mode_backup;
+      #endif
+
+      float offset[] = {
+        code_seen('I') ? code_value() : 0.0,
+        code_seen('J') ? code_value() : 0.0,
+        code_seen('P') ? code_value() : 0.0,
+        code_seen('Q') ? code_value() : 0.0
+      };
+
+      plan_cubic_move(offset);
+    }
+  }
+
+#endif // BEZIER_CURVE_SUPPORT
 
 #if ENABLED(FWRETRACT)
 
@@ -3098,8 +3156,9 @@ inline void gcode_G28() {
           return;
         }
         mbl.z_offset = z;
-
     } // switch(state)
+
+    report_current_position();
   }
 
 #elif ENABLED(AUTO_BED_LEVELING_FEATURE)
@@ -3158,8 +3217,8 @@ inline void gcode_G28() {
     #endif
 
     // Don't allow auto-leveling without homing first
-    if (!axis_homed[X_AXIS] || !axis_homed[Y_AXIS]) {
-      axis_unhomed_error();
+    if (!axis_homed[X_AXIS] || !axis_homed[Y_AXIS] || !axis_homed[Z_AXIS]) {
+      axis_unhomed_error(true);
       return;
     }
 
@@ -4017,7 +4076,7 @@ inline void gcode_M42() {
   inline void gcode_M48() {
 
     if (!axis_homed[X_AXIS] || !axis_homed[Y_AXIS] || !axis_homed[Z_AXIS]) {
-      axis_unhomed_error();
+      axis_unhomed_error(true);
       return;
     }
 
@@ -6574,16 +6633,27 @@ void process_next_command() {
 
       // G2, G3
       #if ENABLED(ARC_SUPPORT) && DISABLED(SCARA)
+
         case 2: // G2  - CW ARC
         case 3: // G3  - CCW ARC
           gcode_G2_G3(codenum == 2);
           break;
+
       #endif
 
       // G4 Dwell
       case 4:
         gcode_G4();
         break;
+
+      #if ENABLED(BEZIER_CURVE_SUPPORT)
+
+        // G5
+        case 5: // G5  - Cubic B_spline
+          gcode_G5();
+          break;
+
+      #endif // BEZIER_CURVE_SUPPORT
 
       #if ENABLED(FWRETRACT)
 
@@ -6592,7 +6662,7 @@ void process_next_command() {
           gcode_G10_G11(codenum == 10);
           break;
 
-      #endif //FWRETRACT
+      #endif // FWRETRACT
 
       case 28: // G28: Home all axes, one at a time
         gcode_G28();
@@ -7391,8 +7461,10 @@ void mesh_buffer_line(float x, float y, float z, const float e, float feed_rate,
     float cartesian_mm = sqrt(sq(difference[X_AXIS]) + sq(difference[Y_AXIS]) + sq(difference[Z_AXIS]));
     if (cartesian_mm < 0.000001) cartesian_mm = abs(difference[E_AXIS]);
     if (cartesian_mm < 0.000001) return false;
-    float seconds = 6000 * cartesian_mm / feedrate / feedrate_multiplier;
+    float _feedrate = feedrate * feedrate_multiplier / 6000.0;
+    float seconds = cartesian_mm / _feedrate;
     int steps = max(1, int(delta_segments_per_second * seconds));
+    float inv_steps = 1.0/steps;
 
     // SERIAL_ECHOPGM("mm="); SERIAL_ECHO(cartesian_mm);
     // SERIAL_ECHOPGM(" seconds="); SERIAL_ECHO(seconds);
@@ -7400,7 +7472,7 @@ void mesh_buffer_line(float x, float y, float z, const float e, float feed_rate,
 
     for (int s = 1; s <= steps; s++) {
 
-      float fraction = float(s) / float(steps);
+      float fraction = float(s) * inv_steps;
 
       for (int8_t i = 0; i < NUM_AXIS; i++)
         target[i] = current_position[i] + difference[i] * fraction;
@@ -7414,7 +7486,7 @@ void mesh_buffer_line(float x, float y, float z, const float e, float feed_rate,
       //DEBUG_POS("prepare_move_delta", target);
       //DEBUG_POS("prepare_move_delta", delta);
 
-      planner.buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], target[E_AXIS], feedrate / 60 * feedrate_multiplier / 100.0, active_extruder);
+      planner.buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], target[E_AXIS], _feedrate, active_extruder);
     }
     return true;
   }
@@ -7663,6 +7735,19 @@ void prepare_move() {
     set_current_to_destination();
   }
 #endif
+
+#if ENABLED(BEZIER_CURVE_SUPPORT)
+
+  void plan_cubic_move(const float offset[4]) {
+    cubic_b_spline(current_position, destination, offset, feedrate * feedrate_multiplier / 60 / 100.0, active_extruder);
+
+    // As far as the parser is concerned, the position is now == target. In reality the
+    // motion control system might still be processing the action and the real tool position
+    // in any intermediate location.
+    set_current_to_destination();
+  }
+
+#endif // BEZIER_CURVE_SUPPORT
 
 #if HAS_CONTROLLERFAN
 
