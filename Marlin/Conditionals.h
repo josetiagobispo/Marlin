@@ -842,9 +842,6 @@
     #undef FAST_PWM_FAN
     #undef WATCHDOG_RESET_MANUAL
     #undef ADVANCE
-    #ifndef MEDIAN_COUNT
-      #define MEDIAN_COUNT 10
-    #endif
   #else
     #undef UI_VOLTAGE_LEVEL
     #undef RADDS_DISPLAY

@@ -38,6 +38,13 @@
   #define SOFT_PWM_SCALE 0
 #endif
 
+#ifdef __SAM3X8E__
+  // MEDIAN COUNT
+  // For Smoother temperature
+  // ONLY FOR DUE
+  #define MEDIAN_COUNT 10
+#endif
+
 class Temperature {
 
   public:
