@@ -430,12 +430,12 @@ void eeprom_read_block(void* pos, const void* eeprom_address, size_t n) {
   eeprom_init();
 
   Wire.beginTransmission(eeprom_device_address);
-  Wire.write((int)((unsigned)eeprom_address >> 8)); // MSB
+  Wire.write((int)((unsigned)eeprom_address >> 8));   // MSB
   Wire.write((int)((unsigned)eeprom_address & 0xFF)); // LSB
   Wire.endTransmission();
   Wire.requestFrom(eeprom_device_address, (byte)n);
   for (byte c = 0; c < n; c++ )
-    if (Wire.available()) *(uint8_t*)(pos + c) = Wire.read();
+    if (Wire.available()) *((uint8_t*)pos + c) = Wire.read();
 }
 
 void eeprom_write_byte(uint8_t* pos, uint8_t value) {
@@ -467,18 +467,18 @@ void eeprom_update_block(const void* pos, void* eeprom_address, size_t n) {
   eeprom_init();
 
   Wire.beginTransmission(eeprom_device_address);
-  Wire.write((int)((unsigned)eeprom_address >> 8)); // MSB
+  Wire.write((int)((unsigned)eeprom_address >> 8));   // MSB
   Wire.write((int)((unsigned)eeprom_address & 0xFF)); // LSB
   Wire.endTransmission();
   Wire.requestFrom(eeprom_device_address, (byte)n);
   for (byte c = 0; c < n; c++) {
     if (Wire.available()) eeprom_temp[c] = Wire.read();
-    flag |= (eeprom_temp[c] ^ *(uint8_t*)(pos + c));
+    flag |= (eeprom_temp[c] ^ *((uint8_t*)pos + c));
   }
 
   if (flag) {
     Wire.beginTransmission(eeprom_device_address);
-    Wire.write((int)((unsigned)eeprom_address >> 8)); // MSB
+    Wire.write((int)((unsigned)eeprom_address >> 8));   // MSB
     Wire.write((int)((unsigned)eeprom_address & 0xFF)); // LSB
     Wire.write((uint8_t*)(pos), n);
     Wire.endTransmission();

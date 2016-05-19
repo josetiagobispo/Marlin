@@ -45,7 +45,7 @@
   // On AVR this is in math.h?
   #define square(x) ((x)*(x))
 
-  #define strncpy_P(dest, src, num) strncpy((dest), (src), (num))
+  //#define strncpy_P(dest, src, num) strncpy((dest), (src), (num))
 
   // On AVR this is in sfr_defs.h
   #ifndef _BV
