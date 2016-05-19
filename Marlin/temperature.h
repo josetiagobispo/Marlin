@@ -177,9 +177,11 @@ class Temperature {
       #define CORRECTION_FOR_RAW_TEMP 4
       #define MIN_TEMP_DEFAULT 123000
 
-      int max_temp[5] = { 0 };
-      int min_temp[5] = { 0 };
-      unsigned long raw_median_temp[5][MEDIAN_COUNT] = { { 0 } };
+      int max_temp[EXTRUDERS + 1] = { 0 };
+      int min_temp[EXTRUDERS + 1] = { 0 };
+      unsigned long raw_median_temp[EXTRUDERS + 1][MEDIAN_COUNT] = { { 0 } };
+      unsigned char median_counter = 0;
+      unsigned long sum = 0;
     #endif
 
     // Init min and max temp with extreme values to prevent false errors during startup
@@ -355,6 +357,22 @@ class Temperature {
   private:
 
     void set_current_temp_raw();
+
+    #ifdef __SAM3X8E__
+      FORCE_INLINE int calc_raw_temp_value(uint8_t temp_id) {
+        raw_median_temp[temp_id][median_counter] = (raw_temp_value[temp_id] - (min_temp[temp_id] + max_temp[temp_id]));
+        sum = 0;
+        for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i];
+        return (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2;
+      }
+
+      FORCE_INLINE int calc_raw_temp_bed_value() {
+        raw_median_temp[EXTRUDERS][median_counter] = (raw_temp_bed_value - (min_temp[EXTRUDERS] + max_temp[EXTRUDERS]));
+        sum = 0;
+        for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[EXTRUDERS][i];
+        return (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2;
+      }
+    #endif
 
     void updateTemperaturesFromRawValues();
 

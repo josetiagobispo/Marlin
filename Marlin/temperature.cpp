@@ -1257,29 +1257,9 @@ enum TempState {
  * Get raw temperatures
  */
 void Temperature::set_current_temp_raw() {
-  #ifdef __SAM3X8E__
-    static unsigned char median_counter = 0;
-    unsigned long sum = 0;
-
-    #define SET_CURRENT_TEMP_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_value[temp_id] - (min_temp[temp_id] + max_temp[temp_id])); \
-      sum = 0; \
-      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
-      current_temperature_raw[temp_id] = (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2
-
-    #define SET_CURRENT_TEMP_BED_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_bed_value - (min_temp[temp_id] + max_temp[temp_id])); \
-      sum = 0; \
-      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
-      current_temperature_bed_raw = (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2
-
-    #define SET_REDUNDANT_TEMP_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_value[temp_id] - (min_temp[temp_id] + max_temp[temp_id])); \
-      sum = 0; \
-      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
-      redundant_temperature_raw = (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2
-  #endif
-
   #if HAS_TEMP_0 && DISABLED(HEATER_0_USES_MAX6675)
     #ifdef __SAM3X8E__
-      SET_CURRENT_TEMP_RAW(0);
+      current_temperature_raw[0] = calc_raw_temp_value(0);
     #else
       current_temperature_raw[0] = raw_temp_value[0];
     #endif
@@ -1287,26 +1267,26 @@ void Temperature::set_current_temp_raw() {
   #if HAS_TEMP_1
     #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
       #ifdef __SAM3X8E__
-        SET_REDUNDANT_TEMP_RAW(1);
+        redundant_temperature_raw = calc_raw_temp_value(1);
       #else
         redundant_temperature_raw = raw_temp_value[1];
       #endif
     #else
       #ifdef __SAM3X8E__
-        SET_CURRENT_TEMP_RAW(1);
+        current_temperature_raw[1] = calc_raw_temp_value(1);
       #else
         current_temperature_raw[1] = raw_temp_value[1];
       #endif
     #endif
     #if HAS_TEMP_2
       #ifdef __SAM3X8E__
-        SET_CURRENT_TEMP_RAW(2);
+        current_temperature_raw[2] = calc_raw_temp_value(2);
       #else
         current_temperature_raw[2] = raw_temp_value[2];
       #endif
       #if HAS_TEMP_3
         #ifdef __SAM3X8E__
-          SET_CURRENT_TEMP_RAW(3);
+          current_temperature_raw[3] = calc_raw_temp_value(3);
         #else
           current_temperature_raw[3] = raw_temp_value[3];
         #endif
@@ -1314,13 +1294,13 @@ void Temperature::set_current_temp_raw() {
     #endif
   #endif
   #ifdef __SAM3X8E__
-    SET_CURRENT_TEMP_BED_RAW(4);
+    current_temperature_bed_raw = calc_raw_temp_bed_value();
   #else
     current_temperature_bed_raw = raw_temp_bed_value;
   #endif
   #ifdef __SAM3X8E__
     // Reset min/max-holder
-    for (uint8_t i = 0; i < 5; i++) {
+    for (uint8_t i = 0; i < EXTRUDERS + 1; i++) {
       max_temp[i] = 0;
       min_temp[i] = MIN_TEMP_DEFAULT;
     }
@@ -1354,7 +1334,6 @@ void Temperature::isr() {
   static unsigned char pwm_count = _BV(SOFT_PWM_SCALE);
   #ifdef __SAM3X8E__
     static int temp_read = 0;
-
     static bool first_start = true;
   #endif
 
@@ -1391,7 +1370,7 @@ void Temperature::isr() {
   #ifdef __SAM3X8E__
     // Initialize some variables only at start!
     if (first_start) {
-      for (uint8_t i = 0; i < 5; i++) {
+      for (uint8_t i = 0; i < EXTRUDERS + 1; i++) {
         for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = 3600 * OVERSAMPLENR;
         max_temp[i] = 0;
         min_temp[i] = MIN_TEMP_DEFAULT;
@@ -1602,15 +1581,15 @@ void Temperature::isr() {
   #endif // SLOW_PWM_HEATERS
 
   #ifdef __SAM3X8E__
-    #define READ_TEMP(temp_id) temp_read = getAdcFreerun(pinToAdcChannel(TEMP_## temp_id ##_PIN)); \
+    #define SET_RAW_TEMP_VALUE(temp_id) temp_read = getAdcFreerun(pinToAdcChannel(TEMP_## temp_id ##_PIN)); \
       raw_temp_value[temp_id] += temp_read; \
       max_temp[temp_id] = max(max_temp[temp_id], temp_read); \
       min_temp[temp_id] = min(min_temp[temp_id], temp_read)
 
-    #define READ_BED_TEMP(temp_id) temp_read = getAdcFreerun(pinToAdcChannel(TEMP_BED_PIN)); \
+    #define SET_RAW_TEMP_BED_VALUE() temp_read = getAdcFreerun(pinToAdcChannel(TEMP_BED_PIN)); \
       raw_temp_bed_value += temp_read; \
-      max_temp[temp_id] = max(max_temp[temp_id], temp_read); \
-      min_temp[temp_id] = min(min_temp[temp_id], temp_read)
+      max_temp[EXTRUDERS] = max(max_temp[EXTRUDERS], temp_read); \
+      min_temp[EXTRUDERS] = min(min_temp[EXTRUDERS], temp_read)
   #else
     #define SET_ADMUX_ADCSRA(pin) ADMUX = _BV(REFS0) | (pin & 0x07); SBI(ADCSRA, ADSC)
     #ifdef MUX5
@@ -1636,7 +1615,7 @@ void Temperature::isr() {
     case MeasureTemp_0:
       #if HAS_TEMP_0
         #ifdef __SAM3X8E__
-          READ_TEMP(0);
+          SET_RAW_TEMP_VALUE(0);
         #else
           raw_temp_value[0] += ADC;
         #endif
@@ -1658,7 +1637,7 @@ void Temperature::isr() {
     case MeasureTemp_BED:
       #if HAS_TEMP_BED
         #ifdef __SAM3X8E__
-          READ_BED_TEMP(4);
+          SET_RAW_TEMP_BED_VALUE();
         #else
           raw_temp_bed_value += ADC;
         #endif
@@ -1680,7 +1659,7 @@ void Temperature::isr() {
     case MeasureTemp_1:
       #if HAS_TEMP_1
         #ifdef __SAM3X8E__
-          READ_TEMP(1);
+          SET_RAW_TEMP_VALUE(1);
         #else
           raw_temp_value[1] += ADC;
         #endif
@@ -1702,7 +1681,7 @@ void Temperature::isr() {
     case MeasureTemp_2:
       #if HAS_TEMP_2
         #ifdef __SAM3X8E__
-          READ_TEMP(2);
+          SET_RAW_TEMP_VALUE(2);
         #else
           raw_temp_value[2] += ADC;
         #endif
@@ -1724,7 +1703,7 @@ void Temperature::isr() {
     case MeasureTemp_3:
       #if HAS_TEMP_3
         #ifdef __SAM3X8E__
-          READ_TEMP(3);
+          SET_RAW_TEMP_VALUE(3);
         #else
           raw_temp_value[3] += ADC;
         #endif
