@@ -1256,28 +1256,80 @@ enum TempState {
 /**
  * Get raw temperatures
  */
-#ifndef __SAM3X8E__
-  void Temperature::set_current_temp_raw() {
-    #if HAS_TEMP_0 && DISABLED(HEATER_0_USES_MAX6675)
+void Temperature::set_current_temp_raw() {
+  #ifdef __SAM3X8E__
+    static unsigned char median_counter = 0;
+    unsigned long sum = 0;
+
+    #define SET_CURRENT_TEMP_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_value[temp_id] - (min_temp[temp_id] + max_temp[temp_id])); \
+      sum = 0; \
+      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
+      current_temperature_raw[temp_id] = (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2
+
+    #define SET_CURRENT_TEMP_BED_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_bed_value - (min_temp[temp_id] + max_temp[temp_id])); \
+      sum = 0; \
+      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
+      current_temperature_bed_raw = (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2
+
+    #define SET_REDUNDANT_TEMP_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_value[temp_id] - (min_temp[temp_id] + max_temp[temp_id])); \
+      sum = 0; \
+      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
+      redundant_temperature_raw = (sum / MEDIAN_COUNT + CORRECTION_FOR_RAW_TEMP) >> 2
+  #endif
+
+  #if HAS_TEMP_0 && DISABLED(HEATER_0_USES_MAX6675)
+    #ifdef __SAM3X8E__
+      SET_CURRENT_TEMP_RAW(0);
+    #else
       current_temperature_raw[0] = raw_temp_value[0];
     #endif
-    #if HAS_TEMP_1
-      #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+  #endif
+  #if HAS_TEMP_1
+    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+      #ifdef __SAM3X8E__
+        SET_REDUNDANT_TEMP_RAW(1);
+      #else
         redundant_temperature_raw = raw_temp_value[1];
+      #endif
+    #else
+      #ifdef __SAM3X8E__
+        SET_CURRENT_TEMP_RAW(1);
       #else
         current_temperature_raw[1] = raw_temp_value[1];
       #endif
-      #if HAS_TEMP_2
+    #endif
+    #if HAS_TEMP_2
+      #ifdef __SAM3X8E__
+        SET_CURRENT_TEMP_RAW(2);
+      #else
         current_temperature_raw[2] = raw_temp_value[2];
-        #if HAS_TEMP_3
+      #endif
+      #if HAS_TEMP_3
+        #ifdef __SAM3X8E__
+          SET_CURRENT_TEMP_RAW(3);
+        #else
           current_temperature_raw[3] = raw_temp_value[3];
         #endif
       #endif
     #endif
+  #endif
+  #ifdef __SAM3X8E__
+    SET_CURRENT_TEMP_BED_RAW(4);
+  #else
     current_temperature_bed_raw = raw_temp_bed_value;
-    temp_meas_ready = true;
-  }
-#endif //__SAM3X8E__
+  #endif
+  #ifdef __SAM3X8E__
+    // Reset min/max-holder
+    for (uint8_t i = 0; i < 5; i++) {
+      max_temp[i] = 0;
+      min_temp[i] = MIN_TEMP_DEFAULT;
+    }
+
+    median_counter++;
+    if (median_counter >= MEDIAN_COUNT) median_counter = 0;
+  #endif
+  temp_meas_ready = true;
+}
 
 /**
  * Timer 0 is shared with millies
@@ -1301,14 +1353,8 @@ void Temperature::isr() {
   static TempState temp_state = StartupDelay;
   static unsigned char pwm_count = _BV(SOFT_PWM_SCALE);
   #ifdef __SAM3X8E__
-    static unsigned long raw_temp_value[4] = { 0 };
-    static unsigned long raw_temp_bed_value = 0;
-    static int max_temp[5] = { 0 };
-    static int min_temp[5] = { 123000 };
     static int temp_read = 0;
 
-    static unsigned char median_counter = 0;
-    static unsigned long raw_median_temp[5][MEDIAN_COUNT] = { { 3950 * OVERSAMPLENR } };
     static bool first_start = true;
   #endif
 
@@ -1348,7 +1394,7 @@ void Temperature::isr() {
       for (uint8_t i = 0; i < 5; i++) {
         for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = 3600 * OVERSAMPLENR;
         max_temp[i] = 0;
-        min_temp[i] = 123000;
+        min_temp[i] = MIN_TEMP_DEFAULT;
       }
       first_start = false;
       SERIAL_ECHOLN("First start for temperature finished.");
@@ -1720,66 +1766,18 @@ void Temperature::isr() {
   } // switch(temp_state)
 
   #ifdef __SAM3X8E__
-    #define SET_CURRENT_TEMP_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_value[temp_id] - (min_temp[temp_id] + max_temp[temp_id])); \
-      sum = 0; \
-      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
-      current_temperature_raw[temp_id] = (sum / MEDIAN_COUNT + 4) >> 2
-
-    #define SET_CURRENT_BED_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_bed_value - (min_temp[temp_id] + max_temp[temp_id])); \
-      sum = 0; \
-      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
-      current_temperature_bed_raw = (sum / MEDIAN_COUNT + 4) >> 2
-
-    #define SET_REDUNDANT_RAW(temp_id) raw_median_temp[temp_id][median_counter] = (raw_temp_bed_value - (min_temp[temp_id] + max_temp[temp_id])); \
-      sum = 0; \
-      for(int i = 0; i < MEDIAN_COUNT; i++) sum += raw_median_temp[temp_id][i]; \
-      redundant_temperature_raw = (sum / MEDIAN_COUNT + 4) >> 2
-  #endif
-
-  #ifdef __SAM3X8E__
     if (temp_count >= OVERSAMPLENR + 2) { // 14 * 16 * 1/(16000000/64/256)  = 164ms.
-      if (!temp_meas_ready) { //Only update the raw values if they have been read. Else we could be updating them during reading.
-        unsigned long sum = 0;
-        #ifndef HEATER_0_USES_MAX6675
-          SET_CURRENT_TEMP_RAW(0);
-        #endif
-        #if EXTRUDERS > 1
-          SET_CURRENT_TEMP_RAW(1);
-          #if EXTRUDERS > 2
-            SET_CURRENT_TEMP_RAW(2);
-            #if EXTRUDERS > 3
-              SET_CURRENT_TEMP_RAW(3);
-            #endif
-          #endif
-        #endif
-        #ifdef TEMP_SENSOR_1_AS_REDUNDANT
-          SET_REDUNDANT_RAW(1);
-        #endif
-        SET_CURRENT_BED_RAW(4);
-
-        //  Reset min/max-holder
-        for (uint8_t i = 0; i < 5; i++) {
-          max_temp[i] = 0;
-          min_temp[i] = 123000;
-        }
-      } //!temp_meas_ready
   #else
     if (temp_count >= OVERSAMPLENR) { // 10 * 16 * 1/(16000000/64/256)  = 164ms.
-      // Update the raw values if they've been read. Else we could be updating them during reading.
-      if (!temp_meas_ready) set_current_temp_raw();
   #endif
+    // Update the raw values if they've been read. Else we could be updating them during reading.
+    if (!temp_meas_ready) set_current_temp_raw();
 
     // Filament Sensor - can be read any time since IIR filtering is used
     #if ENABLED(FILAMENT_WIDTH_SENSOR)
       current_raw_filwidth = raw_filwidth_value >> 10;  // Divide to get to 0-16384 range since we used 1/128 IIR filter approach
     #endif
 
-    #ifdef __SAM3X8E__
-      median_counter++;
-      if (median_counter >= MEDIAN_COUNT) median_counter = 0;
-
-      temp_meas_ready = true;
-    #endif
     temp_count = 0;
     for (int i = 0; i < 4; i++) raw_temp_value[i] = 0;
     raw_temp_bed_value = 0;

@@ -38,13 +38,6 @@
   #define SOFT_PWM_SCALE 0
 #endif
 
-#ifdef __SAM3X8E__
-  // MEDIAN COUNT
-  // For Smoother temperature
-  // ONLY FOR DUE
-  #define MEDIAN_COUNT 10
-#endif
-
 class Temperature {
 
   public:
@@ -172,9 +165,21 @@ class Temperature {
       millis_t next_bed_check_ms;
     #endif
 
-    #ifndef __SAM3X8E__
-      unsigned long raw_temp_value[4] = { 0 };
-      unsigned long raw_temp_bed_value = 0;
+    unsigned long raw_temp_value[4] = { 0 };
+    unsigned long raw_temp_bed_value = 0;
+
+    #ifdef __SAM3X8E__
+      // MEDIAN COUNT
+      // For Smoother temperature
+      // ONLY FOR DUE
+      #define MEDIAN_COUNT 10
+  
+      #define CORRECTION_FOR_RAW_TEMP 4
+      #define MIN_TEMP_DEFAULT 123000
+
+      int max_temp[5] = { 0 };
+      int min_temp[5] = { 0 };
+      unsigned long raw_median_temp[5][MEDIAN_COUNT] = { { 0 } };
     #endif
 
     // Init min and max temp with extreme values to prevent false errors during startup
@@ -349,9 +354,7 @@ class Temperature {
 
   private:
 
-    #ifndef __SAM3X8E__
-      void set_current_temp_raw();
-    #endif
+    void set_current_temp_raw();
 
     void updateTemperaturesFromRawValues();
 
