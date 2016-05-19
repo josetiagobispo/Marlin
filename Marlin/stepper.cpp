@@ -247,7 +247,6 @@ void Stepper::set_directions() {
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
 #ifdef __SAM3X8E__
-  TcChannel* stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL);
   HAL_STEP_TIMER_ISR { stepper.isr(); }
 #else
   ISR(TIMER1_COMPA_vect) { stepper.isr(); }

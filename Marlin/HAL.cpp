@@ -525,6 +525,8 @@ static const tTimerConfig TimerConfig [NUM_HARDWARE_TIMERS] =
 // thanks for that work
 // http://forum.arduino.cc/index.php?topic=297397.0
 
+TcChannel* stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL);
+
 void HAL_step_timer_start() {
   pmc_set_writeprotect(false); //remove write protection on registers
   
