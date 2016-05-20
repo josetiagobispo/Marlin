@@ -1,5 +1,9 @@
 # Marlin Duo 3D Printer Firmware
-<img align="top" width=175 src="Documentation/Logo/Marlin%20Logo%20GitHub.png" />
+
+[![Build Status](https://travis-ci.org/esenapaj/Marlin.svg?branch=Duo)](https://travis-ci.org/esenapaj/Marlin)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/2224/badge.svg)](https://scan.coverity.com/projects/2224)
+
+<img align="top" width=175 src="buildroot/share/pixmaps/logo/Marlin%20Logo%20GitHub.png" />
 
 ## Release Candidate -- Marlin Duo 1.1.0-RCBugFix - 27 April 2016
 
@@ -61,5 +65,3 @@ perform your modifications, and direct users to your modified fork.<br>
 While we can't prevent the use of this code in products (3D printers, CNC, etc.)<br>
 that are closed source or crippled by a patent,<br>
 we would prefer that you choose another firmware or, better yet, make your own.<br>
-
-[![Flattr this git repo](http://api.flattr.com/button/flattr-badge-large.png)](https://flattr.com/submit/auto?user_id=ErikZalm&url=https://github.com/MarlinFirmware/Marlin&title=Marlin&language=&tags=github&category=software)
