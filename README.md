@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/esenapaj/Marlin.svg?branch=Duo)](https://travis-ci.org/esenapaj/Marlin)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/2224/badge.svg)](https://scan.coverity.com/projects/2224)
 
-<img align="top" width=175 src="buildroot/share/pixmaps/logo/Marlin%20Logo%20GitHub.png" />
+<img align="top" width=175 src="buildroot/share/pixmaps/logo/marlin-250.png" />
 
 ## Release Candidate -- Marlin Duo 1.1.0-RCBugFix - 27 April 2016
 
