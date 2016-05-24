@@ -845,18 +845,10 @@
     #endif
   #endif
 
-  #ifdef __SAM3X8E__
-    #undef M100_FREE_MEMORY_WATCHER
-    #undef HEATER_0_USES_MAX6675
-    #undef MAX6675_IS_MAX31855
-    #undef FAST_PWM_FAN
-    #undef WATCHDOG_RESET_MANUAL
-    #undef ADVANCE
-  #else
+  #ifndef __SAM3X8E__
     #undef UI_VOLTAGE_LEVEL
     #undef RADDS_DISPLAY
     #undef MOTOR_CURRENT
-    #undef MEDIAN_COUNT
   #endif
 
 #endif //CONFIGURATION_LCD

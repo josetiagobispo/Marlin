@@ -519,6 +519,9 @@
   #ifdef M100_FREE_MEMORY_WATCHER
     #error M100_FREE_MEMORY_WATCHER is not supported by ARM platform yet.
   #endif
+  #ifdef PRINTCOUNTER
+    #error PRINTCOUNTER is not supported by ARM platform yet.
+  #endif
   #ifdef FAST_PWM_FAN
     #error FAST_PWM_FAN is not supported by ARM platform yet.
   #endif
