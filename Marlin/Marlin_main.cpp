@@ -911,6 +911,9 @@ void setup() {
     digitalWrite(STAT_LED_BLUE, LOW); // turn it off
   #endif
   #ifdef __SAM3X8E__
+    #if ENABLED(PRINTCOUNTER)
+      print_job_timer.loadStats();
+    #endif
     #if ENABLED(EXPERIMENTAL_I2CBUS)
       Wire.begin(); // We use no address so we will join the BUS as the master
     #endif

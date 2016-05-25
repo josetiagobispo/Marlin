@@ -24,7 +24,9 @@
 #include "printcounter.h"
 
 PrintCounter::PrintCounter(): super() {
-  this->loadStats();
+  #ifndef __SAM3X8E__
+    this->loadStats();
+  #endif
 }
 
 uint16_t PrintCounter::deltaDuration() {

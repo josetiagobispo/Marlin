@@ -42,7 +42,6 @@ __Not for production use – use with caution!__
  - HEATER_0_USES_MAX6675 does not work on Due
  - MAX6675_IS_MAX31855 does not work on Due
  - M100_FREE_MEMORY_WATCHER does not work on Due
- - PRINTCOUNTER does not work on Due
  - FAST_PWM_FAN does not work on Due
  - WATCHDOG_RESET_MANUAL does not work on Due
  - ADVANCE does not work on Due
