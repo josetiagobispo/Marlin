@@ -70,9 +70,18 @@
   #include "watchdog.h"
 #endif
 
-#if ENABLED(BLINKM)
-  #include "blinkm.h"
-  #include "Wire.h"
+#ifdef __SAM3X8E__
+  #if ENABLED(BLINKM)
+    #include "blinkm.h"
+    #include "Wire.h"
+  #elif ENABLED(EXPERIMENTAL_I2CBUS)
+    #include "Wire.h"
+  #endif
+#else
+  #if ENABLED(BLINKM)
+    #include "blinkm.h"
+    #include "Wire.h"
+  #endif
 #endif
 
 #if HAS_SERVOS
@@ -900,6 +909,11 @@ void setup() {
   #ifdef STAT_LED_BLUE
     pinMode(STAT_LED_BLUE, OUTPUT);
     digitalWrite(STAT_LED_BLUE, LOW); // turn it off
+  #endif
+  #ifdef __SAM3X8E__
+    #if ENABLED(EXPERIMENTAL_I2CBUS)
+      Wire.begin(); // We use no address so we will join the BUS as the master
+    #endif
   #endif
 }
 

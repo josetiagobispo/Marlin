@@ -531,9 +531,6 @@
   #ifdef ADVANCE
     #error ADVANCE is not supported by ARM platform yet.
   #endif
-  #ifdef EXPERIMENTAL_I2CBUS
-    #error EXPERIMENTAL_I2CBUS is not supported by ARM platform yet.
-  #endif
 #endif
 /**
  * Endstops

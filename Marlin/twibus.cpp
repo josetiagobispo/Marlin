@@ -29,7 +29,9 @@
 #include <Wire.h>
 
 TWIBus::TWIBus() {
-  Wire.begin(); // We use no address so we will join the BUS as the master
+  #ifndef __SAM3X8E__
+    Wire.begin(); // We use no address so we will join the BUS as the master
+  #endif
   this->reset();
 }
 
