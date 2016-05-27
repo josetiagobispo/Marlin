@@ -843,6 +843,16 @@ void Temperature::init() {
     #endif //PIDTEMPBED
   }
 
+  #ifdef __SAM3X8E__
+    // Initialize some variables only at start!
+    for (uint8_t i = 0; i < EXTRUDERS + 1; i++) {
+      for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = 3600 * OVERSAMPLENR;
+      max_temp[i] = 0;
+      min_temp[i] = MIN_TEMP_DEFAULT;
+    }
+    SERIAL_ECHOLN("First start for temperature finished.");
+  #endif
+
   #if HAS_HEATER_0
     SET_OUTPUT(HEATER_0_PIN);
   #endif
@@ -1345,7 +1355,6 @@ void Temperature::isr() {
   static unsigned char pwm_count = _BV(SOFT_PWM_SCALE);
   #ifdef __SAM3X8E__
     static int temp_read = 0;
-    static bool first_start = true;
   #endif
 
   // Static members for each heater
@@ -1379,17 +1388,6 @@ void Temperature::isr() {
   #endif
 
   #ifdef __SAM3X8E__
-    // Initialize some variables only at start!
-    if (first_start) {
-      for (uint8_t i = 0; i < EXTRUDERS + 1; i++) {
-        for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = 3600 * OVERSAMPLENR;
-        max_temp[i] = 0;
-        min_temp[i] = MIN_TEMP_DEFAULT;
-      }
-      first_start = false;
-      SERIAL_ECHOLN("First start for temperature finished.");
-    }
-
     HAL_timer_isr_status (TEMP_TIMER_COUNTER, TEMP_TIMER_CHANNEL);
   #endif
 
