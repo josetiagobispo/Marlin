@@ -273,21 +273,19 @@ class Stepper {
       NOMORE(step_rate, MAX_STEP_FREQUENCY);
 
       #ifdef __SAM3X8E__
-        if(step_rate > 180000) { // If steprate > 180kHz >> step 4 times
-          step_rate = (step_rate >> 2);
+        if (step_rate > 180000) { // If steprate > 180kHz >> step 4 times
       #else
         if (step_rate > 20000) { // If steprate > 20kHz >> step 4 times
-          step_rate = (step_rate >> 2) & 0x3fff;
       #endif
+        step_rate >>= 2;
         step_loops = 4;
       }
       #ifdef __SAM3X8E__
-        else if(step_rate > 90000) { // If steprate > 90kHz >> step 2 times
-          step_rate = (step_rate >> 1);
+        else if (step_rate > 90000) { // If steprate > 90kHz >> step 2 times
       #else
         else if (step_rate > 10000) { // If steprate > 10kHz >> step 2 times
-          step_rate = (step_rate >> 1) & 0x7fff;
       #endif
+        step_rate >>= 1;
         step_loops = 2;
       }
       else {
