@@ -894,6 +894,10 @@ void setup() {
     digipot_i2c_init();
   #endif
 
+  #if ENABLED(DAC_STEPPER_CURRENT)
+    dac_init();
+  #endif
+
   #if ENABLED(Z_PROBE_SLED)
     pinMode(SLED_PIN, OUTPUT);
     digitalWrite(SLED_PIN, LOW); // turn it off
@@ -1316,6 +1320,7 @@ XYZ_CONSTS_FROM_CONFIG(signed char, home_dir, HOME_DIR);
  */
 static void update_software_endstops(AxisEnum axis) {
   float offs = home_offset[axis] + position_shift[axis];
+
   #if ENABLED(DUAL_X_CARRIAGE)
     if (axis == X_AXIS) {
       float dual_max_x = max(extruder_offset[X_AXIS][1], X2_MAX_POS);
@@ -1336,6 +1341,7 @@ static void update_software_endstops(AxisEnum axis) {
     sw_endstop_min[axis] = base_min_pos(axis) + offs;
     sw_endstop_max[axis] = base_max_pos(axis) + offs;
   }
+
 }
 
 /**
@@ -5716,7 +5722,7 @@ inline void gcode_M226() {
 
 #endif // CHDK || PHOTOGRAPH_PIN
 
-#if ENABLED(HAS_LCD_CONTRAST)
+#if HAS_LCD_CONTRAST
 
   /**
    * M250: Read and optionally set the LCD contrast
@@ -6564,24 +6570,29 @@ inline void gcode_T(uint8_t tmp_extruder) {
 
         #else // !AUTO_BED_LEVELING_FEATURE
 
-          // Offset extruder (only by XY)
-          for (int i=X_AXIS; i<=Y_AXIS; i++)
-            current_position[i] += extruder_offset[i][tmp_extruder] - extruder_offset[i][active_extruder];
+          // The newly-selected extruder is actually at...
+          for (int i=X_AXIS; i<=Y_AXIS; i++) {
+            float diff = extruder_offset[i][tmp_extruder] - extruder_offset[i][active_extruder];
+            current_position[i] += diff;
+            position_shift[i] += diff; // Offset the coordinate space
+            update_software_endstops((AxisEnum)i);
+          }
 
         #endif // !AUTO_BED_LEVELING_FEATURE
 
-        // Set the new active extruder and position
+        // Set the new active extruder
         active_extruder = tmp_extruder;
 
       #endif // !DUAL_X_CARRIAGE
 
+      // Tell the planner the new "current position"
       #if ENABLED(DELTA)
         sync_plan_position_delta();
       #else
         sync_plan_position();
       #endif
 
-      // Move to the old position
+      // Move to the "old position" (move the extruder into place)
       if (IsRunning()) prepare_move();
 
     } // (tmp_extruder != active_extruder)
@@ -7071,7 +7082,7 @@ void process_next_command() {
           break;
       #endif // CHDK || PHOTOGRAPH_PIN
 
-      #if ENABLED(HAS_LCD_CONTRAST)
+      #if HAS_LCD_CONTRAST
         case 250: // M250  Set LCD contrast value: C<value> (value 0..63)
           gcode_M250();
           break;
@@ -7279,23 +7290,8 @@ void clamp_to_software_endstops(float target[3]) {
   if (min_software_endstops) {
     NOLESS(target[X_AXIS], sw_endstop_min[X_AXIS]);
     NOLESS(target[Y_AXIS], sw_endstop_min[Y_AXIS]);
-
-    float negative_z_offset = 0;
-    #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-      if (zprobe_zoffset < 0) negative_z_offset += zprobe_zoffset;
-      if (home_offset[Z_AXIS] < 0) {
-        #if ENABLED(DEBUG_LEVELING_FEATURE)
-          if (DEBUGGING(LEVELING)) {
-            SERIAL_ECHOPAIR("> clamp_to_software_endstops > Add home_offset[Z_AXIS]:", home_offset[Z_AXIS]);
-            SERIAL_EOL;
-          }
-        #endif
-        negative_z_offset += home_offset[Z_AXIS];
-      }
-    #endif
-    NOLESS(target[Z_AXIS], sw_endstop_min[Z_AXIS] + negative_z_offset);
+    NOLESS(target[Z_AXIS], sw_endstop_min[Z_AXIS]);
   }
-
   if (max_software_endstops) {
     NOMORE(target[X_AXIS], sw_endstop_max[X_AXIS]);
     NOMORE(target[Y_AXIS], sw_endstop_max[Y_AXIS]);
