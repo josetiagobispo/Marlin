@@ -161,11 +161,11 @@ unsigned long Temperature::raw_temp_value[4] = { 0 };
 unsigned long Temperature::raw_temp_bed_value = 0;
 
 #ifdef __SAM3X8E__
-  int max_temp[EXTRUDERS + 1] = { 0 };
-  int min_temp[EXTRUDERS + 1] = { 0 };
-  unsigned long raw_median_temp[EXTRUDERS + 1][MEDIAN_COUNT] = { { 0 } };
-  uint8_t median_counter = 0;
-  unsigned long sum = 0;
+  int Temperature::max_temp[EXTRUDERS + 1] = { 0 };
+  int Temperature::min_temp[EXTRUDERS + 1] = { 0 };
+  unsigned long Temperature::raw_median_temp[EXTRUDERS + 1][MEDIAN_COUNT] = { { 0 } };
+  uint8_t Temperature::median_counter = 0;
+  unsigned long Temperature::sum = 0;
 #endif
 
 // Init min and max temp with extreme values to prevent false errors during startup
