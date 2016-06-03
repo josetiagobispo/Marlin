@@ -39,23 +39,17 @@
   #define marlinAnalogInputToDigitalPin(p) ((p) == -1 ? -1 : (p))
   #define FORCE_INLINE __attribute__((always_inline)) inline
 
-  #define     CRITICAL_SECTION_START	uint32_t primask=__get_PRIMASK(); __disable_irq();
-  #define     CRITICAL_SECTION_END    if (primask==0) __enable_irq();
+  #define CRITICAL_SECTION_START uint32_t primask=__get_PRIMASK(); __disable_irq();
+  #define CRITICAL_SECTION_END if (primask==0) __enable_irq();
 
   // On AVR this is in math.h?
   #define square(x) ((x)*(x))
-
-  //#define strncpy_P(dest, src, num) strncpy((dest), (src), (num))
 
   // On AVR this is in sfr_defs.h
   #ifndef _BV
     #define _BV(b) (1<<(b))
   #endif
 
-  #undef LOW
-  #define LOW  0
-  #undef HIGH
-  #define HIGH 1
   // --------------------------------------------------------------------------
   // Types
   // --------------------------------------------------------------------------

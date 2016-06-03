@@ -1484,9 +1484,6 @@ void Temperature::set_current_temp_raw() {
 
 void Temperature::isr() {
 
-  #ifdef __SAM3X8E__
-    //these variables are only accesible from the ISR, but static, so they don't lose their value
-  #endif
   static unsigned char temp_count = 0;
   static TempState temp_state = StartupDelay;
   static unsigned char pwm_count = _BV(SOFT_PWM_SCALE);
