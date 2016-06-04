@@ -174,7 +174,7 @@
 /**
  * Servo deactivation depends on servo endstops
  */
-#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_SERVO_ENDSTOPS
+#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && DISABLED(HAS_SERVO_ENDSTOPS)
   #error "At least one of the ?_ENDSTOP_SERVO_NR is required for DEACTIVATE_SERVOS_AFTER_MOVE."
 #endif
 
@@ -367,7 +367,14 @@
 #endif
 
 #if ENCODER_PULSES_PER_STEP < 0
-  #error "ENCODER_PULSES_PER_STEP should not be negative, use REVERSE_MENU_DIRECTION instead"
+  #error "ENCODER_PULSES_PER_STEP should not be negative, use REVERSE_MENU_DIRECTION instead."
+#endif
+
+/**
+ * SAV_3DGLCD display options
+ */
+#if ENABLED(U8GLIB_SSD1306) && ENABLED(U8GLIB_SH1106)
+  #error "Only enable one SAV_3DGLCD display type: U8GLIB_SSD1306 or U8GLIB_SH1106."
 #endif
 
 /**
