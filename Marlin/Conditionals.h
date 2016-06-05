@@ -559,6 +559,21 @@
   #define HAS_PID_FOR_BOTH (ENABLED(PIDTEMP) && ENABLED(PIDTEMPBED))
 
   /**
+   * SINGLENOZZLE needs to differentiate EXTRUDERS and HOTENDS
+   * And all "extruders" are in the same place.
+   */
+  #if ENABLED(SINGLENOZZLE)
+    #define HOTENDS 1
+    #undef TEMP_SENSOR_1_AS_REDUNDANT
+    #undef HOTEND_OFFSET_X
+    #undef HOTEND_OFFSET_Y
+    #define HOTEND_OFFSET_X { 0 }
+    #define HOTEND_OFFSET_Y { 0 }
+  #else
+    #define HOTENDS EXTRUDERS
+  #endif
+
+  /**
    * ARRAY_BY_EXTRUDERS based on EXTRUDERS
    */
   #if EXTRUDERS > 3
@@ -574,14 +589,19 @@
   #define ARRAY_BY_EXTRUDERS1(v1) ARRAY_BY_EXTRUDERS(v1, v1, v1, v1)
 
   /**
-   * With SINGLENOZZLE all "extruders" are in the same place
+   * ARRAY_BY_HOTENDS based on HOTENDS
    */
-  #if ENABLED(SINGLENOZZLE)
-    #undef EXTRUDER_OFFSET_X
-    #undef EXTRUDER_OFFSET_Y
-    #define EXTRUDER_OFFSET_X { 0 }
-    #define EXTRUDER_OFFSET_Y { 0 }
+  #if HOTENDS > 3
+    #define ARRAY_BY_HOTENDS(v1, v2, v3, v4) { v1, v2, v3, v4 }
+  #elif HOTENDS > 2
+    #define ARRAY_BY_HOTENDS(v1, v2, v3, v4) { v1, v2, v3 }
+  #elif HOTENDS > 1
+    #define ARRAY_BY_HOTENDS(v1, v2, v3, v4) { v1, v2 }
+  #else
+    #define ARRAY_BY_HOTENDS(v1, v2, v3, v4) { v1 }
   #endif
+
+  #define ARRAY_BY_HOTENDS1(v1) ARRAY_BY_HOTENDS(v1, v1, v1, v1)
 
   /**
    * Z_DUAL_ENDSTOPS endstop reassignment
@@ -722,27 +742,27 @@
    */
   #ifdef __SAM3X8E__
     #if ENABLED(INVERTED_HEATER_PINS)
-      #define WRITE_HEATER(pin, value) WRITE(pin, !value)
+      #define WRITE_HEATER(pin, v) WRITE(pin, !v)
     #else
-      #define WRITE_HEATER(pin, value) WRITE(pin, value)
+      #define WRITE_HEATER(pin, v) WRITE(pin, v)
     #endif
     #define WRITE_HEATER_0P(v) WRITE_HEATER(HEATER_0_PIN, v)
-    #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
+    #if HOTENDS > 1 || ENABLED(HEATERS_PARALLEL)
       #define WRITE_HEATER_1(v) WRITE_HEATER(HEATER_1_PIN, v)
-      #if EXTRUDERS > 2
+      #if HOTENDS > 2
         #define WRITE_HEATER_2(v) WRITE_HEATER(HEATER_2_PIN, v)
-        #if EXTRUDERS > 3
+        #if HOTENDS > 3
           #define WRITE_HEATER_3(v) WRITE_HEATER(HEATER_3_PIN, v)
         #endif
       #endif
     #endif
   #else //__SAM3X8E__
     #define WRITE_HEATER_0P(v) WRITE(HEATER_0_PIN, v)
-    #if EXTRUDERS > 1 || ENABLED(HEATERS_PARALLEL)
+    #if HOTENDS > 1 || ENABLED(HEATERS_PARALLEL)
       #define WRITE_HEATER_1(v) WRITE(HEATER_1_PIN, v)
-      #if EXTRUDERS > 2
+      #if HOTENDS > 2
         #define WRITE_HEATER_2(v) WRITE(HEATER_2_PIN, v)
-        #if EXTRUDERS > 3
+        #if HOTENDS > 3
           #define WRITE_HEATER_3(v) WRITE(HEATER_3_PIN, v)
         #endif
       #endif

@@ -98,7 +98,7 @@ volatile unsigned long Stepper::step_events_completed = 0; // The number of step
   unsigned char Stepper::old_OCR0A;
   long  Stepper::final_advance = 0,
         Stepper::old_advance = 0,
-        Stepper::e_steps[4],
+        Stepper::e_steps[EXTRUDERS],
         Stepper::advance_rate,
         Stepper::advance;
 #endif
@@ -735,18 +735,18 @@ void Stepper::init() {
   #endif
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
-  #ifdef __SAM3X8E__
-    //needs rework
-  #else
-    #if ENABLED(ADVANCE)
+  #if ENABLED(ADVANCE)
+    #ifdef __SAM3X8E__
+      //needs rework
+    #else
       #if defined(TCCR0A) && defined(WGM01)
         CBI(TCCR0A, WGM01);
         CBI(TCCR0A, WGM00);
       #endif
-      e_steps[0] = e_steps[1] = e_steps[2] = e_steps[3] = 0;
+      for (uint8_t i = 0; i < EXTRUDERS; i++) e_steps[i] = 0;
       SBI(TIMSK0, OCIE0A);
-    #endif //ADVANCE
-  #endif
+    #endif
+  #endif //ADVANCE
 
   endstops.enable(true); // Start with endstops active. After homing they can be disabled
   sei();

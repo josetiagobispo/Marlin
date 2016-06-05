@@ -95,7 +95,7 @@ class Stepper {
     #endif
 
     #if ENABLED(ADVANCE)
-      static long e_steps[4];
+      static long e_steps[EXTRUDERS];
     #endif
 
   private:
