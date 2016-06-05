@@ -3,10 +3,10 @@
  *
  * Applies to the following boards:
  *
- *  RAMPS4DUE_EFB (Extruder, Fan, Bed)
- *  RAMPS4DUE_EEB (Extruder, Extruder, Bed)
- *  RAMPS4DUE_EFF (Extruder, Fan, Fan)
- *  RAMPS4DUE_EEF (Extruder, Extruder, Fan)
+ *  RAMPS4DUE_EFB (Hotend, Fan, Bed)
+ *  RAMPS4DUE_EEB (Hotend0, Hotend1, Bed)
+ *  RAMPS4DUE_EFF (Hotend, Fan0, Fan1)
+ *  RAMPS4DUE_EEF (Hotend0, Hotend1, Fan)
  *  RAMPS4DUE_SF  (Spindle, Controller Fan)
  *
  *  Differences between
