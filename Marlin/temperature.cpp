@@ -1043,7 +1043,9 @@ void Temperature::init() {
 
   #endif //HEATER_0_USES_MAX6675
 
-  #ifndef __SAM3X8E__
+  #ifdef __SAM3X8E__
+    #define ANALOG_SELECT(pin) startAdcConversion(pinToAdcChannel(pin))
+  #else
     #ifdef DIDR2
       #define ANALOG_SELECT(pin) do{ if (pin < 8) SBI(DIDR0, pin); else SBI(DIDR2, pin - 8); }while(0)
     #else
@@ -1053,51 +1055,35 @@ void Temperature::init() {
 
   // Set analog inputs
   #ifdef __SAM3X8E__
-
     // Setup channels
 
-    ADC->ADC_MR |= ADC_MR_FREERUN_ON |
-                     ADC_MR_LOWRES_BITS_12;
-
-    #define START_TEMP(temp_id) startAdcConversion(pinToAdcChannel(TEMP_## temp_id ##_PIN))
-    #define START_BED_TEMP() startAdcConversion(pinToAdcChannel(TEMP_BED_PIN))
-
-    #if HAS_TEMP_0
-      START_TEMP(0);
-    #endif
-    #if HAS_TEMP_1
-      START_TEMP(1);
-    #endif
-    #if HAS_TEMP_2
-      START_TEMP(2);
-    #endif
-    #if HAS_TEMP_3
-      START_TEMP(3);
-    #endif
-    #if HAS_TEMP_BED
-      START_BED_TEMP();
-    #endif
+    // ADC_MR_FREERUN_ON: Free Run Mode. It never waits for any trigger.
+    ADC->ADC_MR |= ADC_MR_FREERUN_ON | ADC_MR_LOWRES_BITS_12;
   #else
     ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADIF) | 0x07;
     DIDR0 = 0;
     #ifdef DIDR2
       DIDR2 = 0;
     #endif
-    #if HAS_TEMP_0
-      ANALOG_SELECT(TEMP_0_PIN);
-    #endif
-    #if HAS_TEMP_1
-      ANALOG_SELECT(TEMP_1_PIN);
-    #endif
-    #if HAS_TEMP_2
-      ANALOG_SELECT(TEMP_2_PIN);
-    #endif
-    #if HAS_TEMP_3
-      ANALOG_SELECT(TEMP_3_PIN);
-    #endif
-    #if HAS_TEMP_BED
-      ANALOG_SELECT(TEMP_BED_PIN);
-    #endif
+  #endif
+  #if HAS_TEMP_0
+    ANALOG_SELECT(TEMP_0_PIN);
+  #endif
+  #if HAS_TEMP_1
+    ANALOG_SELECT(TEMP_1_PIN);
+  #endif
+  #if HAS_TEMP_2
+    ANALOG_SELECT(TEMP_2_PIN);
+  #endif
+  #if HAS_TEMP_3
+    ANALOG_SELECT(TEMP_3_PIN);
+  #endif
+  #if HAS_TEMP_BED
+    ANALOG_SELECT(TEMP_BED_PIN);
+  #endif
+  #ifdef __SAM3X8E__
+    // needs something for Due? or nothing todo?
+  #else
     #if ENABLED(FILAMENT_WIDTH_SENSOR)
       ANALOG_SELECT(FILWIDTH_PIN);
     #endif
@@ -1747,7 +1733,7 @@ void Temperature::isr() {
     case PrepareTemp_0:
       #if HAS_TEMP_0
         #ifdef __SAM3X8E__
-          //START_TEMP(0);
+          // nothing todo for Due
         #else
           START_ADC(TEMP_0_PIN);
         #endif
@@ -1769,7 +1755,7 @@ void Temperature::isr() {
     case PrepareTemp_BED:
       #if HAS_TEMP_BED
         #ifdef __SAM3X8E__
-          //START_BED_TEMP();
+          // nothing todo for Due
         #else
           START_ADC(TEMP_BED_PIN);
         #endif
@@ -1791,7 +1777,7 @@ void Temperature::isr() {
     case PrepareTemp_1:
       #if HAS_TEMP_1
         #ifdef __SAM3X8E__
-          //START_TEMP(1);
+          // nothing todo for Due
         #else
           START_ADC(TEMP_1_PIN);
         #endif
@@ -1813,7 +1799,7 @@ void Temperature::isr() {
     case PrepareTemp_2:
       #if HAS_TEMP_2
         #ifdef __SAM3X8E__
-          //START_TEMP(2);
+          // nothing todo for Due
         #else
           START_ADC(TEMP_2_PIN);
         #endif
@@ -1835,7 +1821,7 @@ void Temperature::isr() {
     case PrepareTemp_3:
       #if HAS_TEMP_3
         #ifdef __SAM3X8E__
-          //START_TEMP(3);
+          // nothing todo for Due
         #else
           START_ADC(TEMP_3_PIN);
         #endif
