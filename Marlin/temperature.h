@@ -173,7 +173,8 @@ class Temperature {
       #define MEDIAN_COUNT 10
   
       #define CORRECTION_FOR_RAW_TEMP 4
-      #define MIN_TEMP_DEFAULT 123000
+      #define RAW_MIN_TEMP_DEFAULT 123000
+      #define RAW_MEDIAN_TEMP_DEFAULT 3600 * OVERSAMPLENR
 
       static int max_temp[HOTENDS + 1];
       static int min_temp[HOTENDS + 1];
