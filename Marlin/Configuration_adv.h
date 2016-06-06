@@ -113,7 +113,7 @@
 #if ENABLED(PIDTEMP)
   // this adds an experimental additional term to the heating power, proportional to the extrusion speed.
   // if Kc is chosen well, the additional required power due to increased melting should be compensated.
-  //#define PID_EXTRUSION_SCALING
+  #define PID_EXTRUSION_SCALING
   #if ENABLED(PID_EXTRUSION_SCALING)
     #define DEFAULT_Kc (100) //heating power=Kc*(e_speed)
     #define LPQ_MAX_LEN 50
@@ -191,12 +191,12 @@
 //and turn off after the set amount of seconds from last driver being disabled again
 #define CONTROLLERFAN_PIN -1 //Pin used for the fan to cool controller (-1 to disable)
 #define CONTROLLERFAN_SECS 60 //How many seconds, after all motors were disabled, the fan should run
-#define CONTROLLERFAN_SPEED 255  // == full speed
+#define CONTROLLERFAN_SPEED 128  // == full speed
 
 // When first starting the main fan, run it at full speed for the
 // given number of milliseconds.  This gets the fan spinning reliably
 // before setting a PWM value. (Does not work with software PWM for fan on Sanguinololu)
-//#define FAN_KICKSTART_TIME 100
+#define FAN_KICKSTART_TIME 200
 
 // This defines the minimal speed for the main fan, run in PWM mode
 // to enable uncomment and set minimal PWM speed for reliable running (1-255)
@@ -222,7 +222,7 @@
 #define E2_AUTO_FAN_PIN -1
 #define E3_AUTO_FAN_PIN -1
 #define EXTRUDER_AUTO_FAN_TEMPERATURE 50
-#define EXTRUDER_AUTO_FAN_SPEED   255  // == full speed
+#define EXTRUDER_AUTO_FAN_SPEED   128  // == full speed
 
 // Define a pin to turn case light on/off
 //#define CASE_LIGHT_PIN 4
@@ -327,10 +327,10 @@
 // @section homing
 
 //homing hits the endstop, then retracts by this distance, before it tries to slowly bump again:
-#define X_HOME_BUMP_MM 5
-#define Y_HOME_BUMP_MM 5
-#define Z_HOME_BUMP_MM 2
-#define HOMING_BUMP_DIVISOR {2, 2, 4}  // Re-Bump Speed Divisor (Divides the Homing Feedrate)
+#define X_HOME_BUMP_MM 2
+#define Y_HOME_BUMP_MM 2
+#define Z_HOME_BUMP_MM 2 // deltas need the same for all three axis
+#define HOMING_BUMP_DIVISOR {10, 10, 10}  // Re-Bump Speed Divisor (Divides the Homing Feedrate)
 //#define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
 
 // When G28 is called, this option will make Y home before X
@@ -352,7 +352,7 @@
 // Default stepper release if idle. Set to 0 to deactivate.
 // Steppers will shut down DEFAULT_STEPPER_DEACTIVE_TIME seconds after the last move when DISABLE_INACTIVE_? is true.
 // Time can be set by M18 and M84.
-#define DEFAULT_STEPPER_DEACTIVE_TIME 120
+#define DEFAULT_STEPPER_DEACTIVE_TIME 360
 #define DISABLE_INACTIVE_X true
 #define DISABLE_INACTIVE_Y true
 #define DISABLE_INACTIVE_Z true  // set to false if the nozzle will fall down on your printed part when print has finished.
@@ -364,7 +364,8 @@
 // @section lcd
 
 #if ENABLED(ULTIPANEL)
-  #define MANUAL_FEEDRATE {50*60, 50*60, 4*60, 60} // Feedrates for manual moves along X, Y, Z, E from panel
+  #define MANUAL_FEEDRATE_XYZ 50*60
+  #define MANUAL_FEEDRATE { MANUAL_FEEDRATE_XYZ, MANUAL_FEEDRATE_XYZ, MANUAL_FEEDRATE_XYZ, 60 } // Feedrates for manual moves along X, Y, Z, E from panel
   #define ULTIPANEL_FEEDMULTIPLY  // Comment to disable setting feedrate multiplier via encoder
 #endif
 
@@ -374,7 +375,8 @@
 #define DEFAULT_MINSEGMENTTIME        20000
 
 // If defined the movements slow down when the look ahead buffer is only half full
-#define SLOWDOWN
+// (don't use SLOWDOWN with DELTA because DELTA generates hundreds of segments per second)
+//#define SLOWDOWN
 
 // Frequency limit
 // See nophead's blog for more info
@@ -450,12 +452,12 @@
   #endif
 
   // This allows hosts to request long names for files and folders with M33
-  //#define LONG_FILENAME_HOST_SUPPORT
+  #define LONG_FILENAME_HOST_SUPPORT
 
   // This option allows you to abort SD printing when any endstop is triggered.
   // This feature must be enabled with "M540 S1" or from the LCD menu.
   // To have any effect, endstops must be enabled during SD printing.
-  //#define ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
+  #define ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
 
 #endif // SDSUPPORT
 
@@ -488,9 +490,9 @@
 // Babystepping enables the user to control the axis in tiny amounts, independently from the normal printing process
 // it can e.g. be used to change z-positions in the print startup phase in real-time
 // does not respect endstops!
-//#define BABYSTEPPING
+#define BABYSTEPPING
 #if ENABLED(BABYSTEPPING)
-  #define BABYSTEP_XY  //not only z, but also XY in the menu. more clutter, more functions
+  //#define BABYSTEP_XY  //not only z, but also XY in the menu. more clutter, more functions
                        //not implemented for deltabots!
   #define BABYSTEP_INVERT_Z false  //true for inverse movements in Z
   #define BABYSTEP_MULTIPLICATOR 1 //faster movements
@@ -538,7 +540,7 @@
 
 #if ENABLED(ADVANCE)
   #define EXTRUDER_ADVANCE_K .0
-  #define D_FILAMENT 2.85
+  #define D_FILAMENT 1.75
 #endif
 
 /**
@@ -555,10 +557,10 @@
  * Stiff filament (PLA)        | K=47*L/10 | K=139*L/10 |
  * Softer filament (ABS, nGen) | K=88*L/10 | K=260*L/10 |
  */
-//#define LIN_ADVANCE
+#define LIN_ADVANCE
 
 #if ENABLED(LIN_ADVANCE)
-  #define LIN_ADVANCE_K 75
+  #define LIN_ADVANCE_K .0
 #endif
 
 // @section leveling
@@ -653,21 +655,21 @@
 // until then, intended retractions can be detected by moves that only extrude and the direction.
 // the moves are than replaced by the firmware controlled ones.
 
-//#define FWRETRACT  //ONLY PARTIALLY TESTED
+#define FWRETRACT  //ONLY PARTIALLY TESTED
 #if ENABLED(FWRETRACT)
   #define MIN_RETRACT 0.1                //minimum extruded mm to accept a automatic gcode retraction attempt
   #define RETRACT_LENGTH 3               //default retract length (positive mm)
   #define RETRACT_LENGTH_SWAP 13         //default swap retract length (positive mm), for extruder change
-  #define RETRACT_FEEDRATE 45            //default feedrate for retracting (mm/s)
+  #define RETRACT_FEEDRATE 40            //default feedrate for retracting (mm/s)
   #define RETRACT_ZLIFT 0                //default retract Z-lift
   #define RETRACT_RECOVER_LENGTH 0       //default additional recover length (mm, added to retract length when recovering)
   #define RETRACT_RECOVER_LENGTH_SWAP 0  //default additional swap recover length (mm, added to retract length when recovering from extruder change)
-  #define RETRACT_RECOVER_FEEDRATE 8     //default feedrate for recovering from retraction (mm/s)
+  #define RETRACT_RECOVER_FEEDRATE 20    //default feedrate for recovering from retraction (mm/s)
 #endif
 
 // Add support for experimental filament exchange support M600; requires display
 #if ENABLED(ULTIPANEL)
-  // #define FILAMENT_CHANGE_FEATURE             // Enable filament exchange menu and M600 g-code (used for runout sensor too)
+  #define FILAMENT_CHANGE_FEATURE               // Enable filament exchange menu and M600 g-code (used for runout sensor too)
   #if ENABLED(FILAMENT_CHANGE_FEATURE)
     #define FILAMENT_CHANGE_X_POS 3             // X position of hotend
     #define FILAMENT_CHANGE_Y_POS 3             // Y position of hotend
