@@ -50,6 +50,11 @@
 #define BOARD_RAMPS_14_SF       48   // RAMPS 1.4 (Power outputs: Spindle, Controller Fan)
 #define BOARD_GEN6              5    // Gen6
 #define BOARD_GEN6_DELUXE       51   // Gen6 deluxe
+#define BOARD_RAMPS_DUO_EFB     53   // RAMPS Duo (Power outputs: Hotend, Fan, Bed)
+#define BOARD_RAMPS_DUO_EEB     54   // RAMPS Duo (Power outputs: Hotend0, Hotend1, Bed)
+#define BOARD_RAMPS_DUO_EFF     55   // RAMPS Duo (Power outputs: Hotend, Fan0, Fan1)
+#define BOARD_RAMPS_DUO_EEF     56   // RAMPS Duo (Power outputs: Hotend0, Hotend1, Fan)
+#define BOARD_RAMPS_DUO_SF      58   // RAMPS Duo (Power outputs: Spindle, Controller Fan)
 #define BOARD_SANGUINOLOLU_11   6    // Sanguinololu < 1.2
 #define BOARD_SANGUINOLOLU_12   62   // Sanguinololu 1.2 and above
 #define BOARD_MELZI             63   // Melzi
