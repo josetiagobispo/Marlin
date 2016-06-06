@@ -176,8 +176,8 @@ class Temperature {
       #define RAW_MIN_TEMP_DEFAULT 123000
       #define RAW_MEDIAN_TEMP_DEFAULT 3600 * OVERSAMPLENR
 
-      static int max_temp[HOTENDS + 1];
       static int min_temp[HOTENDS + 1];
+      static int max_temp[HOTENDS + 1];
       static unsigned long raw_median_temp[HOTENDS + 1][MEDIAN_COUNT];
       static uint8_t median_counter;
       static unsigned long sum;

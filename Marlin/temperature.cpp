@@ -161,8 +161,8 @@ unsigned long Temperature::raw_temp_value[4] = { 0 };
 unsigned long Temperature::raw_temp_bed_value = 0;
 
 #ifdef __SAM3X8E__
-  int Temperature::max_temp[HOTENDS + 1] = { 0 };
   int Temperature::min_temp[HOTENDS + 1] = { 0 };
+  int Temperature::max_temp[HOTENDS + 1] = { 0 };
   unsigned long Temperature::raw_median_temp[HOTENDS + 1][MEDIAN_COUNT] = { { 0 } };
   uint8_t Temperature::median_counter = 0;
   unsigned long Temperature::sum = 0;
@@ -971,9 +971,8 @@ void Temperature::init() {
   #ifdef __SAM3X8E__
     // Initialize some variables only at start!
     for (uint8_t i = 0; i < HOTENDS + 1; i++) {
-      for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = RAW_MEDIAN_TEMP_DEFAULT;
-      max_temp[i] = 0;
       min_temp[i] = RAW_MIN_TEMP_DEFAULT;
+      for (int j = 0; j < MEDIAN_COUNT; j++) raw_median_temp[i][j] = RAW_MEDIAN_TEMP_DEFAULT;
     }
     SERIAL_ECHOLN("First start for temperature finished.");
   #endif
@@ -1445,8 +1444,8 @@ void Temperature::set_current_temp_raw() {
   #ifdef __SAM3X8E__
     // Reset min/max-holder
     for (uint8_t i = 0; i < HOTENDS + 1; i++) {
-      max_temp[i] = 0;
       min_temp[i] = RAW_MIN_TEMP_DEFAULT;
+      max_temp[i] = 0;
     }
 
     median_counter++;
