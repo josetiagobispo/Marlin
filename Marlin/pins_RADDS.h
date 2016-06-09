@@ -159,3 +159,35 @@
 
   #endif // SPARK_FULL_GRAPHICS
 #endif // ULTRA_LCD
+
+
+// for my machine
+
+//
+// Limit Switches
+//
+#undef X_MIN_PIN
+#define X_MIN_PIN          -1 // unused for deltabot, was 28
+
+#undef Y_MIN_PIN
+#define Y_MIN_PIN          -1 // unused for deltabot, was 30
+
+//
+// Heaters / Fans
+//
+#undef FAN_PIN
+#define FAN_PIN            11 // (Sprinter config), was 9
+
+#undef FAN1_PIN
+#define FAN1_PIN            9
+
+#define FAN2_PIN            8
+
+//
+// LCD / Controller
+//
+#undef BEEPER_PIN
+#define BEEPER_PIN         -1
+
+#define STAT_LED_RED_PIN   33
+#define STAT_LED_BLUE_PIN  35
