@@ -121,8 +121,28 @@ script:
   - opt_enable_adv DUAL_X_CARRIAGE
   - build_marlin
   #
+  # Test SPEAKER with BOARD_BQ_ZUM_MEGA_3D and BQ_LCD_SMART_CONTROLLER
+  #
+  - restore_configs
+  - opt_set MOTHERBOARD BOARD_BQ_ZUM_MEGA_3D
+  - opt_set LCD_FEEDBACK_FREQUENCY_DURATION_MS 10
+  - opt_set LCD_FEEDBACK_FREQUENCY_HZ 100
+  - opt_enable BQ_LCD_SMART_CONTROLLER SPEAKER
+  - build_marlin
+  #
   ### LCDS ###
   #
+  # ULTRA_LCD
+  #
+  - restore_configs
+  - opt_enable ULTRA_LCD
+  - build_marlin
+  #
+  # DOGLCD
+  #
+  - restore_configs
+  - opt_enable DOGLCD
+  - build_marlin
   #
   # ULTIMAKERCONTROLLER
   #

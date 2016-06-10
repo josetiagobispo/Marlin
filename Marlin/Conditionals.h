@@ -43,8 +43,7 @@
 #endif
 
 #ifndef CONFIGURATION_LCD // Get the LCD defines which are needed first
-
-  #define CONFIGURATION_LCD
+#define CONFIGURATION_LCD
 
   #define LCD_HAS_DIRECTIONAL_BUTTONS (BUTTON_EXISTS(UP) || BUTTON_EXISTS(DWN) || BUTTON_EXISTS(LFT) || BUTTON_EXISTS(RT))
 
@@ -152,11 +151,6 @@
 
     #ifndef ENCODER_STEPS_PER_MENU_ITEM
       #define ENCODER_STEPS_PER_MENU_ITEM 1
-    #endif
-
-    #if ENABLED(LCD_USE_I2C_BUZZER)
-      #define LCD_FEEDBACK_FREQUENCY_HZ 1000
-      #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 100
     #endif
 
     #define ULTIPANEL
@@ -445,7 +439,7 @@
    */
   #if ENABLED(ADVANCE)
     #define EXTRUSION_AREA (0.25 * (D_FILAMENT) * (D_FILAMENT) * M_PI)
-    #define STEPS_PER_CUBIC_MM_E (axis_steps_per_unit[E_AXIS] / (EXTRUSION_AREA))
+    #define STEPS_PER_CUBIC_MM_E (axis_steps_per_mm[E_AXIS] / (EXTRUSION_AREA))
   #endif
 
   #if ENABLED(ULTIPANEL) && DISABLED(ELB_FULL_GRAPHIC_CONTROLLER)
@@ -876,11 +870,33 @@
     #endif
   #endif
 
+  /**
+   * Buzzer/Speaker
+   */
+  #if ENABLED(LCD_USE_I2C_BUZZER)
+    #ifndef LCD_FEEDBACK_FREQUENCY_HZ
+      #define LCD_FEEDBACK_FREQUENCY_HZ 1000
+    #endif
+    #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
+      #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 100
+    #endif
+  #elif PIN_EXISTS(BEEPER)
+    #ifndef LCD_FEEDBACK_FREQUENCY_HZ
+      #define LCD_FEEDBACK_FREQUENCY_HZ 5000
+    #endif
+    #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
+      #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
+    #endif
+  #else
+    #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
+      #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
+    #endif
+  #endif
+
   #ifndef __SAM3X8E__
     #undef UI_VOLTAGE_LEVEL
     #undef RADDS_DISPLAY
     #undef MOTOR_CURRENT
   #endif
-
 #endif //CONFIGURATION_LCD
 #endif //CONDITIONALS_H

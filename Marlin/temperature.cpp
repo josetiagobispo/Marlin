@@ -219,15 +219,18 @@ unsigned char Temperature::soft_pwm[HOTENDS];
       next_auto_fan_check_ms = temp_ms + 2500UL;
     #endif
 
-    if (false
-      #if ENABLED(PIDTEMP)
-         || hotend >= HOTENDS
-      #else
-         || hotend >= 0
-      #endif
-      #if DISABLED(PIDTEMPBED)
-         || hotend < 0
-      #endif
+    if (hotend >=
+        #if ENABLED(PIDTEMP)
+          HOTENDS
+        #else
+          0
+        #endif
+      || hotend <
+        #if ENABLED(PIDTEMPBED)
+          -1
+        #else
+          0
+        #endif
     ) {
       SERIAL_ECHOLN(MSG_PID_BAD_EXTRUDER_NUM);
       return;
@@ -569,7 +572,7 @@ float Temperature::get_pid_output(int e) {
               lpq[lpq_ptr++] = 0;
             }
             if (lpq_ptr >= lpq_len) lpq_ptr = 0;
-            cTerm[_CTERM_INDEX] = (lpq[lpq_ptr] / planner.axis_steps_per_unit[E_AXIS]) * PID_PARAM(Kc, e);
+            cTerm[_CTERM_INDEX] = (lpq[lpq_ptr] / planner.axis_steps_per_mm[E_AXIS]) * PID_PARAM(Kc, e);
             pid_output += cTerm[e];
           }
         #endif //PID_ADD_EXTRUSION_RATE
