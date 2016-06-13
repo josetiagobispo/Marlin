@@ -24,8 +24,8 @@
 #define __BUZZER_H__
 
 #include "fastio.h"
-#include "watchdog.h"
 #include "circularqueue.h"
+#include "temperature.h"
 
 #define TONE_QUEUE_LENGTH 4
 
@@ -110,9 +110,7 @@ class Buzzer {
           delay(5);
         #endif
         this->tick();
-        #if ENABLED(USE_WATCHDOG)
-          watchdog_reset();
-        #endif
+        thermalManager.manage_heater();
       }
       this->buffer.enqueue((tone_t) { duration, frequency });
     }

@@ -247,7 +247,6 @@ void FlushSerialRequestResend();
 void ok_to_send();
 
 void reset_bed_level();
-void prepare_move();
 void kill(const char*);
 
 #if DISABLED(DELTA) && DISABLED(SCARA)
