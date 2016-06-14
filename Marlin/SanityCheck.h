@@ -539,30 +539,33 @@
 
 #ifdef __SAM3X8E__
   #if HAS_MOTOR_CURRENT_PWM
-    #error MOTOR_CURRENT_PWM (_XY, _Z, _E) are not supported by ARM platform yet.
+    #error "MOTOR_CURRENT_PWM (_XY, _Z, _E) are not supported by ARM platform yet."
   #endif
   #if MB(ALLIGATOR)
     #if DISABLED(UI_VOLTAGE_LEVEL)
-      #error DEPENDENCY ERROR: Missing setting UI_VOLTAGE_LEVEL
+      #error "DEPENDENCY ERROR: Missing setting UI_VOLTAGE_LEVEL"
     #endif
   #endif
   #ifdef HEATER_0_USES_MAX6675
-    #error HEATER_0_USES_MAX6675 is not supported by ARM platform yet.
+    #error "HEATER_0_USES_MAX6675 is not supported by ARM platform yet."
   #endif
   #ifdef MAX6675_IS_MAX31855
-    #error MAX6675_IS_MAX31855 is not supported by ARM platform yet.
+    #error "MAX6675_IS_MAX31855 is not supported by ARM platform yet."
   #endif
   #ifdef M100_FREE_MEMORY_WATCHER
-    #error M100_FREE_MEMORY_WATCHER is not supported by ARM platform yet.
+    #error "M100_FREE_MEMORY_WATCHER is not supported by ARM platform yet."
   #endif
   #ifdef FAST_PWM_FAN
-    #error FAST_PWM_FAN is not supported by ARM platform yet.
+    #error "FAST_PWM_FAN is not supported by ARM platform yet."
   #endif
   #ifdef WATCHDOG_RESET_MANUAL
-    #error WATCHDOG_RESET_MANUAL is not supported by ARM platform yet.
+    #error "WATCHDOG_RESET_MANUAL is not supported by ARM platform yet."
   #endif
   #ifdef ADVANCE
-    #error ADVANCE is not supported by ARM platform yet.
+    #error "ADVANCE is not supported by ARM platform yet."
+  #endif
+  #ifdef LIN_ADVANCE
+    #error "LIN_ADVANCE is not supported by ARM platform yet."
   #endif
 #endif
 /**
