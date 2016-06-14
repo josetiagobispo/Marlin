@@ -271,14 +271,8 @@ static void lcd_implementation_init() {
       }
     } while (u8g.nextPage());
 
-    if (show_bootscreen) {
-      #ifdef __SAM3X8E__
-        HAL_delay(1000);
-      #else
-        delay(1000);
-      #endif
-      show_bootscreen = false;
-    }
+    show_bootscreen = false;
+
   #endif
 }
 
