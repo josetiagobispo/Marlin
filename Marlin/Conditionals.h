@@ -375,32 +375,14 @@
     #define MAX_PROBE_Y (min(Y_MAX_POS, Y_MAX_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
   #endif
 
-  #define HAS_Z_ENDSTOP_SERVO (defined(Z_ENDSTOP_SERVO_NR) && Z_ENDSTOP_SERVO_NR >= 0)
-  #define SERVO_LEVELING (ENABLED(AUTO_BED_LEVELING_FEATURE) && HAS_Z_ENDSTOP_SERVO)
+  #define HAS_Z_SERVO_ENDSTOP (defined(Z_ENDSTOP_SERVO_NR) && Z_ENDSTOP_SERVO_NR >= 0)
+  #define SERVO_LEVELING (ENABLED(AUTO_BED_LEVELING_FEATURE) && HAS_Z_SERVO_ENDSTOP)
 
   /**
    * Sled Options
    */
   #if ENABLED(Z_PROBE_SLED)
     #define Z_SAFE_HOMING
-  #endif
-
-  /**
-   * Z Safe Homing dependencies
-   */
-  #if ENABLED(Z_SAFE_HOMING)
-    #ifndef X_PROBE_OFFSET_FROM_EXTRUDER
-      #define X_PROBE_OFFSET_FROM_EXTRUDER 0
-    #endif
-    #ifndef Y_PROBE_OFFSET_FROM_EXTRUDER
-      #define Y_PROBE_OFFSET_FROM_EXTRUDER 0
-    #endif
-    #ifndef Z_PROBE_OFFSET_FROM_EXTRUDER
-      #define Z_PROBE_OFFSET_FROM_EXTRUDER 0
-    #endif
-    #ifndef XY_TRAVEL_SPEED
-      #define XY_TRAVEL_SPEED 4000
-    #endif
   #endif
 
   /**
@@ -834,26 +816,40 @@
   #define HAS_BUZZER (PIN_EXISTS(BEEPER) || defined(LCD_USE_I2C_BUZZER))
 
   #if HAS_SERVOS
-    #ifndef X_ENDSTOP_SERVO_NR
-      #define X_ENDSTOP_SERVO_NR -1
-    #endif
-    #ifndef Y_ENDSTOP_SERVO_NR
-      #define Y_ENDSTOP_SERVO_NR -1
-    #endif
     #ifndef Z_ENDSTOP_SERVO_NR
       #define Z_ENDSTOP_SERVO_NR -1
     #endif
-    #if X_ENDSTOP_SERVO_NR >= 0 || Y_ENDSTOP_SERVO_NR >= 0 || HAS_Z_ENDSTOP_SERVO
-      #define HAS_SERVO_ENDSTOPS
-      #define SERVO_ENDSTOP_IDS { X_ENDSTOP_SERVO_NR, Y_ENDSTOP_SERVO_NR, Z_ENDSTOP_SERVO_NR }
-    #endif
   #endif
 
-  #define PROBE_SELECTED (ENABLED(FIX_MOUNTED_PROBE) || ENABLED(MECHANICAL_PROBE) || ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_ENDSTOP_SERVO || ENABLED(Z_PROBE_SLED))
+  #define PROBE_SELECTED (ENABLED(FIX_MOUNTED_PROBE) || ENABLED(MECHANICAL_PROBE) || ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))
 
   #define PROBE_PIN_CONFIGURED (HAS_Z_MIN_PROBE_PIN || (HAS_Z_MIN && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)))
 
   #define HAS_BED_PROBE (PROBE_SELECTED && PROBE_PIN_CONFIGURED)
+
+  /**
+   * Probe dependencies
+   */
+  #if HAS_BED_PROBE
+    #ifndef X_PROBE_OFFSET_FROM_EXTRUDER
+      #define X_PROBE_OFFSET_FROM_EXTRUDER 0
+    #endif
+    #ifndef Y_PROBE_OFFSET_FROM_EXTRUDER
+      #define Y_PROBE_OFFSET_FROM_EXTRUDER 0
+    #endif
+    #ifndef Z_PROBE_OFFSET_FROM_EXTRUDER
+      #define Z_PROBE_OFFSET_FROM_EXTRUDER 0
+    #endif
+    #ifndef Z_PROBE_OFFSET_RANGE_MIN
+      #define Z_PROBE_OFFSET_RANGE_MIN -20
+    #endif
+    #ifndef Z_PROBE_OFFSET_RANGE_MAX
+      #define Z_PROBE_OFFSET_RANGE_MAX 20
+    #endif
+    #ifndef XY_TRAVEL_SPEED
+      #define XY_TRAVEL_SPEED 4000
+    #endif
+  #endif
 
   /**
    * Delta radius/rod trimmers
