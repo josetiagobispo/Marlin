@@ -241,6 +241,7 @@
  * M665 - Set delta configurations: L<diagonal rod> R<delta radius> S<segments/s>
  * M666 - Set delta endstop adjustment
  * M605 - Set dual x-carriage movement mode: S<mode> [ X<duplication x-offset> R<duplication temp offset> ]
+ * M851 - Set Z probe's Z offset (mm). Set to a negative value for probes that trigger below the nozzle.
  * M907 - Set digital trimpot motor current using axis codes.
  * M908 - Control digital trimpot directly.
  * M909 - DAC_STEPPER_CURRENT: Print digipot/DAC current value
@@ -259,9 +260,6 @@
  *
  * ************ Custom codes - This can change to suit future G-code regulations
  * M100 - Watch Free Memory (For Debugging Only)
- * M851 - Set Z probe's Z offset (mm above extruder -- The value will always be negative)
-
-
  * M928 - Start SD logging (M928 filename.g) - ended by M29
  * M999 - Restart after being stopped by error
  *
@@ -1717,6 +1715,8 @@ static void setup_for_endstop_move() {
 
   static void run_z_probe() {
 
+    float old_feedrate = feedrate;
+
     /**
      * To prevent stepper_inactive_time from running out and
      * EXTRUDER_RUNOUT_PREVENT from extruding
@@ -1793,6 +1793,8 @@ static void setup_for_endstop_move() {
       #endif
 
     #endif // !DELTA
+
+    feedrate = old_feedrate;
   }
 
   /**
@@ -1800,7 +1802,7 @@ static void setup_for_endstop_move() {
    *  The final current_position may not be the one that was requested
    */
   static void do_blocking_move_to(float x, float y, float z) {
-    float oldFeedRate = feedrate;
+    float old_feedrate = feedrate;
 
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) print_xyz("do_blocking_move_to", x, y, z);
@@ -1808,7 +1810,7 @@ static void setup_for_endstop_move() {
 
     #if ENABLED(DELTA)
 
-      feedrate = XY_TRAVEL_SPEED;
+      feedrate = xy_travel_speed;
 
       destination[X_AXIS] = x;
       destination[Y_AXIS] = y;
@@ -1818,8 +1820,6 @@ static void setup_for_endstop_move() {
         prepare_move_to_destination_raw(); // this will also set_current_to_destination
       else
         prepare_move_to_destination();     // this will also set_current_to_destination
-
-      stepper.synchronize();
 
     #else
 
@@ -1834,11 +1834,12 @@ static void setup_for_endstop_move() {
       current_position[X_AXIS] = x;
       current_position[Y_AXIS] = y;
       line_to_current_position();
-      stepper.synchronize();
 
     #endif
 
-    feedrate = oldFeedRate;
+    stepper.synchronize();
+
+    feedrate = old_feedrate;
   }
 
   inline void do_blocking_move_to_xy(float x, float y) {
@@ -1888,6 +1889,8 @@ static void setup_for_endstop_move() {
       DEPLOY_Z_SERVO();
 
     #elif ENABLED(Z_PROBE_ALLEN_KEY)
+      float old_feedrate = feedrate;
+
       feedrate = Z_PROBE_ALLEN_KEY_DEPLOY_1_FEEDRATE;
 
       // If endstop is already false, the Z probe is deployed
@@ -1899,7 +1902,6 @@ static void setup_for_endstop_move() {
         if (z_min_endstop)
       #endif
         {
-
           // Move to the start position to initiate deployment
           destination[X_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_1_X;
           destination[Y_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_1_Y;
@@ -1936,9 +1938,11 @@ static void setup_for_endstop_move() {
         }
 
       // Partially Home X,Y for safety
-      destination[X_AXIS] = destination[X_AXIS] * 0.75;
-      destination[Y_AXIS] = destination[Y_AXIS] * 0.75;
+      destination[X_AXIS] *= 0.75;
+      destination[Y_AXIS] *= 0.75;
       prepare_move_to_destination_raw(); // this will also set_current_to_destination
+
+      feedrate = old_feedrate;
 
       stepper.synchronize();
 
@@ -1993,6 +1997,8 @@ static void setup_for_endstop_move() {
 
     #elif ENABLED(Z_PROBE_ALLEN_KEY)
 
+      float old_feedrate = feedrate;
+
       // Move up for safety
       feedrate = Z_PROBE_ALLEN_KEY_STOW_1_FEEDRATE;
 
@@ -2032,6 +2038,8 @@ static void setup_for_endstop_move() {
       destination[X_AXIS] = 0;
       destination[Y_AXIS] = 0;
       prepare_move_to_destination_raw(); // this will also set_current_to_destination
+
+      feedrate = old_feedrate;
 
       stepper.synchronize();
 
@@ -3558,22 +3566,16 @@ inline void gcode_G28() {
           float measured_z,
                 z_before = probePointCounter ? Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS] : Z_RAISE_BEFORE_PROBING + home_offset[Z_AXIS];
 
-          if (probePointCounter) {
-            #if ENABLED(DEBUG_LEVELING_FEATURE)
-              if (DEBUGGING(LEVELING)) {
-                SERIAL_ECHOPAIR("z_before = (between) ", (Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS]));
-                SERIAL_EOL;
-              }
-            #endif
-          }
-          else {
-            #if ENABLED(DEBUG_LEVELING_FEATURE)
-              if (DEBUGGING(LEVELING)) {
-                SERIAL_ECHOPAIR("z_before = (before) ", Z_RAISE_BEFORE_PROBING + home_offset[Z_AXIS]);
-                SERIAL_EOL;
-              }
-            #endif
-          }
+          #if ENABLED(DEBUG_LEVELING_FEATURE)
+            if (DEBUGGING(LEVELING)) {
+              SERIAL_ECHOPGM("z_before = (");
+              if (probePointCounter)
+                SERIAL_ECHOPGM("between) ");
+              else
+                SERIAL_ECHOPGM("before) ");
+              SERIAL_ECHOLN(z_before);
+            }
+          #endif
 
           #if ENABLED(DELTA)
             // Avoid probing the corners (outside the round or hexagon print surface) on a delta printer.
@@ -3879,9 +3881,8 @@ inline void gcode_G28() {
       // TODO: clear the leveling matrix or the planner will be set incorrectly
       setup_for_endstop_move(); // Too late. Must be done before deploying.
 
-      feedrate = homing_feedrate[Z_AXIS];
-
       run_z_probe();
+
       SERIAL_PROTOCOLPGM("Bed X: ");
       SERIAL_PROTOCOL(current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER + 0.0001);
       SERIAL_PROTOCOLPGM(" Y: ");
@@ -4242,57 +4243,41 @@ inline void gcode_M42() {
       return;
     }
 
-    double sum = 0.0, mean = 0.0, sigma = 0.0, sample_set[50];
-    int8_t verbose_level = 1, n_samples = 10, n_legs = 0, schizoid_flag = 0;
-
-    if (code_seen('V')) {
-      verbose_level = code_value_byte();
-      if (verbose_level < 0 || verbose_level > 4) {
-        SERIAL_PROTOCOLPGM("?Verbose Level not plausible (0-4).\n");
-        return;
-      }
+    int8_t verbose_level = code_seen('V') ? code_value_byte() : 1;
+    if (verbose_level < 0 || verbose_level > 4) {
+      SERIAL_PROTOCOLPGM("?Verbose Level not plausible (0-4).\n");
+      return;
     }
 
     if (verbose_level > 0)
       SERIAL_PROTOCOLPGM("M48 Z-Probe Repeatability test\n");
 
-    if (code_seen('P')) {
-      n_samples = code_value_byte();
-      if (n_samples < 4 || n_samples > 50) {
-        SERIAL_PROTOCOLPGM("?Sample size not plausible (4-50).\n");
-        return;
-      }
+    int8_t n_samples = code_seen('P') ? code_value_byte() : 10;
+    if (n_samples < 4 || n_samples > 50) {
+      SERIAL_PROTOCOLPGM("?Sample size not plausible (4-50).\n");
+      return;
     }
 
     float  X_current = current_position[X_AXIS],
            Y_current = current_position[Y_AXIS],
-           Z_current = current_position[Z_AXIS],
-           X_probe_location = X_current + X_PROBE_OFFSET_FROM_EXTRUDER,
-           Y_probe_location = Y_current + Y_PROBE_OFFSET_FROM_EXTRUDER,
-           Z_start_location = Z_current + Z_RAISE_BEFORE_PROBING;
+           Z_start_location = current_position[Z_AXIS] + Z_RAISE_BEFORE_PROBING;
     bool deploy_probe_for_each_reading = code_seen('E');
 
-    if (code_seen('X')) {
-      X_probe_location = code_value_axis_units(X_AXIS);
-      #if DISABLED(DELTA)
-        if (X_probe_location < MIN_PROBE_X || X_probe_location > MAX_PROBE_X) {
-          out_of_range_error(PSTR("X"));
-          return;
-        }
-      #endif
-    }
+    float X_probe_location = code_seen('X') ? code_value_axis_units(X_AXIS) : X_current + X_PROBE_OFFSET_FROM_EXTRUDER;
+    #if DISABLED(DELTA)
+      if (X_probe_location < MIN_PROBE_X || X_probe_location > MAX_PROBE_X) {
+        out_of_range_error(PSTR("X"));
+        return;
+      }
+    #endif
 
-    if (code_seen('Y')) {
-      Y_probe_location = code_value_axis_units(Y_AXIS);
-      #if DISABLED(DELTA)
-        if (Y_probe_location < MIN_PROBE_Y || Y_probe_location > MAX_PROBE_Y) {
-          out_of_range_error(PSTR("Y"));
-          return;
-        }
-      #endif
-    }
-
-    #if ENABLED(DELTA)
+    float Y_probe_location = code_seen('Y') ? code_value_axis_units(Y_AXIS) : Y_current + Y_PROBE_OFFSET_FROM_EXTRUDER;
+    #if DISABLED(DELTA)
+      if (Y_probe_location < MIN_PROBE_Y || Y_probe_location > MAX_PROBE_Y) {
+        out_of_range_error(PSTR("Y"));
+        return;
+      }
+    #else
       if (sqrt(X_probe_location * X_probe_location + Y_probe_location * Y_probe_location) > DELTA_PROBEABLE_RADIUS) {
         SERIAL_PROTOCOLPGM("? (X,Y) location outside of probeable radius.\n");
         return;
@@ -4300,20 +4285,15 @@ inline void gcode_M42() {
     #endif
 
     bool seen_L = code_seen('L');
-
-    if (seen_L) {
-      n_legs = code_value_byte();
-      if (n_legs < 0 || n_legs > 15) {
-        SERIAL_PROTOCOLPGM("?Number of legs in movement not plausible (0-15).\n");
-        return;
-      }
-      if (n_legs == 1) n_legs = 2;
+    uint8_t n_legs = seen_L ? code_value_byte() : 0;
+    if (n_legs < 0 || n_legs > 15) {
+      SERIAL_PROTOCOLPGM("?Number of legs in movement not plausible (0-15).\n");
+      return;
     }
+    if (n_legs == 1) n_legs = 2;
 
-    if (code_seen('S')) {
-      schizoid_flag++;
-      if (!seen_L) n_legs = 7;
-    }
+    bool schizoid_flag = code_seen('S');
+    if (schizoid_flag && !seen_L) n_legs = 7;
 
     /**
      * Now get everything to the specified probe point So we can safely do a
@@ -4342,30 +4322,29 @@ inline void gcode_M42() {
      */
     setup_for_endstop_move();
 
-    probe_pt(X_probe_location, Y_probe_location, Z_RAISE_BEFORE_PROBING,
+    // Height before each probe (except the first)
+    float z_between = home_offset[Z_AXIS] + (deploy_probe_for_each_reading ? Z_RAISE_BEFORE_PROBING : Z_RAISE_BETWEEN_PROBINGS);
+
+    // Deploy the probe and probe the first point
+    probe_pt(X_probe_location, Y_probe_location,
+      home_offset[Z_AXIS] + Z_RAISE_BEFORE_PROBING,
       deploy_probe_for_each_reading ? ProbeDeployAndStow : ProbeDeploy,
       verbose_level);
 
-    raise_z_after_probing();
+    randomSeed(millis());
 
+    double mean, sigma, sample_set[n_samples];
     for (uint8_t n = 0; n < n_samples; n++) {
-      randomSeed(millis());
-      #ifdef __SAM3X8E__
-        HAL_delay(500);
-      #else
-        delay(500);
-      #endif
       if (n_legs) {
-        float radius, angle = random(0.0, 360.0);
         int dir = (random(0, 10) > 5.0) ? -1 : 1;  // clockwise or counter clockwise
-
-        radius = random(
-          #if ENABLED(DELTA)
-            DELTA_PROBEABLE_RADIUS / 8, DELTA_PROBEABLE_RADIUS / 3
-          #else
-            5, X_MAX_LENGTH / 8
-          #endif
-        );
+        float angle = random(0.0, 360.0),
+              radius = random(
+                #if ENABLED(DELTA)
+                  DELTA_PROBEABLE_RADIUS / 8, DELTA_PROBEABLE_RADIUS / 3
+                #else
+                  5, X_MAX_LENGTH / 8
+                #endif
+              );
 
         if (verbose_level > 3) {
           SERIAL_ECHOPAIR("Starting radius: ", radius);
@@ -4446,26 +4425,21 @@ inline void gcode_M42() {
         } // n_legs loop
       } // n_legs
 
-      /**
-       * We don't really have to do this move, but if we don't we can see a
-       * funny shift in the Z Height because the user might not have the
-       * Z_RAISE_BEFORE_PROBING height identical to the Z_RAISE_BETWEEN_PROBING
-       * height. This gets us back to the probe location at the same height that
-       * we have been running around the circle at.
-       */
-      do_blocking_move_to_xy(X_probe_location - (X_PROBE_OFFSET_FROM_EXTRUDER), Y_probe_location - (Y_PROBE_OFFSET_FROM_EXTRUDER));
-      if (deploy_probe_for_each_reading)
-        sample_set[n] = probe_pt(X_probe_location, Y_probe_location, Z_RAISE_BEFORE_PROBING, ProbeDeployAndStow, verbose_level);
-      else {
-        if (n == n_samples - 1)
-          sample_set[n] = probe_pt(X_probe_location, Y_probe_location, Z_RAISE_BEFORE_PROBING, ProbeStow, verbose_level); else
-          sample_set[n] = probe_pt(X_probe_location, Y_probe_location, Z_RAISE_BEFORE_PROBING, ProbeStay, verbose_level);
-      }
+      // The last probe will differ
+      bool last_probe = (n == n_samples - 1);
+
+      // Probe a single point
+      sample_set[n] = probe_pt(
+        X_probe_location, Y_probe_location,
+        z_between,
+        deploy_probe_for_each_reading ? ProbeDeployAndStow : last_probe ? ProbeStow : ProbeStay,
+        verbose_level
+      );
 
       /**
        * Get the current mean for the data points we have so far
        */
-      sum = 0.0;
+      double sum = 0.0;
       for (uint8_t j = 0; j <= n; j++) sum += sample_set[j];
       mean = sum / (n + 1);
 
@@ -4479,54 +4453,50 @@ inline void gcode_M42() {
         sum += ss * ss;
       }
       sigma = sqrt(sum / (n + 1));
-      if (verbose_level > 1) {
-        SERIAL_PROTOCOL(n + 1);
-        SERIAL_PROTOCOLPGM(" of ");
-        SERIAL_PROTOCOL((int)n_samples);
-        SERIAL_PROTOCOLPGM("   z: ");
-        SERIAL_PROTOCOL_F(current_position[Z_AXIS], 6);
-        #ifdef __SAM3X8E__
-          HAL_delay(50);
-        #else
-          delay(50);
-        #endif
-        if (verbose_level > 2) {
-          SERIAL_PROTOCOLPGM(" mean: ");
-          SERIAL_PROTOCOL_F(mean, 6);
-          SERIAL_PROTOCOLPGM("   sigma: ");
-          SERIAL_PROTOCOL_F(sigma, 6);
+      if (verbose_level > 0) {
+        if (verbose_level > 1) {
+          SERIAL_PROTOCOL(n + 1);
+          SERIAL_PROTOCOLPGM(" of ");
+          SERIAL_PROTOCOL((int)n_samples);
+          SERIAL_PROTOCOLPGM("   z: ");
+          SERIAL_PROTOCOL_F(current_position[Z_AXIS], 6);
+          #ifdef __SAM3X8E__
+            HAL_delay(50);
+          #else
+            delay(50);
+          #endif
+          if (verbose_level > 2) {
+            SERIAL_PROTOCOLPGM(" mean: ");
+            SERIAL_PROTOCOL_F(mean, 6);
+            SERIAL_PROTOCOLPGM("   sigma: ");
+            SERIAL_PROTOCOL_F(sigma, 6);
+          }
         }
+        SERIAL_EOL;
       }
-      if (verbose_level > 0) SERIAL_EOL;
-      #ifdef __SAM3X8E__
-        HAL_delay(50);
-      #else
-        delay(50);
-      #endif
-      do_blocking_move_to_z(current_position[Z_AXIS] + Z_RAISE_BETWEEN_PROBINGS);
-    }  // End of probe loop code
 
-    // raise_z_after_probing();
+      // Raise before the next loop for the legs,
+      // or do the final raise after the last probe
+      if (n_legs || last_probe) {
+        do_blocking_move_to_z(last_probe ? home_offset[Z_AXIS] + Z_RAISE_AFTER_PROBING : z_between);
+        #ifdef __SAM3X8E__
+          if (!last_probe) HAL_delay(500);
+        #else
+          if (!last_probe) delay(500);
+        #endif
+      }
+
+    } // End of probe loop
 
     if (verbose_level > 0) {
       SERIAL_PROTOCOLPGM("Mean: ");
       SERIAL_PROTOCOL_F(mean, 6);
       SERIAL_EOL;
-      #ifdef __SAM3X8E__
-        HAL_delay(25);
-      #else
-        delay(25);
-      #endif
     }
 
     SERIAL_PROTOCOLPGM("Standard Deviation: ");
     SERIAL_PROTOCOL_F(sigma, 6);
     SERIAL_EOL; SERIAL_EOL;
-    #ifdef __SAM3X8E__
-      HAL_delay(25);
-    #else
-      delay(25);
-    #endif
 
     clean_up_after_endstop_move();
 
@@ -5867,9 +5837,17 @@ inline void gcode_M226() {
       const float PULSE_LENGTH = 0.01524;
       for (int i = 0; i < NUM_PULSES; i++) {
         WRITE(PHOTOGRAPH_PIN, HIGH);
-        HAL_delay(PULSE_LENGTH);
+        #ifdef __SAM3X8E__
+          HAL_delay(PULSE_LENGTH);
+        #else
+          _delay_ms(PULSE_LENGTH);
+        #endif
         WRITE(PHOTOGRAPH_PIN, LOW);
-        HAL_delay(PULSE_LENGTH);
+        #ifdef __SAM3X8E__
+          HAL_delay(PULSE_LENGTH);
+        #else
+          _delay_ms(PULSE_LENGTH);
+        #endif
       }
       #ifdef __SAM3X8E__
         HAL_delay(7.33);
@@ -5878,9 +5856,17 @@ inline void gcode_M226() {
       #endif
       for (int i = 0; i < NUM_PULSES; i++) {
         WRITE(PHOTOGRAPH_PIN, HIGH);
-        HAL_delay(PULSE_LENGTH);
+        #ifdef __SAM3X8E__
+          HAL_delay(PULSE_LENGTH);
+        #else
+          _delay_ms(PULSE_LENGTH);
+        #endif
         WRITE(PHOTOGRAPH_PIN, LOW);
-        HAL_delay(PULSE_LENGTH);
+        #ifdef __SAM3X8E__
+          HAL_delay(PULSE_LENGTH);
+        #else
+          _delay_ms(PULSE_LENGTH);
+        #endif
       }
 
     #endif // !CHDK && HAS_PHOTOGRAPH
@@ -7452,11 +7438,11 @@ void process_next_command() {
           break;
       #endif
 
-      #ifdef CUSTOM_M_CODE_SET_Z_PROBE_OFFSET
-        case CUSTOM_M_CODE_SET_Z_PROBE_OFFSET:
+      #if HAS_BED_PROBE
+        case 851:
           gcode_M851();
           break;
-      #endif // CUSTOM_M_CODE_SET_Z_PROBE_OFFSET
+      #endif // HAS_BED_PROBE
 
       #if ENABLED(FILAMENTCHANGEENABLE)
         case 600: //Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
