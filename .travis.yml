@@ -90,10 +90,10 @@ script:
   - opt_enable PIDTEMPBED
   - build_marlin
   #
-  # Test a "Fix Mounted" Probe
+  # Test a "Fix Mounted" Probe along with Safe Homing
   #
   - restore_configs
-  - opt_enable FIX_MOUNTED_PROBE
+  - opt_enable FIX_MOUNTED_PROBE Z_SAFE_HOMING
   - build_marlin
   #
   # ...with AUTO_BED_LEVELING_FEATURE & DEBUG_LEVELING_FEATURE
@@ -153,6 +153,12 @@ script:
   - opt_set LCD_FEEDBACK_FREQUENCY_DURATION_MS 10
   - opt_set LCD_FEEDBACK_FREQUENCY_HZ 100
   - opt_enable BQ_LCD_SMART_CONTROLLER SPEAKER
+  - build_marlin
+  #
+  # Test MINIRAMBO for PWM_MOTOR_CURRENT
+  #
+  - restore_configs
+  - opt_set MOTHERBOARD BOARD_MINIRAMBO
   - build_marlin
   #
   # Enable FILAMENTCHANGEENABLE
