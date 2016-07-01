@@ -21,20 +21,20 @@
  */
 
 /**
- * Arduino Mega with RAMPS v1.4 adjusted pin assignments
- *
- *  MKS v1.3  (Extruder, Fan, Bed)
- *  MKS v1.3  (Extruder, Extruder, Fan, Bed)
- *  MKS v1.4  (Extruder, Fan, Bed)
- *  MKS v1.4  (Extruder, Extruder, Fan, Bed)
+ * RIGIDBOARD V2 Arduino Mega with RAMPS v1.4 pin assignments
  */
 
-#include "pins_RAMPS_14_EFB.h"
+#include "pins_RIGIDBOARD.h"
 
-#undef HEATER_1_PIN
-#define HEATER_1_PIN        7 // EXTRUDER 2 (-1 on RAMPS 1.4)
+// I2C based DAC like on the Printrboard REVF
+#define DAC_STEPPER_CURRENT
+// Channels available for DAC, For Rigidboard there are 4
+#define DAC_STEPPER_ORDER {0,1,2,3}
 
-#if ENABLED(VIKI2) || ENABLED(miniVIKI)
-  //#undef SD_DETECT_PIN
-  //#define SD_DETECT_PIN 49  // For easy adapter board
-#endif
+#define DAC_STEPPER_SENSE    0.11
+#define DAC_STEPPER_ADDRESS  0
+#define DAC_STEPPER_MAX   5000
+#define DAC_STEPPER_VREF     1 //internal Vref, gain 1x = 2.048V
+#define DAC_STEPPER_GAIN     0
+#define DAC_DISABLE_PIN     42 //  set low to enable DAC
+#define DAC_OR_ADDRESS    0x01

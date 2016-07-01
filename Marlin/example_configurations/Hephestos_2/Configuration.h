@@ -413,8 +413,10 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 // Use M851 to set the Z probe vertical offset from the nozzle. Store with M500.
 //
 
-// A fix mounted probe, like the normal inductive probe, must be deactivated to go
-// below Z_PROBE_OFFSET_FROM_EXTRUDER when the hardware endstops are active.
+// A Fix-Mounted Probe either doesn't deploy or needs manual deployment.
+// For example an inductive probe, or a setup that uses the nozzle to probe.
+// An inductive probe must be deactivated to go below
+// its trigger-point if hardware endstops are active.
 #define FIX_MOUNTED_PROBE
 
 // Z Servo Probe, such as an endstop switch on a rotating arm.
@@ -424,10 +426,6 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 // Enable if you have a Z probe mounted on a sled like those designed by Charles Bell.
 //#define Z_PROBE_SLED
 //#define SLED_DOCKING_OFFSET 5 // The extra distance the X axis must travel to pickup the sled. 0 should be fine but you can push it further if you'd like.
-
-// A Mechanical Probe is any probe that either doesn't deploy or needs manual deployment
-// For example any setup that uses the nozzle itself as a probe.
-//#define MECHANICAL_PROBE
 
 // Z Probe to nozzle (X,Y) offset, relative to (0, 0).
 // X and Y offsets must be integers.
@@ -505,12 +503,10 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 //#define Z_MIN_PROBE_REPEATABILITY_TEST
 
 //
-// Probe Raise options provide clearance for the probe to deploy and stow.
+// Probe Raise options provide clearance for the probe to deploy, stow, and travel.
 //
-// For G28 these apply when the probe deploys and stows.
-// For G29 these apply before and after the full procedure.
-#define Z_RAISE_BEFORE_PROBING 5    // Raise before probe deploy (e.g., the first probe).
-#define Z_RAISE_AFTER_PROBING 5     // Raise before probe stow (e.g., the last probe).
+#define Z_RAISE_PROBE_DEPLOY_STOW  5 // Raise to make room for the probe to deploy / stow
+#define Z_RAISE_BETWEEN_PROBINGS 2  // Raise between probing points.
 
 //
 // For M851 give a range for adjusting the Z probe offset
@@ -663,8 +659,6 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
     #define ABL_PROBE_PT_3_Y Y_MAX_POS - (Y_PROBE_OFFSET_FROM_EXTRUDER)
 
   #endif // !AUTO_BED_LEVELING_GRID
-
-  #define Z_RAISE_BETWEEN_PROBINGS 2  // How much the Z axis will be raised when traveling from between next probing points.
 
   //#define Z_PROBE_END_SCRIPT "G1 Z10 F12000\nG1 X15 Y330\nG1 Z0.5\nG1 Z10" // These commands will be executed in the end of G29 routine.
                                                                              // Useful to retract a deployable Z probe.
@@ -1150,7 +1144,7 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 // at zero value, there are 128 effective control positions.
 #define SOFT_PWM_SCALE 0
 
-// Temperature status LEDs that display the hotend and bet temperature.
+// Temperature status LEDs that display the hotend and bed temperature.
 // If all hotends and bed temperature and temperature setpoint are < 54C then the BLUE led is on.
 // Otherwise the RED led is on. There is 1C hysteresis.
 //#define TEMP_STAT_LEDS
@@ -1182,17 +1176,15 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 //
 //#define NUM_SERVOS 3 // Servo index starts with 0 for M280 command
 
+// Delay (in microseconds) before the next move will start, to give the servo time to reach its target angle.
+// 300ms is a good value but you can try less delay.
+// If the servo can't reach the requested position, increase it.
+#define SERVO_DELAY 300
+
 // Servo deactivation
 //
 // With this option servos are powered only during movement, then turned off to prevent jitter.
 //#define DEACTIVATE_SERVOS_AFTER_MOVE
-
-#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE)
-  // Delay (in microseconds) before turning the servo off. This depends on the servo speed.
-  // 300ms is a good value but you can try less delay.
-  // If the servo can't reach the requested position, increase it.
-  #define SERVO_DEACTIVATION_DELAY 300
-#endif
 
 /**********************************************************************\
  * Support for a filament diameter sensor

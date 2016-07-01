@@ -234,6 +234,17 @@
 #if PROBE_SELECTED
 
   /**
+   * NUM_SERVOS is required for a Z servo probe
+   */
+  #if HAS_Z_SERVO_ENDSTOP
+    #ifndef NUM_SERVOS
+      #error "You must set NUM_SERVOS for a Z servo probe (Z_ENDSTOP_SERVO_NR)."
+    #elif Z_ENDSTOP_SERVO_NR >= NUM_SERVOS
+      #error "Z_ENDSTOP_SERVO_NR must be less than NUM_SERVOS."
+    #endif
+  #endif
+
+  /**
    * A probe needs a pin
    */
   #if !PROBE_PIN_CONFIGURED
@@ -257,11 +268,10 @@
   /**
    * Only allow one probe option to be defined
    */
-  #if (ENABLED(FIX_MOUNTED_PROBE) && (ENABLED(MECHANICAL_PROBE) || ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))) \
-       || (ENABLED(MECHANICAL_PROBE) && (ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))) \
+  #if (ENABLED(FIX_MOUNTED_PROBE) && (ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))) \
        || (ENABLED(Z_PROBE_ALLEN_KEY) && (HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))) \
        || (HAS_Z_SERVO_ENDSTOP && ENABLED(Z_PROBE_SLED))
-    #error "Please define only one type of probe: Z Servo, MECHANICAL_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or FIX_MOUNTED_PROBE."
+    #error "Please define only one type of probe: Z Servo, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or FIX_MOUNTED_PROBE."
   #endif
 
   /**
@@ -303,9 +313,9 @@
    * Require some kind of probe for bed leveling and probe testing
    */
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-    #error "AUTO_BED_LEVELING_FEATURE requires a probe! Define a Z Servo, MECHANICAL_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or FIX_MOUNTED_PROBE."
+    #error "AUTO_BED_LEVELING_FEATURE requires a probe! Define a Z Servo, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or FIX_MOUNTED_PROBE."
   #elif ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST)
-    #error "Z_MIN_PROBE_REPEATABILITY_TEST requires a probe! Define a Z Servo, MECHANICAL_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or FIX_MOUNTED_PROBE."
+    #error "Z_MIN_PROBE_REPEATABILITY_TEST requires a probe! Define a Z Servo, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or FIX_MOUNTED_PROBE."
   #endif
 
 #endif
@@ -614,8 +624,6 @@
   #error "Z_LATE_ENABLE can't be used with COREXZ."
 #elif defined(X_HOME_RETRACT_MM)
   #error "[XYZ]_HOME_RETRACT_MM settings have been renamed [XYZ]_HOME_BUMP_MM."
-#elif defined(PROBE_SERVO_DEACTIVATION_DELAY)
-  #error "PROBE_SERVO_DEACTIVATION_DELAY has been replaced with DEACTIVATE_SERVOS_AFTER_MOVE and SERVO_DEACTIVATION_DELAY."
 #elif defined(BEEPER)
   #error "BEEPER is now BEEPER_PIN. Please update your pins definitions."
 #elif defined(SDCARDDETECT)
@@ -656,6 +664,10 @@
   #error "X_ENDSTOP_SERVO_NR and Y_ENDSTOP_SERVO_NR are deprecated and should be removed."
 #elif defined(XY_TRAVEL_SPEED)
   #error "XY_TRAVEL_SPEED is deprecated. Use XY_PROBE_SPEED instead."
+#elif defined(PROBE_SERVO_DEACTIVATION_DELAY)
+  #error "PROBE_SERVO_DEACTIVATION_DELAY is deprecated. Use DEACTIVATE_SERVOS_AFTER_MOVE instead."
+#elif defined(SERVO_DEACTIVATION_DELAY)
+  #error "SERVO_DEACTIVATION_DELAY is deprecated. Use SERVO_DELAY instead."
 #endif
 
 #endif //SANITYCHECK_H
