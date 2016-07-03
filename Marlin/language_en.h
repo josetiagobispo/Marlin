@@ -520,5 +520,135 @@
 #ifndef MSG_DELTA_CALIBRATE_CENTER
   #define MSG_DELTA_CALIBRATE_CENTER          "Calibrate Center"
 #endif
+#ifndef MSG_INFO_MENU
+  #define MSG_INFO_MENU                       "About Printer"
+#endif
+#ifndef MSG_INFO_PRINTER_MENU
+  #define MSG_INFO_PRINTER_MENU               "Printer Info"
+#endif
+#ifndef MSG_INFO_STATS_MENU
+  #define MSG_INFO_STATS_MENU                 "Printer Stats"
+#endif
+#ifndef MSG_INFO_BOARD_MENU
+  #define MSG_INFO_BOARD_MENU                 "Board Info"
+#endif
+#ifndef MSG_INFO_THERMISTOR_MENU
+  #define MSG_INFO_THERMISTOR_MENU            "Thermistors"
+#endif
+#ifndef MSG_INFO_EXTRUDERS
+  #define MSG_INFO_EXTRUDERS                  "Extruders"
+#endif
+#ifndef MSG_INFO_BAUDRATE
+  #define MSG_INFO_BAUDRATE                   "Baud"
+#endif
+#ifndef MSG_INFO_PROTOCOL
+  #define MSG_INFO_PROTOCOL                   "Protocol"
+#endif
+#ifndef MSG_INFO_TOTAL_PRINTS
+  #define MSG_INFO_TOTAL_PRINTS               "Total Prints"
+#endif
+#ifndef MSG_INFO_FINISHED_PRINTS
+  #define MSG_INFO_FINISHED_PRINTS            "Finished Prints"
+#endif
+#ifndef MSG_INFO_PRINT_TIME
+  #define MSG_INFO_PRINT_TIME                 "Total Print Time"
+#endif
+#ifndef MSG_INFO_MIN_TEMP
+  #define MSG_INFO_MIN_TEMP                   "Min Temp"
+#endif
+#ifndef MSG_INFO_MAX_TEMP
+  #define MSG_INFO_MAX_TEMP                   "Max Temp"
+#endif
+#ifndef MSG_INFO_PSU
+  #define MSG_INFO_PSU                        "Power Supply"
+#endif
+
+#ifndef MSG_FILAMENT_CHANGE_HEADER
+  #define MSG_FILAMENT_CHANGE_HEADER          "CHANGE FILAMENT"
+#endif
+#ifndef MSG_FILAMENT_CHANGE_OPTION_HEADER
+  #define MSG_FILAMENT_CHANGE_OPTION_HEADER   "CHANGE OPTIONS:"
+#endif
+#ifndef MSG_FILAMENT_CHANGE_OPTION_EXTRUDE
+  #define MSG_FILAMENT_CHANGE_OPTION_EXTRUDE  "Extrude more"
+#endif
+#ifndef MSG_FILAMENT_CHANGE_OPTION_RESUME
+  #define MSG_FILAMENT_CHANGE_OPTION_RESUME   "Resume print"
+#endif
+#if LCD_HEIGHT >= 4
+  #ifndef MSG_FILAMENT_CHANGE_INIT_1
+    #define MSG_FILAMENT_CHANGE_INIT_1          "Wait for start"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_INIT_2
+    #define MSG_FILAMENT_CHANGE_INIT_2          "of the filament"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_INIT_3
+    #define MSG_FILAMENT_CHANGE_INIT_3          "change"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_UNLOAD_1
+    #define MSG_FILAMENT_CHANGE_UNLOAD_1        "Wait for"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_UNLOAD_2
+    #define MSG_FILAMENT_CHANGE_UNLOAD_2        "filament unload"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_UNLOAD_3
+    #define MSG_FILAMENT_CHANGE_UNLOAD_3        ""
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_INSERT_1
+    #define MSG_FILAMENT_CHANGE_INSERT_1        "Insert filament"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_INSERT_2
+    #define MSG_FILAMENT_CHANGE_INSERT_2        "and press button"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_INSERT_3
+    #define MSG_FILAMENT_CHANGE_INSERT_3        "to continue..."
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_LOAD_1
+    #define MSG_FILAMENT_CHANGE_LOAD_1          "Wait for"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_LOAD_2
+    #define MSG_FILAMENT_CHANGE_LOAD_2          "filament load"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_LOAD_3
+    #define MSG_FILAMENT_CHANGE_LOAD_3          ""
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_EXTRUDE_1
+    #define MSG_FILAMENT_CHANGE_EXTRUDE_1       "Wait for"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_EXTRUDE_2
+    #define MSG_FILAMENT_CHANGE_EXTRUDE_2       "filament extrude"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_EXTRUDE_3
+    #define MSG_FILAMENT_CHANGE_EXTRUDE_3       ""
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_RESUME_1
+    #define MSG_FILAMENT_CHANGE_RESUME_1        "Wait for print"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_RESUME_2
+    #define MSG_FILAMENT_CHANGE_RESUME_2        "to resume"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_RESUME_3
+    #define MSG_FILAMENT_CHANGE_RESUME_3        ""
+  #endif
+#else // LCD_HEIGHT < 4
+  #ifndef MSG_FILAMENT_CHANGE_INIT_1
+    #define MSG_FILAMENT_CHANGE_INIT_1          "Please wait..."
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_UNLOAD_1
+    #define MSG_FILAMENT_CHANGE_UNLOAD_1        "Ejecting..."
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_INSERT_1
+    #define MSG_FILAMENT_CHANGE_INSERT_1        "Insert and Click"
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_LOAD_1
+    #define MSG_FILAMENT_CHANGE_LOAD_1          "Loading..."
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_EXTRUDE_1
+    #define MSG_FILAMENT_CHANGE_EXTRUDE_1       "Extruding..."
+  #endif
+  #ifndef MSG_FILAMENT_CHANGE_RESUME_1
+    #define MSG_FILAMENT_CHANGE_RESUME_1        "Resuming..."
+  #endif
+#endif // LCD_HEIGHT < 4
 
 #endif // LANGUAGE_EN_H

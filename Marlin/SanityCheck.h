@@ -56,35 +56,21 @@
  * Marlin release, version and default string
  */
 #ifndef SHORT_BUILD_VERSION
-  #error "SHORT_BUILD_VERSION Information must be specified"
-#endif
-
-#ifndef DETAILED_BUILD_VERSION
-  #error "BUILD_VERSION Information must be specified"
-#endif
-
-#ifndef STRING_DISTRIBUTION_DATE
-  #error "STRING_DISTRIBUTION_DATE Information must be specified"
-#endif
-
-#ifndef PROTOCOL_VERSION
-  #error "PROTOCOL_VERSION Information must be specified"
-#endif
-
-#ifndef MACHINE_NAME
-  #error "MACHINE_NAME Information must be specified"
-#endif
-
-#ifndef SOURCE_CODE_URL
-  #error "SOURCE_CODE_URL Information must be specified"
-#endif
-
-#ifndef DEFAULT_MACHINE_UUID
-  #error "DEFAULT_MACHINE_UUID Information must be specified"
-#endif
-
-#ifndef WEBSITE_URL
-  #error "WEBSITE_URL Information must be specified"
+  #error "SHORT_BUILD_VERSION must be specified."
+#elif !defined(DETAILED_BUILD_VERSION)
+  #error "BUILD_VERSION must be specified."
+#elif !defined(STRING_DISTRIBUTION_DATE)
+  #error "STRING_DISTRIBUTION_DATE must be specified."
+#elif !defined(PROTOCOL_VERSION)
+  #error "PROTOCOL_VERSION must be specified."
+#elif !defined(MACHINE_NAME)
+  #error "MACHINE_NAME must be specified."
+#elif !defined(SOURCE_CODE_URL)
+  #error "SOURCE_CODE_URL must be specified."
+#elif !defined(DEFAULT_MACHINE_UUID)
+  #error "DEFAULT_MACHINE_UUID must be specified."
+#elif !defined(WEBSITE_URL)
+  #error "WEBSITE_URL must be specified."
 #endif
 
 /**
@@ -138,8 +124,8 @@
 /**
  * Filament Change with Extruder Runout Prevention
  */
-#if ENABLED(FILAMENTCHANGEENABLE) && ENABLED(EXTRUDER_RUNOUT_PREVENT)
-  #error "EXTRUDER_RUNOUT_PREVENT currently incompatible with FILAMENTCHANGE."
+#if ENABLED(FILAMENT_CHANGE_FEATURE) && ENABLED(EXTRUDER_RUNOUT_PREVENT)
+  #error "EXTRUDER_RUNOUT_PREVENT is incompatible with FILAMENT_CHANGE_FEATURE."
 #endif
 
 /**
@@ -668,6 +654,8 @@
   #error "PROBE_SERVO_DEACTIVATION_DELAY is deprecated. Use DEACTIVATE_SERVOS_AFTER_MOVE instead."
 #elif defined(SERVO_DEACTIVATION_DELAY)
   #error "SERVO_DEACTIVATION_DELAY is deprecated. Use SERVO_DELAY instead."
+#elif ENABLED(FILAMENTCHANGEENABLE)
+  #error "FILAMENTCHANGEENABLE is now FILAMENT_CHANGE_FEATURE. Please update your configuration."
 #endif
 
 #endif //SANITYCHECK_H
