@@ -1,5 +1,5 @@
 /**
- * Arduino Mega or Due with RAMPS DUO pin assignments
+ * Arduino Mega or Due with RAMPS Duo pin assignments
  *
  * Applies to the following boards:
  *
@@ -24,8 +24,11 @@
   #error "Oops!  Make sure you have 'Arduino Due' or 'Arduino Mega' selected from the 'Tools -> Boards' menu."
 #endif
 
-#define IS_RAMPS_DUO
+#ifndef BOARD_NAME
+  #define BOARD_NAME       "RAMPS Duo"
+#endif
 
+#define IS_RAMPS_DUO
 #include "pins_RAMPS_14.h"
 
 #undef TEMP_0_PIN

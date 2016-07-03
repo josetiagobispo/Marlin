@@ -1,5 +1,5 @@
 /**
- * Alligator R2
+ * Alligator Board R2
  * http://www.3dartists.org/
  */
 
@@ -7,7 +7,9 @@
   #error "Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu."
 #endif
 
-#define SPI_CHAN_DAC 1
+#define BOARD_NAME            "Alligator Board R2"
+
+#define SPI_CHAN_DAC           1
 
 // X AXIS
 #define X_STEP_PIN            96 // PB24

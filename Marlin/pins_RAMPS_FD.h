@@ -1,21 +1,21 @@
 /**
- * Ramps - FD v1 & v2
+ * RAMPS-FD
+ *
+ * No EEPROM
+ * Use 4k7 thermistor tables
  */
 
 #ifndef __SAM3X8E__
   #error "Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu."
 #endif
 
-#if MB(RAMPS_FD_V1)
-  #define INVERTED_HEATER_PINS
-  #define INVERTED_BED_PINS
-  #define INVERTED_FAN_PINS
-  // No EEPROM
-  // Use 4k7 thermistor tables
-#else
-  // EEPROM supported
-  // Use 1k thermistor tables
+#ifndef BOARD_NAME
+  #define BOARD_NAME       "RAMPS-FD"
 #endif
+
+#define INVERTED_HEATER_PINS
+#define INVERTED_BED_PINS
+#define INVERTED_FAN_PINS
 
 #define X_STEP_PIN         63
 #define X_DIR_PIN          62
@@ -49,8 +49,6 @@
 
 #define SDSS                4
 #define LED_PIN            13
-
-#define BEEPER_PIN         -1
 
 #define FAN_PIN            12
 

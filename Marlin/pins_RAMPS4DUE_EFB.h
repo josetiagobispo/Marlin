@@ -4,6 +4,7 @@
  *  RAMPS4DUE_EFB (Extruder, Fan, Bed)
  */
 
-#define IS_RAMPS_EFB
+#define BOARD_NAME "RAMPS4DUE EFB"
 
+#define IS_RAMPS_EFB
 #include "pins_RAMPS4DUE.h"

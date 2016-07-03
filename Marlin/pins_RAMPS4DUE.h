@@ -3,10 +3,10 @@
  *
  * Applies to the following boards:
  *
- *  RAMPS4DUE_EFB (Hotend, Fan, Bed)
- *  RAMPS4DUE_EEB (Hotend0, Hotend1, Bed)
- *  RAMPS4DUE_EFF (Hotend, Fan0, Fan1)
- *  RAMPS4DUE_EEF (Hotend0, Hotend1, Fan)
+ *  RAMPS4DUE_EFB (Extruder, Fan, Bed)
+ *  RAMPS4DUE_EEB (Extruder, Extruder, Bed)
+ *  RAMPS4DUE_EFF (Extruder, Fan, Fan)
+ *  RAMPS4DUE_EEF (Extruder, Extruder, Fan)
  *  RAMPS4DUE_SF  (Spindle, Controller Fan)
  *
  *  Differences between
@@ -20,8 +20,11 @@
   #error "Oops!  Make sure you have 'Arduino Due' or 'Arduino Mega' selected from the 'Tools -> Boards' menu."
 #endif
 
-#define IS_RAMPS4DUE
+#ifndef BOARD_NAME
+  #define BOARD_NAME       "RAMPS4DUE"
+#endif
 
+#define IS_RAMPS4DUE
 #include "pins_RAMPS_14.h"
 
 #undef TEMP_0_PIN

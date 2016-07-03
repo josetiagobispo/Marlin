@@ -6,6 +6,8 @@
   #error "Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu."
 #endif
 
+#define BOARD_NAME         "RADDS"
+
 #define X_STEP_PIN         24
 #define X_DIR_PIN          23
 #define X_ENABLE_PIN       26
@@ -117,7 +119,6 @@
     #define BEEPER          41
     #define LCD_SDSS        10
     #define SDCARDDETECT    14
-    #define KILL_PIN        -1
 
   #elif ENABLED(SPARK_FULL_GRAPHICS)
     #define LCD_PINS_D4     29
@@ -128,9 +129,6 @@
     #define BTN_EN2         33
     #define BTN_ENC         37
 
-    #define KILL_PIN        -1
-    #undef BEEPER
-    #define BEEPER          -1
   #endif // SPARK_FULL_GRAPHICS
 #endif // ULTRA_LCD
 

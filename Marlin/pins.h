@@ -137,8 +137,10 @@
   #include "pins_BQ_ZUM_MEGA_3D.h"
 #elif MB(RADDS)
   #include "pins_RADDS.h"
-#elif MB(RAMPS_FD_V1) || MB(RAMPS_FD_V2)
+#elif MB(RAMPS_FD_V1)
   #include "pins_RAMPS_FD.h"
+#elif MB(RAMPS_FD_V2)
+  #include "pins_RAMPS_FD_V2.h"
 #elif MB(RAMPS_SMART)
   #include "pins_RAMPS_SMART.h"
 #elif MB(RAMPS_DUO_EFB)

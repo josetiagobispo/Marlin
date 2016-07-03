@@ -6,6 +6,8 @@
   #error "Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu."
 #endif
 
+#define BOARD_NAME     "RAMPS-SMART"
+
 #define X_STEP_PIN     54 // A0
 #define X_DIR_PIN      55 // A1
 #define X_MIN_PIN       3
