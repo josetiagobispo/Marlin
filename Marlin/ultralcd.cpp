@@ -217,7 +217,7 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
   /* Helper macros for menus */
 
   /**
-   * START_MENU generates the init code for a menu function
+   * START_SCREEN generates the init code for a screen function
    *
    *   encoderLine is the position based on the encoder
    *   currentMenuViewOffset is the top menu line to display
@@ -225,47 +225,40 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
    *   _lineNr is the menu item to draw and process
    *   _menuItemNr is the index of each MENU_ITEM
    */
+  #define _START_SCREEN(CODE) do { \
+    ENCODER_DIRECTION_MENUS(); \
+    encoderRateMultiplierEnabled = false; \
+    if (encoderPosition > 0x8000) encoderPosition = 0; \
+    uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
+    NOMORE(currentMenuViewOffset, encoderLine); \
+    uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
+    CODE; \
+    for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
+      _menuItemNr = 0;
+
+  #define START_SCREEN() _START_SCREEN(0)
+
+  /**
+   * START_MENU generates the init code for a menu function
+   *
+   *   wasClicked indicates the controller was clicked
+   */
   #ifdef __SAM3X8E__
     #if HAS_BTN_BACK
-      #define START_MENU() do { \
-        ENCODER_DIRECTION_MENUS(); \
-        encoderRateMultiplierEnabled = false; \
-        if (encoderPosition > 0x8000) encoderPosition = 0; \
-        uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
-        NOMORE(currentMenuViewOffset, encoderLine); \
-        uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
-        bool wasClicked = LCD_CLICKED, itemSelected; \
+      #define START_MENU() _START_SCREEN( \
+        bool wasClicked = LCD_CLICKED; \
         bool wasBackClicked = LCD_BACK_CLICKED; \
         if (wasBackClicked) { \
           lcd_quick_feedback(); \
           menu_action_back(); \
           return; } \
-        for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
-          _menuItemNr = 0;
+      )
     #else
-      #define START_MENU() do { \
-        ENCODER_DIRECTION_MENUS(); \
-        encoderRateMultiplierEnabled = false; \
-        if (encoderPosition > 0x8000) encoderPosition = 0; \
-        uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
-        NOMORE(currentMenuViewOffset, encoderLine); \
-        uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
-        bool wasClicked = LCD_CLICKED, itemSelected; \
-        for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
-          _menuItemNr = 0;
+      #define START_MENU() _START_SCREEN(bool wasClicked = LCD_CLICKED)
     #endif
-  #else //__SAM3X8E__
-    #define START_MENU() do { \
-      ENCODER_DIRECTION_MENUS(); \
-      encoderRateMultiplierEnabled = false; \
-      if (encoderPosition > 0x8000) encoderPosition = 0; \
-      uint8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
-      NOMORE(currentMenuViewOffset, encoderLine); \
-      uint8_t _lineNr = currentMenuViewOffset, _menuItemNr; \
-      bool wasClicked = LCD_CLICKED, itemSelected; \
-      for (uint8_t _drawLineNr = 0; _drawLineNr < LCD_HEIGHT; _drawLineNr++, _lineNr++) { \
-        _menuItemNr = 0;
-  #endif //__SAM3X8E__
+  #else
+    #define START_MENU() _START_SCREEN(bool wasClicked = LCD_CLICKED)
+  #endif
 
   /**
    * MENU_ITEM generates draw & handler code for a menu item, potentially calling:
@@ -290,10 +283,9 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
    */
   #define _MENU_ITEM_PART_1(type, label, args...) \
     if (_menuItemNr == _lineNr) { \
-      itemSelected = encoderLine == _menuItemNr; \
       if (lcdDrawUpdate) \
-        lcd_implementation_drawmenu_ ## type(itemSelected, _drawLineNr, PSTR(label), ## args); \
-      if (wasClicked && itemSelected) { \
+        lcd_implementation_drawmenu_ ## type(encoderLine == _menuItemNr, _drawLineNr, PSTR(label), ## args); \
+      if (wasClicked && encoderLine == _menuItemNr) { \
         lcd_quick_feedback()
 
   #define _MENU_ITEM_PART_2(type, args...) \
@@ -317,6 +309,21 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
         lcd_implementation_drawmenu_static(_drawLineNr, PSTR(label), ## args); \
     } \
     _menuItemNr++
+
+  #define END_SCREEN() \
+      if (encoderLine >= _menuItemNr) { \
+        encoderPosition = _menuItemNr * (ENCODER_STEPS_PER_MENU_ITEM) - 1; \
+        encoderLine = _menuItemNr - 1; \
+      } \
+      if (encoderLine >= currentMenuViewOffset + LCD_HEIGHT) { \
+        currentMenuViewOffset = encoderLine - (LCD_HEIGHT) + 1; \
+        lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT; \
+        _lineNr = currentMenuViewOffset - 1; \
+        _drawLineNr = -1; \
+      } \
+    } } while(0)
+
+  #define END_MENU() END_SCREEN()
 
   #if ENABLED(ENCODER_RATE_MULTIPLIER)
 
@@ -344,10 +351,6 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
     #define MENU_MULTIPLIER_ITEM_EDIT(type, label, args...) MENU_ITEM(setting_edit_ ## type, label, PSTR(label), ## args)
     #define MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(type, label, args...) MENU_ITEM(setting_edit_callback_ ## type, label, PSTR(label), ## args)
   #endif //!ENCODER_RATE_MULTIPLIER
-  #define END_MENU() \
-      if (encoderLine >= _menuItemNr) { encoderPosition = _menuItemNr * (ENCODER_STEPS_PER_MENU_ITEM) - 1; encoderLine = _menuItemNr - 1; }\
-      if (encoderLine >= currentMenuViewOffset + LCD_HEIGHT) { currentMenuViewOffset = encoderLine - (LCD_HEIGHT) + 1; lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT; _lineNr = currentMenuViewOffset - 1; _drawLineNr = -1; } \
-      } } while(0)
 
   /** Used variables to keep track of the menu */
   volatile uint8_t buttons;  //the last checked buttons in a bit array.
@@ -1973,14 +1976,14 @@ static void lcd_status_screen() {
         printStatistics stats = print_job_counter.getStats();
 
         char printTime[6];
-        sprintf(printTime, "%02d:%02d", stats.printTime / 60, stats.printTime % 60);
+        sprintf(printTime, "%02d:%02d", int(stats.printTime / 60), int(stats.printTime % 60));
 
         if (LCD_CLICKED) lcd_goto_previous_menu(true);
-        START_MENU();
-        STATIC_ITEM(MSG_INFO_TOTAL_PRINTS ": ", itostr3left(stats.totalPrints));       // Total Prints: 999
-        STATIC_ITEM(MSG_INFO_FINISHED_PRINTS ": ", itostr3left(stats.finishedPrints)); // Finished Prints: 666
-        STATIC_ITEM(MSG_INFO_PRINT_TIME ": ", printTime);                              // Total Print Time: 123456
-        END_MENU();
+        START_SCREEN();
+        STATIC_ITEM(MSG_INFO_PRINT_COUNT ": ", itostr3left(stats.totalPrints));        // Print Count : 999
+        STATIC_ITEM(MSG_INFO_FINISHED_PRINTS ": ", itostr3left(stats.finishedPrints)); // Finished    : 666
+        STATIC_ITEM(MSG_INFO_PRINT_TIME ": ", printTime);                              // Total Time  : 12:34
+        END_SCREEN();
       }
     #endif // PRINTCOUNTER
 
@@ -1991,7 +1994,7 @@ static void lcd_status_screen() {
      */
     static void lcd_info_thermistors_menu() {
       if (LCD_CLICKED) lcd_goto_previous_menu(true);
-      START_MENU();
+      START_SCREEN();
       #define THERMISTOR_ID TEMP_SENSOR_0
       #include "thermistornames.h"
       STATIC_ITEM("T0: " THERMISTOR_NAME);
@@ -2033,7 +2036,7 @@ static void lcd_status_screen() {
         STATIC_ITEM(MSG_INFO_MIN_TEMP ": " STRINGIFY(BED_MINTEMP));
         STATIC_ITEM(MSG_INFO_MAX_TEMP ": " STRINGIFY(BED_MAXTEMP));
       #endif
-      END_MENU();
+      END_SCREEN();
     }
 
     /**
@@ -2043,7 +2046,7 @@ static void lcd_status_screen() {
      */
     static void lcd_info_board_menu() {
       if (LCD_CLICKED) lcd_goto_previous_menu(true);
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(BOARD_NAME);                                 // MyPrinterController
       STATIC_ITEM(MSG_INFO_BAUDRATE ": " STRINGIFY(BAUDRATE)); // Baud: 250000
       STATIC_ITEM(MSG_INFO_PROTOCOL ": " PROTOCOL_VERSION);    // Protocol: 1.0
@@ -2054,7 +2057,7 @@ static void lcd_status_screen() {
           STATIC_ITEM(MSG_INFO_PSU ": XBox"); // Power Supply: XBox
         #endif
       #endif // POWER_SUPPLY
-      END_MENU();
+      END_SCREEN();
     }
 
     /**
@@ -2064,14 +2067,14 @@ static void lcd_status_screen() {
      */
     static void lcd_info_printer_menu() {
       if (LCD_CLICKED) lcd_goto_previous_menu(true);
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(MSG_MARLIN);                                   // Marlin
       STATIC_ITEM(SHORT_BUILD_VERSION);                          // x.x.x-Branch
       STATIC_ITEM(STRING_DISTRIBUTION_DATE);                     // YYYY-MM-DD HH:MM
       STATIC_ITEM(MACHINE_NAME);                                 // My3DPrinter
       STATIC_ITEM(WEBSITE_URL);                                  // www.my3dprinter.com
       STATIC_ITEM(MSG_INFO_EXTRUDERS ": " STRINGIFY(EXTRUDERS)); // Extruders: 2
-      END_MENU();
+      END_SCREEN();
     }
 
     /**
@@ -2115,7 +2118,7 @@ static void lcd_status_screen() {
     }
 
     static void lcd_filament_change_init_message() {
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(MSG_FILAMENT_CHANGE_HEADER);
       STATIC_ITEM(MSG_FILAMENT_CHANGE_INIT_1);
       #ifdef MSG_FILAMENT_CHANGE_INIT_2
@@ -2124,11 +2127,11 @@ static void lcd_status_screen() {
       #ifdef MSG_FILAMENT_CHANGE_INIT_3
         STATIC_ITEM(MSG_FILAMENT_CHANGE_INIT_3);
       #endif
-      END_MENU();
+      END_SCREEN();
     }
 
     static void lcd_filament_change_unload_message() {
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(MSG_FILAMENT_CHANGE_HEADER);
       STATIC_ITEM(MSG_FILAMENT_CHANGE_UNLOAD_1);
       #ifdef MSG_FILAMENT_CHANGE_UNLOAD_2
@@ -2137,11 +2140,11 @@ static void lcd_status_screen() {
       #ifdef MSG_FILAMENT_CHANGE_UNLOAD_3
         STATIC_ITEM(MSG_FILAMENT_CHANGE_UNLOAD_3);
       #endif
-      END_MENU();
+      END_SCREEN();
     }
 
     static void lcd_filament_change_insert_message() {
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(MSG_FILAMENT_CHANGE_HEADER);
       STATIC_ITEM(MSG_FILAMENT_CHANGE_INSERT_1);
       #ifdef MSG_FILAMENT_CHANGE_INSERT_2
@@ -2150,11 +2153,11 @@ static void lcd_status_screen() {
       #ifdef MSG_FILAMENT_CHANGE_INSERT_3
         STATIC_ITEM(MSG_FILAMENT_CHANGE_INSERT_3);
       #endif
-      END_MENU();
+      END_SCREEN();
     }
 
     static void lcd_filament_change_load_message() {
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(MSG_FILAMENT_CHANGE_HEADER);
       STATIC_ITEM(MSG_FILAMENT_CHANGE_LOAD_1);
       #ifdef MSG_FILAMENT_CHANGE_LOAD_2
@@ -2163,11 +2166,11 @@ static void lcd_status_screen() {
       #ifdef MSG_FILAMENT_CHANGE_LOAD_3
         STATIC_ITEM(MSG_FILAMENT_CHANGE_LOAD_3);
       #endif
-      END_MENU();
+      END_SCREEN();
     }
 
     static void lcd_filament_change_extrude_message() {
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(MSG_FILAMENT_CHANGE_HEADER);
       STATIC_ITEM(MSG_FILAMENT_CHANGE_EXTRUDE_1);
       #ifdef MSG_FILAMENT_CHANGE_EXTRUDE_2
@@ -2176,11 +2179,11 @@ static void lcd_status_screen() {
       #ifdef MSG_FILAMENT_CHANGE_EXTRUDE_3
         STATIC_ITEM(MSG_FILAMENT_CHANGE_EXTRUDE_3);
       #endif
-      END_MENU();
+      END_SCREEN();
     }
 
     static void lcd_filament_change_resume_message() {
-      START_MENU();
+      START_SCREEN();
       STATIC_ITEM(MSG_FILAMENT_CHANGE_HEADER);
       STATIC_ITEM(MSG_FILAMENT_CHANGE_RESUME_1);
       #ifdef MSG_FILAMENT_CHANGE_RESUME_2
@@ -2189,7 +2192,7 @@ static void lcd_status_screen() {
       #ifdef MSG_FILAMENT_CHANGE_RESUME_3
         STATIC_ITEM(MSG_FILAMENT_CHANGE_RESUME_3);
       #endif
-      END_MENU();
+      END_SCREEN();
     }
   
     void lcd_filament_change_show_message(FilamentChangeMessage message) {
