@@ -338,7 +338,7 @@
 #define MINIMUM_PLANNER_SPEED 0.05// (mm/sec)
 
 // Microstep setting (Only functional when stepper driver microstep pins are connected to MCU.
-// Alligator Board support 16 or 32 only value                         *
+// Alligator Board support 16 or 32 only value
 #define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16,32(32 is supported only by Alligator)]
 
 // Motor Current setting (Only functional on ALLIGATOR BOARD)
