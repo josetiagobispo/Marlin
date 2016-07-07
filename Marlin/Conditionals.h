@@ -823,6 +823,10 @@
 
   #define HAS_BED_PROBE (PROBE_SELECTED && PROBE_PIN_CONFIGURED)
 
+  #if ENABLED(Z_PROBE_ALLEN_KEY)
+    #define PROBE_IS_TRIGGERED_WHEN_STOWED_TEST
+  #endif
+
   /**
    * Bed Probe dependencies
    */
@@ -849,14 +853,11 @@
         #define XY_PROBE_SPEED 4000
       #endif
     #endif
-    #ifndef Z_RAISE_PROBE_DEPLOY_STOW
-      #if defined(Z_RAISE_BEFORE_PROBING) && defined(Z_RAISE_AFTER_PROBING)
-        #define Z_RAISE_PROBE_DEPLOY_STOW (max(Z_RAISE_BEFORE_PROBING, Z_RAISE_AFTER_PROBING))
-      #else
-        #error "You must set Z_RAISE_PROBE_DEPLOY_STOW in your configuration."
-      #endif
+    #if Z_RAISE_BETWEEN_PROBINGS > Z_RAISE_PROBE_DEPLOY_STOW
+      #define _Z_RAISE_PROBE_DEPLOY_STOW Z_RAISE_BETWEEN_PROBINGS
+    #else
+      #define _Z_RAISE_PROBE_DEPLOY_STOW Z_RAISE_PROBE_DEPLOY_STOW
     #endif
-    #define _Z_RAISE_PROBE_DEPLOY_STOW (max(Z_RAISE_PROBE_DEPLOY_STOW, Z_RAISE_BETWEEN_PROBINGS))
   #endif
 
   /**
