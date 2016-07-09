@@ -595,6 +595,12 @@
   #ifdef LIN_ADVANCE
     #error "LIN_ADVANCE is not supported by ARM platform yet."
   #endif
+  #ifdef TX_BUFFER_SIZE
+    #error "TX_BUFFER_SIZE is not supported by ARM platform yet."
+  #endif
+  #ifdef EMERGENCY_PARSER
+    #error "EMERGENCY_PARSER is not supported by ARM platform yet."
+  #endif
 #endif
 /**
  * Endstops
