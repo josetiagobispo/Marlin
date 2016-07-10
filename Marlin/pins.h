@@ -137,6 +137,10 @@
   #include "pins_MEGACONTROLLER.h"
 #elif MB(BQ_ZUM_MEGA_3D)
   #include "pins_BQ_ZUM_MEGA_3D.h"
+#elif MB(DUE3DOM)
+  #include "pins_DUE3DOM.h"
+#elif MB(DUE3DOM_MINI)
+  #include "pins_DUE3DOM_MINI.h"
 #elif MB(RADDS)
   #include "pins_RADDS.h"
 #elif MB(RAMPS_FD_V1)

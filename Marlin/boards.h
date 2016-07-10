@@ -92,6 +92,8 @@
 #define BOARD_BAM_DICE_DUE      402  // 2PrintBeta BAM&DICE Due with STK drivers
 #define BOARD_BQ_ZUM_MEGA_3D    503  // bq ZUM Mega 3D
 //ARM 32
+#define BOARD_DUE3DOM          1411  // DUE3DOM for Arduino DUE
+#define BOARD_DUE3DOM_MINI     1412  // DUE3DOM MINI for Arduino DUE
 #define BOARD_RADDS            1502  // RADDS
 #define BOARD_RAMPS_FD_V1      1503  // RAMPS-FD v1
 #define BOARD_RAMPS_FD_V2      1504  // RAMPS-FD v2
