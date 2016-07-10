@@ -551,6 +551,24 @@ static void lcd_status_screen() {
   #endif //ULTIPANEL
 }
 
+/**
+ *
+ * draw the kill screen
+ *
+ */
+void kill_screen(const char* lcd_msg) {
+  lcd_init();
+  lcd_setalertstatuspgm(lcd_msg);
+  #if ENABLED(DOGLCD)
+    u8g.firstPage();
+    do {
+      lcd_kill_screen();
+    } while (u8g.nextPage());
+  #else
+    lcd_kill_screen();
+  #endif
+}
+
 #if ENABLED(ULTIPANEL)
 
   inline void line_to_current(AxisEnum axis) {
@@ -999,17 +1017,13 @@ static void lcd_status_screen() {
     // Note: During Manual Bed Leveling the homed Z position is MESH_HOME_SEARCH_Z
     // Z position will be restored with the final action, a G28
     inline void _mbl_goto_xy(float x, float y) {
-      current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-        #if MIN_Z_HEIGHT_FOR_HOMING > 0
-          + MIN_Z_HEIGHT_FOR_HOMING
-        #endif
-      ;
+      current_position[Z_AXIS] = MESH_HOME_SEARCH_Z + MIN_Z_HEIGHT_FOR_HOMING;
       line_to_current(Z_AXIS);
       current_position[X_AXIS] = x + home_offset[X_AXIS];
       current_position[Y_AXIS] = y + home_offset[Y_AXIS];
       line_to_current(manual_feedrate[X_AXIS] <= manual_feedrate[Y_AXIS] ? X_AXIS : Y_AXIS);
       #if MIN_Z_HEIGHT_FOR_HOMING > 0
-        current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+        current_position[Z_AXIS] = MESH_HOME_SEARCH_Z; // How do condition and action match?
         line_to_current(Z_AXIS);
       #endif
       stepper.synchronize();
@@ -1059,11 +1073,7 @@ static void lcd_status_screen() {
           if (_lcd_level_bed_position == (MESH_NUM_X_POINTS) * (MESH_NUM_Y_POINTS)) {
             lcd_goto_screen(_lcd_level_bed_done, true);
 
-            current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-              #if MIN_Z_HEIGHT_FOR_HOMING > 0
-                + MIN_Z_HEIGHT_FOR_HOMING
-              #endif
-            ;
+            current_position[Z_AXIS] = MESH_HOME_SEARCH_Z + MIN_Z_HEIGHT_FOR_HOMING;
             line_to_current(Z_AXIS);
             stepper.synchronize();
 
