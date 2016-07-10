@@ -11,6 +11,12 @@
 
 #define SPI_CHAN_DAC           1
 
+// Servo support
+#define SERVO0_PIN            36
+#define SERVO1_PIN            40
+#define SERVO2_PIN            41
+#define SERVO3_PIN            -1
+
 // X AXIS
 #define X_STEP_PIN            96 // PB24
 #define X_DIR_PIN              2 // PB25
@@ -56,30 +62,29 @@
 #define E3_DIR_PIN            12 // PD8 on piggy
 #define E3_ENABLE_PIN         24 // PA15, motor RESET pin
 
-#define MOTOR_FAULT_PIN       22 // PB26 , motor X-Y-Z-E0 motor FAULT
+//#define MOTOR_FAULT_PIN     22 // PB26 , motor X-Y-Z-E0 motor FAULT
 
 #define SDSS                  77 // PA28
 #define SD_DETECT_PIN         87 // PA29
+#define LED_RED_PIN           40 // PC8
+#define LED_GREEN_PIN         41 // PC9
+#define CASE_LIGHTS_PIN       36 // PC4
 
 #define FAN_PIN               92 // PA5
-#define FAN2_PIN              31 // PA7
+#define FAN1_PIN              31 // PA7
 
 // Note that on the Due pin A0 on the board is channel 2 on the ARM chip
-#define HEATER_BED_PIN        69 // PA0
 #define HEATER_0_PIN          68 // PA1
 #define HEATER_1_PIN           8 // PC22 on piggy
 #define HEATER_2_PIN           9 // PC21 on piggy
 #define HEATER_3_PIN          97 // PC20 on piggy
+#define HEATER_BED_PIN        69 // PA0
 
-#define TEMP_BED_PIN           0 // PA16
 #define TEMP_0_PIN             1 // PA24, analog pin
 #define TEMP_1_PIN             2 // PA23 analog pin on piggy
 #define TEMP_2_PIN             3 // PA22, analog pin on piggy
 #define TEMP_3_PIN             4 // PA6, analog on piggy
-
-#define LED_RED_PIN           40 // PC8
-#define LED_GREEN_PIN         41 // PC9
-#define CASE_LIGHTS_PIN       36 // PC4
+#define TEMP_BED_PIN           0 // PA16
 
 #define EXP_VOLTAGE_LEVEL_PIN 65
 
@@ -110,23 +115,10 @@
   #define BTN_EN1             14
   #define BTN_EN2             16
   #define BTN_ENC             17
-  
+
   #if UI_VOLTAGE_LEVEL != 1
     #undef UI_VOLTAGE_LEVEL
     #define UI_VOLTAGE_LEVEL   1
   #endif
-     
-#endif // REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER
 
-#if NUM_SERVOS > 0
-  #define SERVO0_PIN          36
-  #if NUM_SERVOS > 1
-    #define SERVO1_PIN        40
-    #if NUM_SERVOS > 2
-      #define SERVO2_PIN      41
-      #if NUM_SERVOS > 3
-        #define SERVO3_PIN    -1
-      #endif
-    #endif
-  #endif
-#endif
+#endif // REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER

@@ -95,7 +95,11 @@
 #define BOARD_RADDS            1502  // RADDS
 #define BOARD_RAMPS_FD_V1      1503  // RAMPS-FD v1
 #define BOARD_RAMPS_FD_V2      1504  // RAMPS-FD v2
-#define BOARD_RAMPS_SMART      1523  // RAMPS-SMART
+#define BOARD_RAMPS_SMART      1523  // RAMPS-SMART (Power outputs: Hotend, Fan, Bed)
+#define BOARD_RAMPS_SMART      1524  // RAMPS-SMART (Power outputs: Hotend0, Hotend1, Bed)
+#define BOARD_RAMPS_SMART      1525  // RAMPS-SMART (Power outputs: Hotend, Fan0, Fan1)
+#define BOARD_RAMPS_SMART      1526  // RAMPS-SMART (Power outputs: Hotend0, Hotend1, Fan)
+#define BOARD_RAMPS_SMART      1528  // RAMPS-SMART (Power outputs: Spindle, Controller Fan)
 #define BOARD_RAMPS_DUO_EFB    1533  // RAMPS Duo (Power outputs: Hotend, Fan, Bed)
 #define BOARD_RAMPS_DUO_EEB    1534  // RAMPS Duo (Power outputs: Hotend0, Hotend1, Bed)
 #define BOARD_RAMPS_DUO_EFF    1535  // RAMPS Duo (Power outputs: Hotend, Fan0, Fan1)

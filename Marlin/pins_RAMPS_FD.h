@@ -17,6 +17,12 @@
 #define INVERTED_BED_PINS
 #define INVERTED_FAN_PINS
 
+// Servo support
+#define SERVO0_PIN          7
+#define SERVO1_PIN          6
+#define SERVO2_PIN          5
+#define SERVO3_PIN          3
+
 #define X_STEP_PIN         63
 #define X_DIR_PIN          62
 #define X_ENABLE_PIN       48
@@ -51,34 +57,17 @@
 #define LED_PIN            13
 
 #define FAN_PIN            12
-
 #define CONTROLLER_FAN_PIN -1
-
-
-#define HEATER_BED_PIN      8 // BED
 
 #define HEATER_0_PIN        9
 #define HEATER_1_PIN       10
 #define HEATER_2_PIN       11
-
-#define TEMP_BED_PIN        0 // ANALOG NUMBERING
+#define HEATER_BED_PIN      8 // BED
 
 #define TEMP_0_PIN          1 // ANALOG NUMBERING
 #define TEMP_1_PIN          2 // ANALOG NUMBERING
 #define TEMP_2_PIN          3 // ANALOG NUMBERING
-
-#if NUM_SERVOS > 0
-  #define SERVO0_PIN             7
-  #if NUM_SERVOS > 1
-    #define SERVO1_PIN           6
-    #if NUM_SERVOS > 2
-      #define SERVO2_PIN         5
-      #if NUM_SERVOS > 3
-        #define SERVO3_PIN       3
-      #endif
-    #endif
-  #endif
-#endif
+#define TEMP_BED_PIN        0 // ANALOG NUMBERING
 
 #if ENABLED(ULTRA_LCD)
   #if ENABLED(NEWPANEL)
@@ -102,14 +91,16 @@
   #endif
 #endif // ULTRA_LCD
 
-// SPI for Max6675 Thermocouple
+// SPI for Max6675 or Max31855 Thermocouple
+#if DISABLED(SDSUPPORT)
+  #define MAX6675_SS            53
+#else
+  #define MAX6675_SS            49
+#endif
 
 #if DISABLED(SDSUPPORT)
   // these pins are defined in the SD library if building with SD support
-  #define SCK_PIN           52
-  #define MISO_PIN          50
-  #define MOSI_PIN          51
-  #define MAX6675_SS        53
-#else
-  #define MAX6675_SS        49
+  #define SCK_PIN               52
+  #define MISO_PIN              50
+  #define MOSI_PIN              51
 #endif
