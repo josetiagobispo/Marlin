@@ -85,6 +85,9 @@
   #elif ENABLED(DISPLAY_CHARSET_ISO10646_KANA)
     #include "dogm_font_data_ISO10646_Kana.h"
     #define FONT_MENU_NAME ISO10646_Kana_5x7
+  #elif ENABLED(DISPLAY_CHARSET_ISO10646_GREEK)
+    #include "dogm_font_data_ISO10646_Greek.h"
+    #define FONT_MENU_NAME ISO10646_Greek_5x7
   #elif ENABLED(DISPLAY_CHARSET_ISO10646_CN)
     #include "dogm_font_data_ISO10646_CN.h"
     #define FONT_MENU_NAME ISO10646_CN
@@ -258,7 +261,11 @@ static void lcd_implementation_init() {
         do {
             u8g.drawBitmapP((128-(CUSTOM_START_BMPWIDTH))/2, (64 - (CUSTOM_START_BMPHEIGHT))/2, CUSTOM_START_BMPBYTEWIDTH, CUSTOM_START_BMPHEIGHT, custom_start_bmp);
         } while (u8g.nextPage());
-        delay(CUSTOM_START_BMP_DELAY);
+        #ifdef __SAM3X8E__
+          HAL_delay(CUSTOM_START_BMP_DELAY);
+        #else
+          delay(CUSTOM_START_BMP_DELAY);
+        #endif
       }
     #endif
     int offx = (u8g.getWidth() - (START_BMPWIDTH)) / 2;
@@ -392,7 +399,7 @@ static void lcd_implementation_status_screen() {
   #endif
 
   // Extruders
-  for (int i = 0; i < HOTENDS; i++) _draw_heater_status(5 + i * 25, i);
+  HOTEND_LOOP() _draw_heater_status(5 + e * 25, e);
 
   // Heated bed
   #if HOTENDS < 4 && HAS_TEMP_BED

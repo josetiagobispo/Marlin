@@ -181,6 +181,7 @@
 // 13 is 100k Hisens 3950  1% up to 300°C for hotend "Simple ONE " & "Hotend "All In ONE"
 // 20 is the PT100 circuit found in the Ultimainboard V2.x
 // 60 is 100k Maker's Tool Works Kapton Bed Thermistor beta=3950
+// 66 is 4.7M High Temperature thermistor from Dyze Design
 // 70 is the 100K thermistor found in the bq Hephestos 2
 //
 //    1k ohm pullup tables - This is not normal, you would have to have changed out your 4.7k for 1k
@@ -197,7 +198,7 @@
 //     Use it for Testing or Development purposes. NEVER for production machine.
 //#define DUMMY_THERMISTOR_998_VALUE 25
 //#define DUMMY_THERMISTOR_999_VALUE 100
-// :{ '0': "Not used", '4': "10k !! do not use for a hotend. Bad resolution at high temp. !!", '1': "100k / 4.7k - EPCOS", '51': "100k / 1k - EPCOS", '6': "100k / 4.7k EPCOS - Not as accurate as Table 1", '5': "100K / 4.7k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)", '7': "100k / 4.7k Honeywell 135-104LAG-J01", '71': "100k / 4.7k Honeywell 135-104LAF-J01", '8': "100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT", '9': "100k / 4.7k GE Sensing AL03006-58.2K-97-G1", '10': "100k / 4.7k RS 198-961", '11': "100k / 4.7k beta 3950 1%", '12': "100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT (calibrated for Makibox hot bed)", '13': "100k Hisens 3950  1% up to 300°C for hotend 'Simple ONE ' & hotend 'All In ONE'", '60': "100k Maker's Tool Works Kapton Bed Thermistor beta=3950", '55': "100k / 1k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)", '2': "200k / 4.7k - ATC Semitec 204GT-2", '52': "200k / 1k - ATC Semitec 204GT-2", '-3': "Thermocouple + MAX31855 (only for sensor 0)", '-2': "Thermocouple + MAX6675 (only for sensor 0)", '-1': "Thermocouple + AD595", '3': "Mendel-parts / 4.7k", '1047': "Pt1000 / 4.7k", '1010': "Pt1000 / 1k (non standard)", '20': "PT100 (Ultimainboard V2.x)", '147': "Pt100 / 4.7k", '110': "Pt100 / 1k (non-standard)", '998': "Dummy 1", '999': "Dummy 2" }
+// :{ '0': "Not used",'1':"100k / 4.7k - EPCOS",'2':"200k / 4.7k - ATC Semitec 204GT-2",'3':"Mendel-parts / 4.7k",'4':"10k !! do not use for a hotend. Bad resolution at high temp. !!",'5':"100K / 4.7k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)",'6':"100k / 4.7k EPCOS - Not as accurate as Table 1",'7':"100k / 4.7k Honeywell 135-104LAG-J01",'8':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT",'9':"100k / 4.7k GE Sensing AL03006-58.2K-97-G1",'10':"100k / 4.7k RS 198-961",'11':"100k / 4.7k beta 3950 1%",'12':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT (calibrated for Makibox hot bed)",'13':"100k Hisens 3950  1% up to 300°C for hotend 'Simple ONE ' & hotend 'All In ONE'",'20':"PT100 (Ultimainboard V2.x)",'51':"100k / 1k - EPCOS",'52':"200k / 1k - ATC Semitec 204GT-2",'55':"100k / 1k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)",'60':"100k Maker's Tool Works Kapton Bed Thermistor beta=3950",'66':"Dyze Design 4.7M High Temperature thermistor",'70':"the 100K thermistor found in the bq Hephestos 2",'71':"100k / 4.7k Honeywell 135-104LAF-J01",'147':"Pt100 / 4.7k",'1047':"Pt1000 / 4.7k",'110':"Pt100 / 1k (non-standard)",'1010':"Pt1000 / 1k (non standard)",'-3':"Thermocouple + MAX31855 (only for sensor 0)",'-2':"Thermocouple + MAX6675 (only for sensor 0)",'-1':"Thermocouple + AD595",'998':"Dummy 1",'999':"Dummy 2" }
 #define TEMP_SENSOR_0 1
 #define TEMP_SENSOR_1 1
 #define TEMP_SENSOR_2 0
@@ -771,7 +772,10 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 // Print job timer
 //
 // Enable this option to automatically start and stop the
-// print job timer when M104 and M109 commands are received.
+// print job timer when M104/M109/M190 commands are received.
+// M104 (extruder without wait) - high temp = none, low temp = stop timer
+// M109 (extruder with wait) - high temp = start timer, low temp = stop timer
+// M190 (bed with wait) - high temp = start timer, low temp = none
 //
 // In all cases the timer can be started and stopped using
 // the following commands:
@@ -804,10 +808,10 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 //
 // Here you may choose the language used by Marlin on the LCD menus, the following
 // list of languages are available:
-//    en, an, bg, ca, cn, cz, de, es, eu, fi, fr, gl, hr, it, kana,
-//    kana_utf8, nl, pl, pt, pt_utf8, pt-br, pt-br_utf8, ru, test
+//    en, an, bg, ca, cn, cz, de, el, el-gr, es, eu, fi, fr, gl, hr, it,
+//    kana, kana_utf8, nl, pl, pt, pt_utf8, pt-br, pt-br_utf8, ru, test
 //
-// :{'en':'English','an':'Aragonese','bg':'Bulgarian','ca':'Catalan','cn':'Chinese','cz':'Czech','de':'German','es':'Spanish','eu':'Basque-Euskera','fi':'Finnish','fr':'French','gl':'Galician','hr':'Croatian','it':'Italian','kana':'Japanese','kana_utf8':'Japanese (UTF8)','nl':'Dutch','pl':'Polish','pt':'Portuguese','pt-br':'Portuguese (Brazilian)','pt-br_utf8':'Portuguese (Brazilian UTF8)','pt_utf8':'Portuguese (UTF8)','ru':'Russian','test':'TEST'}
+// :{'en':'English','an':'Aragonese','bg':'Bulgarian','ca':'Catalan','cn':'Chinese','cz':'Czech','de':'German','el':'Greek','el-gr':'Greek (Greece)','es':'Spanish','eu':'Basque-Euskera','fi':'Finnish','fr':'French','gl':'Galician','hr':'Croatian','it':'Italian','kana':'Japanese','kana_utf8':'Japanese (UTF8)','nl':'Dutch','pl':'Polish','pt':'Portuguese','pt-br':'Portuguese (Brazilian)','pt-br_utf8':'Portuguese (Brazilian UTF8)','pt_utf8':'Portuguese (UTF8)','ru':'Russian','test':'TEST'}
 //
 //#define LCD_LANGUAGE en
 

@@ -1983,7 +1983,7 @@ void kill_screen(const char* lcd_msg) {
         printStatistics stats = print_job_counter.getStats();
 
         char printTime[6];
-        sprintf(printTime, "%02d:%02d", int(stats.printTime / 60), int(stats.printTime % 60));
+        sprintf(printTime, "%02d:%02d", int(stats.printTime / 3600), int(stats.printTime / 60) % 60);
 
         if (LCD_CLICKED) lcd_goto_previous_menu(true);
         START_SCREEN();
@@ -2367,15 +2367,21 @@ void kill_screen(const char* lcd_msg) {
     lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
     next_button_update_ms = millis() + 500;
 
+    // Buzz and wait. The delay is needed for buttons to settle!
     #if ENABLED(LCD_USE_I2C_BUZZER)
       lcd.buzz(LCD_FEEDBACK_FREQUENCY_DURATION_MS, LCD_FEEDBACK_FREQUENCY_HZ);
+      #ifdef __SAM3X8E__
+        HAL_delay(10);
+      #else
+        delay(10);
+      #endif
     #elif PIN_EXISTS(BEEPER)
       buzzer.tone(LCD_FEEDBACK_FREQUENCY_DURATION_MS, LCD_FEEDBACK_FREQUENCY_HZ);
-    #endif
-    #ifdef __SAM3X8E__
-      HAL_delay(10); // needed for buttons to settle
-    #else
-      delay(10); // needed for buttons to settle
+      #ifdef __SAM3X8E__
+        for (int8_t i = 5; i--;) { buzzer.tick(); HAL_delay(2); }
+      #else
+        for (int8_t i = 5; i--;) { buzzer.tick(); delay(2); }
+      #endif
     #endif
   }
 

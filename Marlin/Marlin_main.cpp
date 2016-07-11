@@ -4417,7 +4417,7 @@ inline void gcode_M104() {
       SERIAL_PROTOCOL_F(thermalManager.degTargetBed(), 1);
     #endif
     #if HOTENDS > 1
-      for (int8_t e = 0; e < HOTENDS; ++e) {
+      HOTEND_LOOP() {
         SERIAL_PROTOCOLPGM(" T");
         SERIAL_PROTOCOL(e);
         SERIAL_PROTOCOLCHAR(':');
@@ -4443,7 +4443,7 @@ inline void gcode_M104() {
       SERIAL_PROTOCOL(thermalManager.getHeaterPower(target_extruder));
     #endif
     #if HOTENDS > 1
-      for (int8_t e = 0; e < HOTENDS; ++e) {
+      HOTEND_LOOP() {
         SERIAL_PROTOCOLPGM(" @");
         SERIAL_PROTOCOL(e);
         SERIAL_PROTOCOLCHAR(':');
@@ -4462,13 +4462,13 @@ inline void gcode_M104() {
         SERIAL_PROTOCOLPGM("C->");
         SERIAL_PROTOCOL_F(thermalManager.rawBedTemp() / OVERSAMPLENR, 0);
       #endif
-      for (int8_t cur_hotend = 0; cur_hotend < HOTENDS; ++cur_hotend) {
+      HOTEND_LOOP() {
         SERIAL_PROTOCOLPGM("  T");
-        SERIAL_PROTOCOL(cur_hotend);
+        SERIAL_PROTOCOL(e);
         SERIAL_PROTOCOLCHAR(':');
-        SERIAL_PROTOCOL_F(thermalManager.degHotend(cur_hotend), 1);
+        SERIAL_PROTOCOL_F(thermalManager.degHotend(e), 1);
         SERIAL_PROTOCOLPGM("C->");
-        SERIAL_PROTOCOL_F(thermalManager.rawHotendTemp(cur_hotend) / OVERSAMPLENR, 0);
+        SERIAL_PROTOCOL_F(thermalManager.rawHotendTemp(e) / OVERSAMPLENR, 0);
       }
     #endif
   }
@@ -4539,6 +4539,13 @@ inline void gcode_M105() {
   inline void gcode_M410() { quickstop_stepper(); }
 
 #endif
+
+  #ifndef MIN_COOLING_SLOPE_DEG
+    #define MIN_COOLING_SLOPE_DEG 1.50
+  #endif
+  #ifndef MIN_COOLING_SLOPE_TIME
+    #define MIN_COOLING_SLOPE_TIME 60
+  #endif
 
 /**
  * M109: Sxxx Wait for extruder(s) to reach temperature. Waits only when heating.
@@ -4652,11 +4659,11 @@ inline void gcode_M109() {
 
     // Prevent a wait-forever situation if R is misused i.e. M109 R0
     if (wants_to_cool) {
-      if (temp < (EXTRUDE_MINTEMP) / 2) break; // always break at (default) 85°
-      // break after 20 seconds if cooling stalls
+      // break after MIN_COOLING_SLOPE_TIME seconds
+      // if the temperature did not drop at least MIN_COOLING_SLOPE_DEG
       if (!next_cool_check_ms || ELAPSED(now, next_cool_check_ms)) {
-        if (old_temp - temp < 1.0) break;
-        next_cool_check_ms = now + 20000;
+        if (old_temp - temp < MIN_COOLING_SLOPE_DEG) break;
+        next_cool_check_ms = now + 1000UL * MIN_COOLING_SLOPE_TIME;
         old_temp = temp;
       }
     }
@@ -4668,6 +4675,13 @@ inline void gcode_M109() {
 }
 
 #if HAS_TEMP_BED
+
+  #ifndef MIN_COOLING_SLOPE_DEG_BED
+    #define MIN_COOLING_SLOPE_DEG_BED 1.50
+  #endif
+  #ifndef MIN_COOLING_SLOPE_TIME_BED
+    #define MIN_COOLING_SLOPE_TIME_BED 60
+  #endif
 
   /**
    * M190: Sxxx Wait for bed current temp to reach target temp. Waits only when heating
@@ -4761,11 +4775,11 @@ inline void gcode_M109() {
 
       // Prevent a wait-forever situation if R is misused i.e. M190 R0
       if (wants_to_cool) {
-        if (temp < 30.0) break; // always break at 30°
-        // break after 20 seconds if cooling stalls
+        // break after MIN_COOLING_SLOPE_TIME_BED seconds
+        // if the temperature did not drop at least MIN_COOLING_SLOPE_DEG_BED
         if (!next_cool_check_ms || ELAPSED(now, next_cool_check_ms)) {
-          if (old_temp - temp < 1.0) break;
-          next_cool_check_ms = now + 20000;
+          if (old_temp - temp < MIN_COOLING_SLOPE_DEG_BED) break;
+          next_cool_check_ms = now + 1000UL * MIN_COOLING_SLOPE_TIME_BED;
           old_temp = temp;
         }
       }
@@ -5492,7 +5506,7 @@ inline void gcode_M206() {
 
     SERIAL_ECHO_START;
     SERIAL_ECHOPGM(MSG_HOTEND_OFFSET);
-    for (int e = 0; e < HOTENDS; e++) {
+    HOTEND_LOOP() {
       SERIAL_CHAR(' ');
       SERIAL_ECHO(hotend_offset[X_AXIS][e]);
       SERIAL_CHAR(',');
@@ -6291,9 +6305,17 @@ inline void gcode_M503() {
       #endif
       idle(true);
     }
-    delay(100);
+    #ifdef __SAM3X8E__
+      HAL_delay(100);
+    #else
+      delay(100);
+    #endif
     while (lcd_clicked()) idle(true);
-    delay(100);
+    #ifdef __SAM3X8E__
+      HAL_delay(100);
+    #else
+      delay(100);
+    #endif
 
     // Show load message
     lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_LOAD);
@@ -8054,8 +8076,9 @@ void prepare_move_to_destination() {
     float max_temp = 0.0;
     if (ELAPSED(millis(), next_status_led_update_ms)) {
       next_status_led_update_ms += 500; // Update every 0.5s
-      for (int8_t cur_hotend = 0; cur_hotend < HOTENDS; ++cur_hotend)
-        max_temp = max(max(max_temp, thermalManager.degHotend(cur_hotend)), thermalManager.degTargetHotend(cur_hotend));
+      HOTEND_LOOP() {
+        max_temp = max(max(max_temp, thermalManager.degHotend(e)), thermalManager.degTargetHotend(e));
+      }
       #if HAS_TEMP_BED
         max_temp = max(max(max_temp, thermalManager.degTargetBed()), thermalManager.degBed());
       #endif
