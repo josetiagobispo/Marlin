@@ -1577,7 +1577,7 @@ static void set_axis_is_at_home(AxisEnum axis) {
     current_position[axis] = base_home_pos(axis) + home_offset[axis];
     update_software_endstops(axis);
 
-    #if HAS_BED_PROBE && Z_HOME_DIR < 0
+    #if HAS_BED_PROBE && Z_HOME_DIR < 0 && DISABLED(Z_MIN_PROBE_ENDSTOP)
       if (axis == Z_AXIS) {
         current_position[Z_AXIS] -= zprobe_zoffset;
         #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -2414,7 +2414,7 @@ static void homeaxis(AxisEnum axis) {
     home_dir(axis);
 
   // Homing Z towards the bed? Deploy the Z probe or endstop.
-  #if HAS_BED_PROBE
+  #if HAS_BED_PROBE && DISABLED(Z_MIN_PROBE_ENDSTOP)
     if (axis == Z_AXIS && axis_home_dir < 0) {
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (DEBUGGING(LEVELING)) SERIAL_ECHOPGM("> ");
@@ -2515,7 +2515,7 @@ static void homeaxis(AxisEnum axis) {
   axis_homed[axis] = true;
 
   // Put away the Z probe
-  #if HAS_BED_PROBE
+  #if HAS_BED_PROBE && DISABLED(Z_MIN_PROBE_ENDSTOP)
     if (axis == Z_AXIS && axis_home_dir < 0) {
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (DEBUGGING(LEVELING)) SERIAL_ECHOPGM("> ");
@@ -6041,7 +6041,7 @@ void quickstop_stepper() {
    * Use either 'M421 X<linear> Y<linear> Z<linear>' or 'M421 I<xindex> J<yindex> Z<linear>'
    */
   inline void gcode_M421() {
-    int8_t px, py;
+    int8_t px = 0, py = 0;
     float z = 0;
     bool hasX, hasY, hasZ, hasI, hasJ;
     if ((hasX = code_seen('X'))) px = mbl.probe_index_x(code_value_axis_units(X_AXIS));
@@ -6290,7 +6290,9 @@ inline void gcode_M503() {
       delay(100);
     #endif
 
-    millis_t next_tick = 0;
+    #if HAS_BUZZER
+      millis_t next_tick = 0;
+    #endif
 
     // Wait for filament insert by user and press button
     lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_INSERT);

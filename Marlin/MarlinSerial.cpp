@@ -543,6 +543,8 @@ MarlinSerial customizedSerial;
             case state_M410:
               quickstop_stepper();
               break;
+            default:
+              break;
           }
           state = state_RESET;
         }
