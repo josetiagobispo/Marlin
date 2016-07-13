@@ -52,13 +52,12 @@ class Temperature {
 
   public:
 
-    static int current_temperature_raw[HOTENDS];
-    static float current_temperature[HOTENDS];
-    static int target_temperature[HOTENDS];
-
-    static int current_temperature_bed_raw;
-    static float current_temperature_bed;
-    static int target_temperature_bed;
+    static float current_temperature[HOTENDS],
+                 current_temperature_bed;
+    static int   current_temperature_raw[HOTENDS],
+                 target_temperature[HOTENDS],
+                 current_temperature_bed_raw,
+                 target_temperature_bed;
 
     #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
       static float redundant_temperature;
@@ -80,13 +79,13 @@ class Temperature {
 
     #if ENABLED(PIDTEMP)
 
-      #if ENABLED(PID_PARAMS_PER_HOTEND)
+      #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
 
         static float Kp[HOTENDS], Ki[HOTENDS], Kd[HOTENDS];
         #if ENABLED(PID_ADD_EXTRUSION_RATE)
           static float Kc[HOTENDS];
         #endif
-        #define PID_PARAM(param, e) Temperature::param[e]
+        #define PID_PARAM(param, h) Temperature::param[h]
 
       #else
 
@@ -94,7 +93,7 @@ class Temperature {
         #if ENABLED(PID_ADD_EXTRUSION_RATE)
           static float Kc;
         #endif
-        #define PID_PARAM(param, e) Temperature::param
+        #define PID_PARAM(param, h) Temperature::param
 
       #endif // PID_PARAMS_PER_HOTEND
 
@@ -125,12 +124,13 @@ class Temperature {
     #endif
 
     #if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
+      static bool allow_cold_extrude;
       static float extrude_min_temp;
       static bool tooColdToExtrude(uint8_t e) {
         #if HOTENDS == 1
           UNUSED(e);
         #endif
-        return degHotend(HOTEND_INDEX) < extrude_min_temp;
+        return allow_cold_extrude ? false : degHotend(HOTEND_INDEX) < extrude_min_temp;
       }
     #else
       static bool tooColdToExtrude(uint8_t e) { UNUSED(e); return false; }
@@ -146,40 +146,40 @@ class Temperature {
     static volatile bool temp_meas_ready;
 
     #if ENABLED(PIDTEMP)
-      static float temp_iState[HOTENDS];
-      static float temp_dState[HOTENDS];
-      static float pTerm[HOTENDS];
-      static float iTerm[HOTENDS];
-      static float dTerm[HOTENDS];
+      static float temp_iState[HOTENDS],
+                   temp_dState[HOTENDS],
+                   pTerm[HOTENDS],
+                   iTerm[HOTENDS],
+                   dTerm[HOTENDS];
 
       #if ENABLED(PID_ADD_EXTRUSION_RATE)
         static float cTerm[HOTENDS];
-        static long last_position[HOTENDS];
+        static long last_e_position;
         static long lpq[LPQ_MAX_LEN];
         static int lpq_ptr;
       #endif
 
-      static float pid_error[HOTENDS];
-      static float temp_iState_min[HOTENDS];
-      static float temp_iState_max[HOTENDS];
+      static float pid_error[HOTENDS],
+                   temp_iState_min[HOTENDS],
+                   temp_iState_max[HOTENDS];
       static bool pid_reset[HOTENDS];
     #endif
 
     #if ENABLED(PIDTEMPBED)
-      static float temp_iState_bed;
-      static float temp_dState_bed;
-      static float pTerm_bed;
-      static float iTerm_bed;
-      static float dTerm_bed;
-      static float pid_error_bed;
-      static float temp_iState_min_bed;
-      static float temp_iState_max_bed;
+      static float temp_iState_bed,
+                   temp_dState_bed,
+                   pTerm_bed,
+                   iTerm_bed,
+                   dTerm_bed,
+                   pid_error_bed,
+                   temp_iState_min_bed,
+                   temp_iState_max_bed;
     #else
       static millis_t next_bed_check_ms;
     #endif
 
-    static unsigned long raw_temp_value[4];
-    static unsigned long raw_temp_bed_value;
+    static unsigned long raw_temp_value[4],
+                         raw_temp_bed_value;
 
     #ifdef __SAM3X8E__
       // MEDIAN COUNT
@@ -199,10 +199,10 @@ class Temperature {
     #endif
 
     // Init min and max temp with extreme values to prevent false errors during startup
-    static int minttemp_raw[HOTENDS];
-    static int maxttemp_raw[HOTENDS];
-    static int minttemp[HOTENDS];
-    static int maxttemp[HOTENDS];
+    static int minttemp_raw[HOTENDS],
+               maxttemp_raw[HOTENDS],
+               minttemp[HOTENDS],
+               maxttemp[HOTENDS];
 
     #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
       static int consecutive_low_temperature_error[HOTENDS];
@@ -268,11 +268,24 @@ class Temperature {
      * Preheating hotends
      */
     #ifdef MILLISECONDS_PREHEAT_TIME
-      static bool is_preheating(uint8_t hotend) {
-        return preheat_end_time[hotend] && PENDING(millis(), preheat_end_time[hotend]);
+      static bool is_preheating(uint8_t e) {
+        #if HOTENDS == 1
+          UNUSED(e);
+        #endif
+        return preheat_end_time[HOTEND_INDEX] && PENDING(millis(), preheat_end_time[HOTEND_INDEX]);
       }
-      static void start_preheat_time(uint8_t hotend) { preheat_end_time[hotend] = millis() + MILLISECONDS_PREHEAT_TIME; }
-      static void reset_preheat_time(uint8_t hotend) { preheat_end_time[hotend] = 0; }
+      static void start_preheat_time(uint8_t e) {
+        #if HOTENDS == 1
+          UNUSED(e);
+        #endif
+        preheat_end_time[HOTEND_INDEX] = millis() + MILLISECONDS_PREHEAT_TIME;
+      }
+      static void reset_preheat_time(uint8_t e) {
+        #if HOTENDS == 1
+          UNUSED(e);
+        #endif
+        preheat_end_time[HOTEND_INDEX] = 0;
+      }
     #else
       #define is_preheating(n) (false)
     #endif
@@ -327,9 +340,9 @@ class Temperature {
       #endif
       #ifdef MILLISECONDS_PREHEAT_TIME
         if (celsius == 0.0f)
-          reset_preheat_time(hotend);
-        else if (target_temperature[hotend] == 0.0f)
-          start_preheat_time(hotend);
+          reset_preheat_time(HOTEND_INDEX);
+        else if (target_temperature[HOTEND_INDEX] == 0.0f)
+          start_preheat_time(HOTEND_INDEX);
       #endif
       target_temperature[HOTEND_INDEX] = celsius;
       #if ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0

@@ -55,13 +55,12 @@ Temperature thermalManager;
 
 // public:
 
-int Temperature::current_temperature_raw[HOTENDS] = { 0 };
-float Temperature::current_temperature[HOTENDS] = { 0.0 };
-int Temperature::target_temperature[HOTENDS] = { 0 };
-
-int Temperature::current_temperature_bed_raw = 0;
-float Temperature::current_temperature_bed = 0.0;
-int Temperature::target_temperature_bed = 0;
+float Temperature::current_temperature[HOTENDS] = { 0.0 },
+      Temperature::current_temperature_bed = 0.0;
+int   Temperature::current_temperature_raw[HOTENDS] = { 0 },
+      Temperature::target_temperature[HOTENDS] = { 0 },
+      Temperature::current_temperature_bed_raw = 0,
+      Temperature::target_temperature_bed = 0;
 
 #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
   float Temperature::redundant_temperature = 0.0;
@@ -112,6 +111,7 @@ unsigned char Temperature::soft_pwm_bed;
 #endif
 
 #if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
+  bool Temperature::allow_cold_extrude = false;
   float Temperature::extrude_min_temp = EXTRUDE_MINTEMP;
 #endif
 
@@ -125,34 +125,34 @@ unsigned char Temperature::soft_pwm_bed;
 volatile bool Temperature::temp_meas_ready = false;
 
 #if ENABLED(PIDTEMP)
-  float Temperature::temp_iState[HOTENDS] = { 0 };
-  float Temperature::temp_dState[HOTENDS] = { 0 };
-  float Temperature::pTerm[HOTENDS];
-  float Temperature::iTerm[HOTENDS];
-  float Temperature::dTerm[HOTENDS];
+  float Temperature::temp_iState[HOTENDS] = { 0 },
+        Temperature::temp_dState[HOTENDS] = { 0 },
+        Temperature::pTerm[HOTENDS],
+        Temperature::iTerm[HOTENDS],
+        Temperature::dTerm[HOTENDS];
 
   #if ENABLED(PID_ADD_EXTRUSION_RATE)
     float Temperature::cTerm[HOTENDS];
-    long Temperature::last_position[HOTENDS];
+    long Temperature::last_e_position;
     long Temperature::lpq[LPQ_MAX_LEN];
     int Temperature::lpq_ptr = 0;
   #endif
 
-  float Temperature::pid_error[HOTENDS];
-  float Temperature::temp_iState_min[HOTENDS];
-  float Temperature::temp_iState_max[HOTENDS];
+  float Temperature::pid_error[HOTENDS],
+        Temperature::temp_iState_min[HOTENDS],
+        Temperature::temp_iState_max[HOTENDS];
   bool Temperature::pid_reset[HOTENDS];
 #endif
 
 #if ENABLED(PIDTEMPBED)
-  float Temperature::temp_iState_bed = { 0 };
-  float Temperature::temp_dState_bed = { 0 };
-  float Temperature::pTerm_bed;
-  float Temperature::iTerm_bed;
-  float Temperature::dTerm_bed;
-  float Temperature::pid_error_bed;
-  float Temperature::temp_iState_min_bed;
-  float Temperature::temp_iState_max_bed;
+  float Temperature::temp_iState_bed = { 0 },
+        Temperature::temp_dState_bed = { 0 },
+        Temperature::pTerm_bed,
+        Temperature::iTerm_bed,
+        Temperature::dTerm_bed,
+        Temperature::pid_error_bed,
+        Temperature::temp_iState_min_bed,
+        Temperature::temp_iState_max_bed;
 #else
   millis_t Temperature::next_bed_check_ms;
 #endif
@@ -169,10 +169,10 @@ unsigned long Temperature::raw_temp_bed_value = 0;
 #endif
 
 // Init min and max temp with extreme values to prevent false errors during startup
-int Temperature::minttemp_raw[HOTENDS] = ARRAY_BY_HOTENDS(HEATER_0_RAW_LO_TEMP , HEATER_1_RAW_LO_TEMP , HEATER_2_RAW_LO_TEMP, HEATER_3_RAW_LO_TEMP);
-int Temperature::maxttemp_raw[HOTENDS] = ARRAY_BY_HOTENDS(HEATER_0_RAW_HI_TEMP , HEATER_1_RAW_HI_TEMP , HEATER_2_RAW_HI_TEMP, HEATER_3_RAW_HI_TEMP);
-int Temperature::minttemp[HOTENDS] = { 0 };
-int Temperature::maxttemp[HOTENDS] = ARRAY_BY_HOTENDS1(16383);
+int Temperature::minttemp_raw[HOTENDS] = ARRAY_BY_HOTENDS(HEATER_0_RAW_LO_TEMP , HEATER_1_RAW_LO_TEMP , HEATER_2_RAW_LO_TEMP, HEATER_3_RAW_LO_TEMP),
+    Temperature::maxttemp_raw[HOTENDS] = ARRAY_BY_HOTENDS(HEATER_0_RAW_HI_TEMP , HEATER_1_RAW_HI_TEMP , HEATER_2_RAW_HI_TEMP, HEATER_3_RAW_HI_TEMP),
+    Temperature::minttemp[HOTENDS] = { 0 },
+    Temperature::maxttemp[HOTENDS] = ARRAY_BY_HOTENDS1(16383);
 
 #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
   int Temperature::consecutive_low_temperature_error[HOTENDS] = { 0 };
@@ -457,11 +457,11 @@ Temperature::Temperature() { }
 
 void Temperature::updatePID() {
   #if ENABLED(PIDTEMP)
+    #if ENABLED(PID_ADD_EXTRUSION_RATE)
+      last_e_position = 0;
+    #endif
     HOTEND_LOOP() {
       temp_iState_max[e] = (PID_INTEGRAL_DRIVE_MAX) / PID_PARAM(Ki, e);
-      #if ENABLED(PID_ADD_EXTRUSION_RATE)
-        last_position[e] = 0;
-      #endif
     }
   #endif
   #if ENABLED(PIDTEMPBED)
@@ -544,10 +544,8 @@ float Temperature::get_pid_output(int e) {
   #if HOTENDS == 1
     UNUSED(e);
     #define _HOTEND_TEST     true
-    #define _HOTEND_EXTRUDER active_extruder
   #else
     #define _HOTEND_TEST     e == active_extruder
-    #define _HOTEND_EXTRUDER e
   #endif
   float pid_output;
   #if ENABLED(PIDTEMP)
@@ -579,14 +577,14 @@ float Temperature::get_pid_output(int e) {
           cTerm[HOTEND_INDEX] = 0;
           if (_HOTEND_TEST) {
             long e_position = stepper.position(E_AXIS);
-            if (e_position > last_position[_HOTEND_EXTRUDER]) {
-              lpq[lpq_ptr++] = e_position - last_position[_HOTEND_EXTRUDER];
-              last_position[_HOTEND_EXTRUDER] = e_position;
+            if (e_position > last_e_position) {
+              lpq[lpq_ptr] = e_position - last_e_position;
+              last_e_position = e_position;
             }
             else {
-              lpq[lpq_ptr++] = 0;
+              lpq[lpq_ptr] = 0;
             }
-            if (lpq_ptr >= lpq_len) lpq_ptr = 0;
+            if (++lpq_ptr >= lpq_len) lpq_ptr = 0;
             cTerm[HOTEND_INDEX] = (lpq[lpq_ptr] / planner.axis_steps_per_mm[E_AXIS]) * PID_PARAM(Kc, HOTEND_INDEX);
             pid_output += cTerm[HOTEND_INDEX];
           }
@@ -977,7 +975,7 @@ void Temperature::init() {
       temp_iState_min[e] = 0.0;
       temp_iState_max[e] = (PID_INTEGRAL_DRIVE_MAX) / PID_PARAM(Ki, e);
       #if ENABLED(PID_ADD_EXTRUSION_RATE)
-        last_position[e] = 0;
+        last_e_position = 0;
       #endif
     #endif //PIDTEMP
     #if ENABLED(PIDTEMPBED)
@@ -985,6 +983,10 @@ void Temperature::init() {
       temp_iState_max_bed = (PID_BED_INTEGRAL_DRIVE_MAX) / bedKi;
     #endif //PIDTEMPBED
   }
+
+  #if ENABLED(PIDTEMP) && ENABLED(PID_ADD_EXTRUSION_RATE)
+    last_e_position = 0;
+  #endif
 
   #ifdef __SAM3X8E__
     // Initialize some variables only at start!

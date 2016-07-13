@@ -30,7 +30,6 @@
 #ifndef LANGUAGE_CA_H
 #define LANGUAGE_CA_H
 
-//#define MAPPER_NON
 #define MAPPER_C2C3  // because of "ó"
 // Define SIMULATE_ROMFONT to see what is seen on the character based display defined in Configuration.h
 //#define SIMULATE_ROMFONT
@@ -50,16 +49,16 @@
 #define MSG_SET_HOME_OFFSETS                "Set home offsets"
 #define MSG_HOME_OFFSETS_APPLIED            "Offsets applied"
 #define MSG_SET_ORIGIN                      "Establir origen"
-#define MSG_PREHEAT_PLA                     "Preescalfar PLA"
-#define MSG_PREHEAT_PLA_N                   "Preescalfar PLA "
-#define MSG_PREHEAT_PLA_ALL                 "Preesc. tot PLA"
-#define MSG_PREHEAT_PLA_BEDONLY             "Preesc. llit PLA"
-#define MSG_PREHEAT_PLA_SETTINGS            "Configuració PLA"
-#define MSG_PREHEAT_ABS                     "Preescalfar ABS"
-#define MSG_PREHEAT_ABS_N                   "Preescalfar ABS "
-#define MSG_PREHEAT_ABS_ALL                 "Preesc. tot ABS"
-#define MSG_PREHEAT_ABS_BEDONLY             "Preesc. llit ABS"
-#define MSG_PREHEAT_ABS_SETTINGS            "Configuració ABS"
+#define MSG_PREHEAT_1                       "Preescalfar PLA"
+#define MSG_PREHEAT_1_N                     "Preescalfar PLA "
+#define MSG_PREHEAT_1_ALL                   "Preesc. tot PLA"
+#define MSG_PREHEAT_1_BEDONLY               "Preesc. llit PLA"
+#define MSG_PREHEAT_1_SETTINGS              "Configuració PLA"
+#define MSG_PREHEAT_2                       "Preescalfar ABS"
+#define MSG_PREHEAT_2_N                     "Preescalfar ABS "
+#define MSG_PREHEAT_2_ALL                   "Preesc. tot ABS"
+#define MSG_PREHEAT_2_BEDONLY               "Preesc. llit ABS"
+#define MSG_PREHEAT_2_SETTINGS              "Configuració ABS"
 #define MSG_COOLDOWN                        "Refredar"
 #define MSG_SWITCH_PS_ON                    "Switch power on"
 #define MSG_SWITCH_PS_OFF                   "Switch power off"
