@@ -336,6 +336,9 @@ float home_offset[3] = { 0 };
 // Software Endstops. Default to configured limits.
 float sw_endstop_min[3] = { X_MIN_POS, Y_MIN_POS, Z_MIN_POS };
 float sw_endstop_max[3] = { X_MAX_POS, Y_MAX_POS, Z_MAX_POS };
+#if ENABLED(DELTA)
+  float delta_clip_start_height = Z_MAX_POS;
+#endif
 
 #if FAN_COUNT > 0
   int fanSpeeds[FAN_COUNT] = { 0 };
@@ -594,17 +597,23 @@ static void report_current_position();
     SERIAL_ECHOPAIR(", ", y);
     SERIAL_ECHOPAIR(", ", z);
     SERIAL_ECHOPGM(")");
-    serialprintPGM(suffix);
+
+    if (suffix) serialprintPGM(suffix);
+    else SERIAL_EOL;
   }
-  void print_xyz(const char* prefix,const char* suffix, const float xyz[]) {
+
+  void print_xyz(const char* prefix, const char* suffix, const float xyz[]) {
     print_xyz(prefix, suffix, xyz[X_AXIS], xyz[Y_AXIS], xyz[Z_AXIS]);
   }
+
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-    void print_xyz(const char* prefix,const char* suffix, const vector_3 &xyz) {
+    void print_xyz(const char* prefix, const char* suffix, const vector_3 &xyz) {
       print_xyz(prefix, suffix, xyz.x, xyz.y, xyz.z);
     }
   #endif
-  #define DEBUG_POS(SUFFIX,VAR) do{ print_xyz(PSTR(STRINGIFY(VAR) "="), PSTR(" : " SUFFIX "\n"), VAR); }while(0)
+
+  #define DEBUG_POS(SUFFIX,VAR) do { \
+    print_xyz(PSTR(STRINGIFY(VAR) "="), PSTR(" : " SUFFIX "\n"), VAR); } while(0)
 #endif
 
 #if ENABLED(DELTA) || ENABLED(SCARA)
@@ -1487,6 +1496,7 @@ static void update_software_endstops(AxisEnum axis) {
     sw_endstop_min[axis] = base_min_pos(axis) + offs;
     sw_endstop_max[axis] = base_max_pos(axis) + offs;
   }
+
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
       SERIAL_ECHOPAIR("For ", axis_codes[axis]);
@@ -1497,6 +1507,13 @@ static void update_software_endstops(AxisEnum axis) {
       SERIAL_EOL;
     }
   #endif
+
+  #if ENABLED(DELTA)
+    if (axis == Z_AXIS) {
+      delta_clip_start_height = sw_endstop_max[axis] - delta_safe_distance_from_top();
+    }
+  #endif
+
 }
 
 /**
@@ -1709,7 +1726,7 @@ static void do_blocking_move_to(float x, float y, float z, float feed_rate = 0.0
   float old_feedrate = feedrate;
 
   #if ENABLED(DEBUG_LEVELING_FEATURE)
-    if (DEBUGGING(LEVELING)) print_xyz(PSTR("do_blocking_move_to"), "", x, y, z);
+    if (DEBUGGING(LEVELING)) print_xyz(PSTR("do_blocking_move_to"), NULL, x, y, z);
   #endif
 
   #if ENABLED(DELTA)
@@ -1759,6 +1776,10 @@ inline void do_blocking_move_to_x(float x, float feed_rate = 0.0) {
 
 inline void do_blocking_move_to_y(float y) {
   do_blocking_move_to(current_position[X_AXIS], y, current_position[Z_AXIS]);
+}
+
+inline void do_blocking_move_to_xy(float x, float y, float feed_rate = 0.0) {
+  do_blocking_move_to(x, y, current_position[Z_AXIS], feed_rate);
 }
 
 inline void do_blocking_move_to_z(float z, float feed_rate = 0.0) {
@@ -2160,10 +2181,6 @@ inline void do_blocking_move_to_z(float z, float feed_rate = 0.0) {
     feedrate = old_feedrate;
 
     return current_position[Z_AXIS];
-  }
-
-  inline void do_blocking_move_to_xy(float x, float y, float feed_rate = 0.0) {
-    do_blocking_move_to(x, y, current_position[Z_AXIS], feed_rate);
   }
 
   //
@@ -2937,20 +2954,17 @@ inline void gcode_G28() {
 
       if (home_all_axis || homeX || homeY) {
         // Raise Z before homing any other axes and z is not already high enough (never lower z)
-        float z_dest = home_offset[Z_AXIS] + MIN_Z_HEIGHT_FOR_HOMING;
-        if (z_dest > current_position[Z_AXIS]) {
+        destination[Z_AXIS] = home_offset[Z_AXIS] + MIN_Z_HEIGHT_FOR_HOMING;
+        if (destination[Z_AXIS] > current_position[Z_AXIS]) {
 
           #if ENABLED(DEBUG_LEVELING_FEATURE)
             if (DEBUGGING(LEVELING)) {
-              SERIAL_ECHOPAIR("Raise Z (before homing) to ", z_dest);
+              SERIAL_ECHOPAIR("Raise Z (before homing) to ", destination[Z_AXIS]);
               SERIAL_EOL;
             }
           #endif
 
-          feedrate = homing_feedrate[Z_AXIS];
-          line_to_z(z_dest);
-          stepper.synchronize();
-          destination[Z_AXIS] = current_position[Z_AXIS] = z_dest;
+          do_blocking_move_to_z(destination[Z_AXIS]);
         }
       }
 
@@ -3037,8 +3051,6 @@ inline void gcode_G28() {
             destination[Y_AXIS] = round(Z_SAFE_HOMING_Y_POINT - (Y_PROBE_OFFSET_FROM_EXTRUDER));
             destination[Z_AXIS] = current_position[Z_AXIS]; //z is already at the right height
 
-            feedrate = XY_PROBE_FEEDRATE;
-
             #if ENABLED(DEBUG_LEVELING_FEATURE)
               if (DEBUGGING(LEVELING)) {
                 DEBUG_POS("> Z_SAFE_HOMING > home_all_axis", current_position);
@@ -3047,15 +3059,7 @@ inline void gcode_G28() {
             #endif
 
             // Move in the XY plane
-            line_to_destination();
-            stepper.synchronize();
-
-            /**
-             * Update the current positions for XY, Z is still at least at
-             * MIN_Z_HEIGHT_FOR_HOMING height, no changes there.
-             */
-            current_position[X_AXIS] = destination[X_AXIS];
-            current_position[Y_AXIS] = destination[Y_AXIS];
+            do_blocking_move_to_xy(destination[X_AXIS], destination[Y_AXIS]);
           }
 
           // Let's see if X and Y are homed
@@ -3145,6 +3149,11 @@ inline void gcode_G28() {
           mbl.get_z(RAW_CURRENT_POSITION(X_AXIS), RAW_CURRENT_POSITION(Y_AXIS));
       }
     }
+  #endif
+
+  #if ENABLED(DELTA)
+    // move to a height where we can use the full xy-area
+    do_blocking_move_to_z(delta_clip_start_height);
   #endif
 
   clean_up_after_endstop_or_probe_move();
@@ -6714,7 +6723,7 @@ inline void gcode_T(uint8_t tmp_extruder) {
             delayed_move_time = 0;
             break;
         }
- 
+
         #if ENABLED(DEBUG_LEVELING_FEATURE)
           if (DEBUGGING(LEVELING)) {
             SERIAL_ECHOPAIR("Active extruder parked: ", active_extruder_parked ? "yes" : "no");
@@ -7621,6 +7630,15 @@ void clamp_to_software_endstops(float target[3]) {
     SERIAL_ECHOPGM(" b="); SERIAL_ECHO(delta[TOWER_2]);
     SERIAL_ECHOPGM(" c="); SERIAL_ECHOLN(delta[TOWER_3]);
     */
+  }
+
+  float delta_safe_distance_from_top() {
+    float cartesian[3] = { 0 };
+    calculate_delta(cartesian);
+    float distance = delta[TOWER_3];
+    cartesian[Y_AXIS] = DELTA_PRINTABLE_RADIUS;
+    calculate_delta(cartesian);
+    return abs(distance - delta[TOWER_3]);
   }
 
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
