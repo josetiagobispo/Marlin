@@ -122,8 +122,24 @@
 // build by the user have been successfully uploaded into firmware.
 #define STRING_CONFIG_H_AUTHOR "(none, default config)" // Who made the changes.
 #define SHOW_BOOTSCREEN
-#define STRING_SPLASH_LINE1 SHORT_BUILD_VERSION // will be shown during bootup in line 1
-//#define STRING_SPLASH_LINE2 STRING_DISTRIBUTION_DATE // will be shown during bootup in line 2
+#define STRING_SPLASH_LINE1 SHORT_BUILD_VERSION // will be shown during boot in line 1
+#define STRING_SPLASH_LINE2 WEBSITE_URL         // will be shown during boot in line 2
+
+//
+// *** VENDORS PLEASE READ *****************************************************
+//
+// Marlin now allow you to have a vendor boot image to be displayed on machine
+// start. When SHOW_CUSTOM_BOOTSCREEN is defined Marlin will first show your
+// custom boot image and them the default Marlin boot image is shown.
+//
+// We suggest for you to take advantage of this new feature and keep the Marlin
+// boot image unmodified. For an example have a look at the bq Hephestos 2
+// example configuration folder.
+//
+//#define SHOW_CUSTOM_BOOTSCREEN
+#if ENABLED(SHOW_BOOTSCREEN) && ENABLED(SHOW_CUSTOM_BOOTSCREEN)
+  #include "_bootscreen.h"
+#endif
 
 // @section machine
 
@@ -794,6 +810,30 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the l
 #define PREHEAT_2_TEMP_HOTEND 240
 #define PREHEAT_2_TEMP_BED    100
 #define PREHEAT_2_FAN_SPEED   255 // Value from 0 to 255
+
+//
+// Nozzle Park -- EXPERIMENTAL
+//
+// When enabled allows the user to define a special XYZ position, inside the
+// machine's topology, to park the nozzle when idle or when receiving the G27
+// command.
+//
+// The "P" paramenter controls what is the action applied to the Z axis:
+//    P0: (Default) If current Z-pos is lower than Z-park then the nozzle will
+//        be raised to reach Z-park height.
+//
+//    P1: No matter the current Z-pos, the nozzle will be raised/lowered to
+//        reach Z-park height.
+//
+//    P2: The nozzle height will be raised by Z-park amount but never going over
+//        the machine's limit of Z_MAX_POS.
+//
+//#define NOZZLE_PARK_FEATURE
+
+#if ENABLED(NOZZLE_PARK_FEATURE)
+  // Specify a park position as { X, Y, Z }
+  #define NOZZLE_PARK_POINT { (X_MIN_POS + 10), (Y_MAX_POS - 10), 20 }
+#endif
 
 //
 // Clean Nozzle Feature -- EXPERIMENTAL

@@ -190,9 +190,10 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
     static void menu_action_sddirectory(const char* filename, char* longFilename);
   #endif
 
-  #define ENCODER_FEEDRATE_DEADZONE 10
-
   #if DISABLED(LCD_I2C_VIKI)
+    #ifndef ENCODER_FEEDRATE_DEADZONE
+      #define ENCODER_FEEDRATE_DEADZONE 10
+    #endif
     #ifndef ENCODER_STEPS_PER_MENU_ITEM
       #define ENCODER_STEPS_PER_MENU_ITEM 5
     #endif
@@ -200,6 +201,9 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
       #define ENCODER_PULSES_PER_STEP 1
     #endif
   #else
+    #ifndef ENCODER_FEEDRATE_DEADZONE
+      #define ENCODER_FEEDRATE_DEADZONE 4
+    #endif
     #ifndef ENCODER_STEPS_PER_MENU_ITEM
       #define ENCODER_STEPS_PER_MENU_ITEM 2 // VIKI LCD rotary encoder uses a different number of steps per rotation
     #endif
@@ -343,7 +347,8 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
     if (encoderLine >= encoderTopLine + LCD_HEIGHT) { \
       encoderTopLine = encoderLine - (LCD_HEIGHT - 1); \
       lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT; \
-    }
+    } \
+    UNUSED(_skipStatic)
 
   #if ENABLED(ENCODER_RATE_MULTIPLIER)
 
@@ -1404,7 +1409,7 @@ void kill_screen(const char* lcd_msg) {
         pos_label = PSTR(MSG_MOVE_E);
       #else
         switch (eindex) {
-          case 0: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E1); break;
+          default: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E1); break;
           case 1: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E2); break;
           #if EXTRUDERS > 2
             case 2: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E3); break;
@@ -1565,14 +1570,14 @@ void kill_screen(const char* lcd_msg) {
     // Helpers for editing PID Ki & Kd values
     // grab the PID value out of the temp variable; scale it; then update the PID driver
     void copy_and_scalePID_i(int e) {
-      #if DISABLED(PID_PARAMS_PER_HOTEND)
+      #if DISABLED(PID_PARAMS_PER_HOTEND) || HOTENDS == 1
         UNUSED(e);
       #endif
       PID_PARAM(Ki, e) = scalePID_i(raw_Ki);
       thermalManager.updatePID();
     }
     void copy_and_scalePID_d(int e) {
-      #if DISABLED(PID_PARAMS_PER_HOTEND)
+      #if DISABLED(PID_PARAMS_PER_HOTEND) || HOTENDS == 1
         UNUSED(e);
       #endif
       PID_PARAM(Kd, e) = scalePID_d(raw_Kd);
@@ -2000,13 +2005,19 @@ void kill_screen(const char* lcd_msg) {
         print_job_counter.loadStats();
         printStatistics stats = print_job_counter.getStats();
 
-        char timeString[8];
-        sprintf_P(timeString, PSTR("%i:%02i"), int(stats.printTime / 60 / 60), int(stats.printTime / 60) % 60);
+        char timeString[14];
+        sprintf_P(timeString,
+        PSTR("%i" MSG_SHORT_DAY " %i" MSG_SHORT_HOUR " %i" MSG_SHORT_MINUTE),
+          int(stats.printTime / 60 / 60 / 24),
+          int((stats.printTime / 60 / 60) % 24),
+          int((stats.printTime / 60) % 60)
+        );
 
         START_SCREEN();                                                                              // 12345678901234567890
         STATIC_ITEM(MSG_INFO_PRINT_COUNT ": ", false, false, itostr3left(stats.totalPrints));        // Print Count: 999
         STATIC_ITEM(MSG_INFO_COMPLETED_PRINTS": ", false, false, itostr3left(stats.finishedPrints)); // Completed  : 666
-        STATIC_ITEM(MSG_INFO_PRINT_TIME ": ", false, false, timeString);                             // Total Time : 123:45
+        STATIC_ITEM(MSG_INFO_PRINT_TIME ": ", false, false);                                         // Total Time :
+        STATIC_ITEM("  ", false, false, timeString);                                                 //   12345d 12h 34m
         END_SCREEN();
       }
     #endif // PRINTCOUNTER

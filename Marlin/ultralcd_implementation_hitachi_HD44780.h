@@ -466,23 +466,6 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
     lcd.setCursor(indent, 2); lcd.print('\x02'); lcd_printPGM(PSTR( "------" ));  lcd.print('\x03');
   }
 
-  void safe_delay(uint16_t del){
-    while (del > 50) {
-      del -= 50;
-      #ifdef __SAM3X8E__
-        HAL_delay(50);
-      #else
-        delay(50);
-      #endif
-      thermalManager.manage_heater();
-    }
-    #ifdef __SAM3X8E__
-      HAL_delay(del);
-    #else
-      delay(del);
-    #endif
-  }
-
   void bootscreen() {
     byte top_left[8] = {
       B00000,

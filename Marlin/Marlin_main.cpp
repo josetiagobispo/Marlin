@@ -984,11 +984,7 @@ void setup() {
   lcd_init();
   #if ENABLED(SHOW_BOOTSCREEN)
     #if ENABLED(DOGLCD)
-      #ifdef __SAM3X8E__
-        HAL_delay(1000);
-      #else
-        delay(1000);
-      #endif
+      safe_delay(BOOTSCREEN_TIMEOUT);
     #elif ENABLED(ULTRA_LCD)
       bootscreen();
       lcd_init();
@@ -1675,34 +1671,6 @@ inline void sync_plan_position_e() { planner.set_e_position_mm(current_position[
 inline void set_current_to_destination() { memcpy(current_position, destination, sizeof(current_position)); }
 inline void set_destination_to_current() { memcpy(destination, current_position, sizeof(destination)); }
 
-//
-// Prepare to do endstop or probe moves
-// with custom feedrates.
-//
-//  - Save current feedrates
-//  - Reset the rate multiplier
-//  - Reset the command timeout
-//  - Enable the endstops (for endstop moves)
-//
-static void setup_for_endstop_or_probe_move() {
-  #if ENABLED(DEBUG_LEVELING_FEATURE)
-    if (DEBUGGING(LEVELING)) DEBUG_POS("setup_for_endstop_or_probe_move", current_position);
-  #endif
-  saved_feedrate = feedrate;
-  saved_feedrate_multiplier = feedrate_multiplier;
-  feedrate_multiplier = 100;
-  refresh_cmd_timeout();
-}
-
-static void clean_up_after_endstop_or_probe_move() {
-  #if ENABLED(DEBUG_LEVELING_FEATURE)
-    if (DEBUGGING(LEVELING)) DEBUG_POS("clean_up_after_endstop_or_probe_move", current_position);
-  #endif
-  feedrate = saved_feedrate;
-  feedrate_multiplier = saved_feedrate_multiplier;
-  refresh_cmd_timeout();
-}
-
 #if ENABLED(DELTA)
   /**
    * Calculate delta, start a line, and set current_position to destination
@@ -1786,6 +1754,34 @@ inline void do_blocking_move_to_z(float z, float feed_rate = 0.0) {
   do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], z, feed_rate);
 }
 
+//
+// Prepare to do endstop or probe moves
+// with custom feedrates.
+//
+//  - Save current feedrates
+//  - Reset the rate multiplier
+//  - Reset the command timeout
+//  - Enable the endstops (for endstop moves)
+//
+static void setup_for_endstop_or_probe_move() {
+  #if ENABLED(DEBUG_LEVELING_FEATURE)
+    if (DEBUGGING(LEVELING)) DEBUG_POS("setup_for_endstop_or_probe_move", current_position);
+  #endif
+  saved_feedrate = feedrate;
+  saved_feedrate_multiplier = feedrate_multiplier;
+  feedrate_multiplier = 100;
+  refresh_cmd_timeout();
+}
+
+static void clean_up_after_endstop_or_probe_move() {
+  #if ENABLED(DEBUG_LEVELING_FEATURE)
+    if (DEBUGGING(LEVELING)) DEBUG_POS("clean_up_after_endstop_or_probe_move", current_position);
+  #endif
+  feedrate = saved_feedrate;
+  feedrate_multiplier = saved_feedrate_multiplier;
+  refresh_cmd_timeout();
+}
+
 #if HAS_BED_PROBE
   /**
    * Raise Z to a minimum height to make room for a probe to move
@@ -1808,7 +1804,7 @@ inline void do_blocking_move_to_z(float z, float feed_rate = 0.0) {
 
 #endif //HAS_BED_PROBE
 
-#if ENABLED(Z_PROBE_ALLEN_KEY) || ENABLED(Z_PROBE_SLED) || ENABLED(Z_SAFE_HOMING) || HAS_PROBING_PROCEDURE || HOTENDS > 1
+#if ENABLED(Z_PROBE_ALLEN_KEY) || ENABLED(Z_PROBE_SLED) || ENABLED(Z_SAFE_HOMING) || HAS_PROBING_PROCEDURE || HOTENDS > 1 || ENABLED(NOZZLE_CLEAN_FEATURE) || ENABLED(NOZZLE_PARK_FEATURE)
   static bool axis_unhomed_error(const bool x, const bool y, const bool z) {
     const bool xx = x && !axis_homed[X_AXIS],
                yy = y && !axis_homed[Y_AXIS],
@@ -2616,8 +2612,14 @@ void gcode_get_destination() {
     else
       destination[i] = current_position[i];
   }
+
   if (code_seen('F') && code_value_linear_units() > 0.0)
     feedrate = code_value_linear_units();
+
+  #if ENABLED(PRINTCOUNTER)
+    if(!DEBUGGING(DRYRUN))
+      print_job_timer.incFilamentUsed(destination[E_AXIS] - current_position[E_AXIS]);
+  #endif
 }
 
 void unknown_command_error() {
@@ -2788,9 +2790,12 @@ inline void gcode_G4() {
 
 #endif //FWRETRACT
 
-#if ENABLED(NOZZLE_CLEAN_FEATURE) && ENABLED(AUTO_BED_LEVELING_FEATURE)
+#if ENABLED(NOZZLE_CLEAN_FEATURE) && HAS_BED_PROBE
   #include "nozzle.h"
 
+  /**
+   * G12: Clean the nozzle
+   */
   inline void gcode_G12() {
     // Don't allow nozzle cleaning without homing first
     if (axis_unhomed_error(true, true, true)) { return; }
@@ -2846,6 +2851,20 @@ inline void gcode_G4() {
   }
 
 #endif // QUICK_HOME
+
+#if ENABLED(NOZZLE_PARK_FEATURE)
+  #include "nozzle.h"
+
+  /**
+   * G27: Park the nozzle
+   */
+  inline void gcode_G27() {
+    // Don't allow nozzle parking without homing first
+    if (axis_unhomed_error(true, true, true)) { return; }
+    uint8_t const z_action = code_seen('P') ? code_value_ushort() : 0;
+    Nozzle::park(z_action);
+  }
+#endif // NOZZLE_PARK_FEATURE
 
 /**
  * G28: Home all axes according to settings
@@ -6972,7 +6991,7 @@ void process_next_command() {
 
       #if ENABLED(NOZZLE_CLEAN_FEATURE) && HAS_BED_PROBE
         case 12:
-          gcode_G12(); // G12: Clean Nozzle
+          gcode_G12(); // G12: Nozzle Clean
           break;
       #endif // NOZZLE_CLEAN_FEATURE
 
@@ -6985,6 +7004,12 @@ void process_next_command() {
           gcode_G21();
           break;
       #endif // INCH_MODE_SUPPORT
+
+      #if ENABLED(NOZZLE_PARK_FEATURE)
+        case 27: // G27: Nozzle Park
+          gcode_G27();
+          break;
+      #endif // NOZZLE_PARK_FEATURE
 
       case 28: // G28: Home all axes, one at a time
         gcode_G28();

@@ -24,6 +24,7 @@
 #define PRINTCOUNTER_H
 
 #include "macros.h"
+#include "language.h"
 #include "stopwatch.h"
 #ifndef __SAM3X8E__
   #include <avr/eeprom.h>
@@ -37,8 +38,9 @@ struct printStatistics {    // 13 bytes
   //const uint8_t magic;    // Magic header, it will always be 0x16
   uint16_t totalPrints;     // Number of prints
   uint16_t finishedPrints;  // Number of complete prints
-  millis_t printTime;       // Total printing time
-  millis_t longestPrint;    // Longest print job - not in use
+  uint32_t printTime;       // Accumulated printing time
+  uint32_t longestPrint;    // Longest successfull print job
+  double   filamentUsed;    // Accumulated filament consumed in mm
 };
 
 class PrintCounter: public Stopwatch {
@@ -106,6 +108,14 @@ class PrintCounter: public Stopwatch {
      * @return bool
      */
     bool isLoaded();
+
+    /**
+     * @brief Increments the total filament used
+     * @details The total filament used counter will be incremented by "amount".
+     *
+     * @param amount The amount of filament used in mm
+     */
+    void incFilamentUsed(double const &amount);
 
     /**
      * @brief Resets the Print Statistics
