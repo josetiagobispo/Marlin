@@ -125,6 +125,7 @@ extern const char echomagic[] PROGMEM;
 
 #define SERIAL_ECHOPAIR(name,value) (serial_echopair_P(PSTR(name),(value)))
 
+void serial_echopair_P(const char* s_P, char v);
 void serial_echopair_P(const char* s_P, int v);
 void serial_echopair_P(const char* s_P, long v);
 void serial_echopair_P(const char* s_P, float v);
@@ -187,37 +188,63 @@ void manage_inactivity(bool ignore_stepper_queue = false);
   #define disable_z() NOOP
 #endif
 
-#if HAS_E0_ENABLE
-  #define  enable_e0() E0_ENABLE_WRITE( E_ENABLE_ON)
-  #define disable_e0() E0_ENABLE_WRITE(!E_ENABLE_ON)
-#else
-  #define  enable_e0() NOOP
-  #define disable_e0() NOOP
-#endif
+#if ENABLED(MIXING_EXTRUDER)
 
-#if (EXTRUDERS > 1) && HAS_E1_ENABLE
-  #define  enable_e1() E1_ENABLE_WRITE( E_ENABLE_ON)
-  #define disable_e1() E1_ENABLE_WRITE(!E_ENABLE_ON)
-#else
+  /**
+   * Mixing steppers synchronize their enable (and direction) together
+   */
+  #if MIXING_STEPPERS > 3
+    #define  enable_e0() { E0_ENABLE_WRITE( E_ENABLE_ON); E1_ENABLE_WRITE( E_ENABLE_ON); E2_ENABLE_WRITE( E_ENABLE_ON); E3_ENABLE_WRITE( E_ENABLE_ON); }
+    #define disable_e0() { E0_ENABLE_WRITE(!E_ENABLE_ON); E1_ENABLE_WRITE(!E_ENABLE_ON); E2_ENABLE_WRITE(!E_ENABLE_ON); E3_ENABLE_WRITE(!E_ENABLE_ON); }
+  #elif MIXING_STEPPERS > 2
+    #define  enable_e0() { E0_ENABLE_WRITE( E_ENABLE_ON); E1_ENABLE_WRITE( E_ENABLE_ON); E2_ENABLE_WRITE( E_ENABLE_ON); }
+    #define disable_e0() { E0_ENABLE_WRITE(!E_ENABLE_ON); E1_ENABLE_WRITE(!E_ENABLE_ON); E2_ENABLE_WRITE(!E_ENABLE_ON); }
+  #else
+    #define  enable_e0() { E0_ENABLE_WRITE( E_ENABLE_ON); E1_ENABLE_WRITE( E_ENABLE_ON); }
+    #define disable_e0() { E0_ENABLE_WRITE(!E_ENABLE_ON); E1_ENABLE_WRITE(!E_ENABLE_ON); }
+  #endif
   #define  enable_e1() NOOP
   #define disable_e1() NOOP
-#endif
-
-#if (EXTRUDERS > 2) && HAS_E2_ENABLE
-  #define  enable_e2() E2_ENABLE_WRITE( E_ENABLE_ON)
-  #define disable_e2() E2_ENABLE_WRITE(!E_ENABLE_ON)
-#else
   #define  enable_e2() NOOP
   #define disable_e2() NOOP
-#endif
-
-#if (EXTRUDERS > 3) && HAS_E3_ENABLE
-  #define  enable_e3() E3_ENABLE_WRITE( E_ENABLE_ON)
-  #define disable_e3() E3_ENABLE_WRITE(!E_ENABLE_ON)
-#else
   #define  enable_e3() NOOP
   #define disable_e3() NOOP
-#endif
+
+#else // !MIXING_EXTRUDER
+
+  #if HAS_E0_ENABLE
+    #define  enable_e0() E0_ENABLE_WRITE( E_ENABLE_ON)
+    #define disable_e0() E0_ENABLE_WRITE(!E_ENABLE_ON)
+  #else
+    #define  enable_e0() NOOP
+    #define disable_e0() NOOP
+  #endif
+
+  #if E_STEPPERS > 1 && HAS_E1_ENABLE
+    #define  enable_e1() E1_ENABLE_WRITE( E_ENABLE_ON)
+    #define disable_e1() E1_ENABLE_WRITE(!E_ENABLE_ON)
+  #else
+    #define  enable_e1() NOOP
+    #define disable_e1() NOOP
+  #endif
+
+  #if E_STEPPERS > 2 && HAS_E2_ENABLE
+    #define  enable_e2() E2_ENABLE_WRITE( E_ENABLE_ON)
+    #define disable_e2() E2_ENABLE_WRITE(!E_ENABLE_ON)
+  #else
+    #define  enable_e2() NOOP
+    #define disable_e2() NOOP
+  #endif
+
+  #if E_STEPPERS > 3 && HAS_E3_ENABLE
+    #define  enable_e3() E3_ENABLE_WRITE( E_ENABLE_ON)
+    #define disable_e3() E3_ENABLE_WRITE(!E_ENABLE_ON)
+  #else
+    #define  enable_e3() NOOP
+    #define disable_e3() NOOP
+  #endif
+
+#endif // !MIXING_EXTRUDER
 
 /**
  * The axis order in all axis related arrays is X, Y, Z, E
@@ -290,8 +317,18 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
   #define CRITICAL_SECTION_END    SREG = _sreg;
 #endif
 
+/**
+ * Feedrate scaling and conversion
+ */
+extern int feedrate_percentage;
+
+#define MMM_TO_MMS(MM_M) ((MM_M)/60.0)
+#define MMS_TO_MMM(MM_S) ((MM_S)*60.0)
+#define MMM_SCALED(MM_M) ((MM_M)*feedrate_percentage/100.0)
+#define MMS_SCALED(MM_S) MMM_SCALED(MM_S)
+#define MMM_TO_MMS_SCALED(MM_M) (MMS_SCALED(MMM_TO_MMS(MM_M)))
+
 extern bool axis_relative_modes[];
-extern int feedrate_multiplier;
 extern bool volumetric_enabled;
 extern int extruder_multiplier[EXTRUDERS]; // sets extrude multiply factor (in percent) for each extruder individually
 extern float filament_size[EXTRUDERS]; // cross-sectional area of filament (in millimeters), typically around 1.75 or 2.85, 0 disables the volumetric calculations for the extruder.
@@ -379,7 +416,7 @@ float code_value_temp_diff();
   extern bool autoretract_enabled;
   extern bool retracted[EXTRUDERS]; // extruder[n].retracted
   extern float retract_length, retract_length_swap, retract_feedrate_mm_s, retract_zlift;
-  extern float retract_recover_length, retract_recover_length_swap, retract_recover_feedrate;
+  extern float retract_recover_length, retract_recover_length_swap, retract_recover_feedrate_mm_s;
 #endif
 
 // Print job timer
@@ -394,6 +431,10 @@ extern uint8_t active_extruder;
 
 #if HAS_TEMP_HOTEND || HAS_TEMP_BED
   void print_heaterstates();
+#endif
+
+#if ENABLED(MIXING_EXTRUDER)
+  extern float mixing_factor[MIXING_STEPPERS];
 #endif
 
 void calculate_volumetric_multipliers();

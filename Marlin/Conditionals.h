@@ -371,6 +371,21 @@
   #endif //!MANUAL_HOME_POSITIONS
 
   /**
+   * The BLTouch Probe emulates a servo probe
+   */
+  #if ENABLED(BLTOUCH)
+    #undef Z_ENDSTOP_SERVO_NR
+    #undef Z_SERVO_ANGLES
+    #define Z_ENDSTOP_SERVO_NR 0
+    #define Z_SERVO_ANGLES {10,90} // For BLTouch 10=deploy, 90=retract
+    #undef DEACTIVATE_SERVOS_AFTER_MOVE
+    #if ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
+      #undef Z_MIN_ENDSTOP_INVERTING
+      #define Z_MIN_ENDSTOP_INVERTING false
+    #endif
+  #endif
+
+  /**
    * Auto Bed Leveling and Z Probe Repeatability Test
    */
   #define HAS_PROBING_PROCEDURE (ENABLED(AUTO_BED_LEVELING_FEATURE) || ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST))
@@ -563,18 +578,52 @@
   #define HAS_PID_FOR_BOTH (ENABLED(PIDTEMP) && ENABLED(PIDTEMPBED))
 
   /**
-   * SINGLENOZZLE needs to differentiate EXTRUDERS and HOTENDS
-   * And all "extruders" are in the same place.
+   * Extruders have some combination of stepper motors and hotends
+   * so we separate these concepts into the defines:
+   *
+   *  EXTRUDERS    - Number of Selectable Tools
+   *  HOTENDS      - Number of hotends, whether connected or separate
+   *  E_STEPPERS   - Number of actual E stepper motors
+   *  TOOL_E_INDEX - Index to use when getting/setting the tool state
+   *  
    */
-  #if ENABLED(SINGLENOZZLE)
-    #define HOTENDS 1
+  #if ENABLED(SINGLENOZZLE)             // One hotend, multi-extruder
+    #define HOTENDS      1
+    #define E_STEPPERS   EXTRUDERS
+    #define TOOL_E_INDEX current_block->active_extruder
     #undef TEMP_SENSOR_1_AS_REDUNDANT
     #undef HOTEND_OFFSET_X
     #undef HOTEND_OFFSET_Y
-    #define HOTEND_OFFSET_X { 0 }
-    #define HOTEND_OFFSET_Y { 0 }
-  #else
-    #define HOTENDS EXTRUDERS
+  #elif ENABLED(SWITCHING_EXTRUDER)     // One E stepper, unified E axis, two hotends
+    #define HOTENDS      EXTRUDERS
+    #define E_STEPPERS   1
+    #define TOOL_E_INDEX 0
+    #ifndef HOTEND_OFFSET_Z
+      #define HOTEND_OFFSET_Z { 0 }
+    #endif
+  #elif ENABLED(MIXING_EXTRUDER)        // Multi-stepper, unified E axis, one hotend
+    #define HOTENDS      1
+    #define E_STEPPERS   MIXING_STEPPERS
+    #define TOOL_E_INDEX 0
+  #else                                 // One stepper, E axis, and hotend per tool
+    #define HOTENDS      EXTRUDERS
+    #define E_STEPPERS   EXTRUDERS
+    #define TOOL_E_INDEX current_block->active_extruder
+  #endif
+
+  /**
+   * Default hotend offsets, if not defined
+   */
+  #if HOTENDS > 1
+    #ifndef HOTEND_OFFSET_X
+      #define HOTEND_OFFSET_X { 0 } // X offsets for each extruder
+    #endif
+    #ifndef HOTEND_OFFSET_Y
+      #define HOTEND_OFFSET_Y { 0 } // Y offsets for each extruder
+    #endif
+    #if !defined(HOTEND_OFFSET_Z) && (ENABLED(DUAL_X_CARRIAGE) || ENABLED(SWITCHING_EXTRUDER))
+      #define HOTEND_OFFSET_Z { 0 }
+    #endif
   #endif
 
   /**
@@ -599,35 +648,33 @@
     #define _XMAX_ 101
     #define _YMAX_ 201
     #define _ZMAX_ 301
-    const bool Z2_MAX_ENDSTOP_INVERTING =
-      #if Z2_USE_ENDSTOP == _XMAX_
-        X_MAX_ENDSTOP_INVERTING
-        #define Z2_MAX_PIN X_MAX_PIN
-        #undef USE_XMAX_PLUG
-      #elif Z2_USE_ENDSTOP == _YMAX_
-        Y_MAX_ENDSTOP_INVERTING
-        #define Z2_MAX_PIN Y_MAX_PIN
-        #undef USE_YMAX_PLUG
-      #elif Z2_USE_ENDSTOP == _ZMAX_
-        Z_MAX_ENDSTOP_INVERTING
-        #define Z2_MAX_PIN Z_MAX_PIN
-        #undef USE_ZMAX_PLUG
-      #elif Z2_USE_ENDSTOP == _XMIN_
-        X_MIN_ENDSTOP_INVERTING
-        #define Z2_MAX_PIN X_MIN_PIN
-        #undef USE_XMIN_PLUG
-      #elif Z2_USE_ENDSTOP == _YMIN_
-        Y_MIN_ENDSTOP_INVERTING
-        #define Z2_MAX_PIN Y_MIN_PIN
-        #undef USE_YMIN_PLUG
-      #elif Z2_USE_ENDSTOP == _ZMIN_
-        Z_MIN_ENDSTOP_INVERTING
-        #define Z2_MAX_PIN Z_MIN_PIN
-        #undef USE_ZMIN_PLUG
-      #else
-        0
-      #endif
-    ;
+    #if Z2_USE_ENDSTOP == _XMAX_
+      #define Z2_MAX_ENDSTOP_INVERTING X_MAX_ENDSTOP_INVERTING
+      #define Z2_MAX_PIN X_MAX_PIN
+      #undef USE_XMAX_PLUG
+    #elif Z2_USE_ENDSTOP == _YMAX_
+      #define Z2_MAX_ENDSTOP_INVERTING Y_MAX_ENDSTOP_INVERTING
+      #define Z2_MAX_PIN Y_MAX_PIN
+      #undef USE_YMAX_PLUG
+    #elif Z2_USE_ENDSTOP == _ZMAX_
+      #define Z2_MAX_ENDSTOP_INVERTING Z_MAX_ENDSTOP_INVERTING
+      #define Z2_MAX_PIN Z_MAX_PIN
+      #undef USE_ZMAX_PLUG
+    #elif Z2_USE_ENDSTOP == _XMIN_
+      #define Z2_MAX_ENDSTOP_INVERTING X_MIN_ENDSTOP_INVERTING
+      #define Z2_MAX_PIN X_MIN_PIN
+      #undef USE_XMIN_PLUG
+    #elif Z2_USE_ENDSTOP == _YMIN_
+      #define Z2_MAX_ENDSTOP_INVERTING Y_MIN_ENDSTOP_INVERTING
+      #define Z2_MAX_PIN Y_MIN_PIN
+      #undef USE_YMIN_PLUG
+    #elif Z2_USE_ENDSTOP == _ZMIN_
+      #define Z2_MAX_ENDSTOP_INVERTING Z_MIN_ENDSTOP_INVERTING
+      #define Z2_MAX_PIN Z_MIN_PIN
+      #undef USE_ZMIN_PLUG
+    #else
+      #define Z2_MAX_ENDSTOP_INVERTING false
+    #endif
   #endif
 
   /**

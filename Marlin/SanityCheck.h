@@ -163,6 +163,42 @@
 #endif
 
 /**
+ * Only one type of extruder allowed
+ */
+#if (ENABLED(SWITCHING_EXTRUDER) && (ENABLED(SINGLENOZZLE) || ENABLED(MIXING_EXTRUDER))) \
+  || (ENABLED(SINGLENOZZLE) && ENABLED(MIXING_EXTRUDER))
+    #error "Please define only one type of extruder: SINGLENOZZLE, SWITCHING_EXTRUDER, or MIXING_EXTRUDER."
+#endif
+
+/**
+ * Single Stepper Dual Extruder with switching servo
+ */
+#if ENABLED(SWITCHING_EXTRUDER)
+  #if ENABLED(DUAL_X_CARRIAGE)
+    #error "SINGLENOZZLE and DUAL_X_CARRIAGE are incompatible."
+  #elif EXTRUDERS != 2
+    #error "SWITCHING_EXTRUDER requires exactly 2 EXTRUDERS."
+  #elif NUM_SERVOS < 1
+    #error "SWITCHING_EXTRUDER requires NUM_SERVOS >= 1."
+  #endif
+#endif
+
+/**
+ * Mixing Extruder requirements
+ */
+#if ENABLED(MIXING_EXTRUDER)
+  #if EXTRUDERS > 1
+    #error "MIXING_EXTRUDER currently only supports one extruder."
+  #endif
+  #if MIXING_STEPPERS < 2
+    #error "You must set MIXING_STEPPERS >= 2 for a mixing extruder."
+  #endif
+  #if ENABLED(FILAMENT_SENSOR)
+    #error "MIXING_EXTRUDER is incompatible with FILAMENT_SENSOR. Comment out this line to use it anyway."
+  #endif
+#endif
+
+/**
  * Limited number of servos
  */
 #if defined(NUM_SERVOS) && NUM_SERVOS > 0
@@ -202,8 +238,8 @@
     #error "MESH_BED_LEVELING does not yet support DELTA printers."
   #elif ENABLED(AUTO_BED_LEVELING_FEATURE)
     #error "Select AUTO_BED_LEVELING_FEATURE or MESH_BED_LEVELING, not both."
-  #elif MESH_NUM_X_POINTS > 7 || MESH_NUM_Y_POINTS > 7
-    #error "MESH_NUM_X_POINTS and MESH_NUM_Y_POINTS need to be less than 8."
+  #elif MESH_NUM_X_POINTS > 9 || MESH_NUM_Y_POINTS > 9
+    #error "MESH_NUM_X_POINTS and MESH_NUM_Y_POINTS must be less than 10."
   #endif
 #elif ENABLED(MANUAL_BED_LEVELING)
   #error "MESH_BED_LEVELING is required for MANUAL_BED_LEVELING."
@@ -681,6 +717,8 @@
   #error "ABS_PREHEAT_HPB_TEMP is now PREHEAT_2_TEMP_BED. Please update your configuration."
 #elif defined(ABS_PREHEAT_FAN_SPEED)
   #error "ABS_PREHEAT_FAN_SPEED is now PREHEAT_2_FAN_SPEED. Please update your configuration."
+#elif defined(ENDSTOPS_ONLY_FOR_HOMING)
+  #error "ENDSTOPS_ONLY_FOR_HOMING is deprecated. Use (disable) ENDSTOPS_ALWAYS_ON_DEFAULT instead."
 #endif
 
 /**
