@@ -539,6 +539,10 @@
 
 // X and Y axis travel speed (mm/m) between probes
 #define XY_PROBE_SPEED 8000
+// Speed for the first approach when probing
+#define Z_PROBE_SPEED_FAST HOMING_FEEDRATE_Z
+// Speed for the second approach when probing
+#define Z_PROBE_SPEED_SLOW (Z_PROBE_SPEED_FAST / 2)
 
 // Allen key retractable z-probe as seen on many Kossel delta printers - http://reprap.org/wiki/Kossel#Automatic_bed_leveling_probe
 // Deploys by touching z-axis belt. Retracts by pushing the probe down. Uses Z_MIN_PIN.
@@ -833,17 +837,13 @@
   #define Z_SAFE_HOMING_Y_POINT ((Y_MIN_POS + Y_MAX_POS) / 2)    // Y point for Z homing when homing all axis (G28).
 #endif
 
+// Delta only homes to Z
+#define HOMING_FEEDRATE_Z  (60*60)
 
+//
+// MOVEMENT SETTINGS
 // @section motion
-
-/**
- * MOVEMENT SETTINGS
- */
-
-// delta homing speeds must be the same on xyz
-#define HOMING_FEEDRATE_XYZ (60*60)
-#define HOMING_FEEDRATE_E 0
-#define HOMING_FEEDRATE { HOMING_FEEDRATE_XYZ, HOMING_FEEDRATE_XYZ, HOMING_FEEDRATE_XYZ, HOMING_FEEDRATE_E }
+//
 
 // variables to calculate steps
 #define XYZ_FULL_STEPS_PER_ROTATION 200
@@ -853,6 +853,8 @@
 
 // delta speeds must be the same on xyz
 #define XYZ_STEPS (XYZ_FULL_STEPS_PER_ROTATION * XYZ_MICROSTEPS / double(XYZ_BELT_PITCH) / double(XYZ_PULLEY_TEETH))
+
+// default settings
 
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {XYZ_STEPS, XYZ_STEPS, XYZ_STEPS, 158}   // default steps per unit for PowerWasp
 #define DEFAULT_MAX_FEEDRATE          {200, 200, 200, 25}    // (mm/sec)
@@ -988,12 +990,12 @@
   // Number of pattern repetitions
   #define NOZZLE_CLEAN_STROKES  12
 
-  //                            {  X,  Y,               Z}
-  #define NOZZLE_CLEAN_START_PT { 30, 30, (Z_MIN_POS + 5)}
-  #define NOZZLE_CLEAN_END_PT   {100, 60, (Z_MIN_POS + 5)}
+  // Specify positions as { X, Y, Z }
+  #define NOZZLE_CLEAN_START_POINT { 30, 30, (Z_MIN_POS + 1)}
+  #define NOZZLE_CLEAN_END_POINT   {100, 60, (Z_MIN_POS + 1)}
 
-  // Moves the nozzle to the parked position
-  #define NOZZLE_CLEAN_PARK
+  // Moves the nozzle to the initial position
+  #define NOZZLE_CLEAN_GOBACK
 #endif
 
 //
@@ -1266,7 +1268,7 @@
 // is pressed, a value of 10.0 means 10mm per click.
 //
 //#define REPRAPWORLD_KEYPAD
-//#define REPRAPWORLD_KEYPAD_MOVE_STEP 10.0
+//#define REPRAPWORLD_KEYPAD_MOVE_STEP 1.0
 
 //
 // RigidBot Panel V1.0

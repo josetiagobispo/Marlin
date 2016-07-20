@@ -44,15 +44,18 @@
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 
-
 #include "Configuration.h"
 #include "pins.h"
+
+#include "utility.h"
 
 #ifndef SANITYCHECK_H
   #error "Your Configuration.h and Configuration_adv.h files are outdated!"
 #endif
 
 #include "Arduino.h"
+
+#include "enum.h"
 
 typedef unsigned long millis_t;
 
@@ -250,19 +253,7 @@ void manage_inactivity(bool ignore_stepper_queue = false);
  * The axis order in all axis related arrays is X, Y, Z, E
  */
 #define NUM_AXIS 4
-
-/**
- * Axis indices as enumerated constants
- *
- * A_AXIS and B_AXIS are used by COREXY printers
- * X_HEAD and Y_HEAD is used for systems that don't have a 1:1 relationship between X_AXIS and X Head movement, like CoreXY bots.
- */
-enum AxisEnum {NO_AXIS = -1, X_AXIS = 0, A_AXIS = 0, Y_AXIS = 1, B_AXIS = 1, Z_AXIS = 2, C_AXIS = 2, E_AXIS = 3, X_HEAD = 4, Y_HEAD = 5, Z_HEAD = 5};
-
 #define _AXIS(AXIS) AXIS ##_AXIS
-
-typedef enum { LINEARUNIT_MM = 0, LINEARUNIT_INCH = 1 } LinearUnit;
-typedef enum { TEMPUNIT_C = 0, TEMPUNIT_K = 1, TEMPUNIT_F = 2 } TempUnit;
 
 void enable_all_steppers();
 void disable_all_steppers();
@@ -279,18 +270,6 @@ void quickstop_stepper();
   void handle_filament_runout();
 #endif
 
-/**
- * Debug flags - not yet widely applied
- */
-enum DebugFlags {
-  DEBUG_NONE          = 0,
-  DEBUG_ECHO          = _BV(0), ///< Echo commands in order as they are processed
-  DEBUG_INFO          = _BV(1), ///< Print messages for code that has debug output
-  DEBUG_ERRORS        = _BV(2), ///< Not implemented
-  DEBUG_DRYRUN        = _BV(3), ///< Ignore temperature setting and E movement commands
-  DEBUG_COMMUNICATION = _BV(4), ///< Not implemented
-  DEBUG_LEVELING      = _BV(5)  ///< Print detailed output for homing and leveling
-};
 extern uint8_t marlin_debug_flags;
 #define DEBUGGING(F) (marlin_debug_flags & (DEBUG_## F))
 
@@ -400,11 +379,6 @@ float code_value_temp_diff();
 #endif
 
 #if ENABLED(FILAMENT_CHANGE_FEATURE)
-  enum FilamentChangeMenuResponse {
-    FILAMENT_CHANGE_RESPONSE_WAIT_FOR,
-    FILAMENT_CHANGE_RESPONSE_EXTRUDE_MORE,
-    FILAMENT_CHANGE_RESPONSE_RESUME_PRINT
-  };
   extern FilamentChangeMenuResponse filament_change_menu_response;
 #endif
 
@@ -450,6 +424,14 @@ void calculate_volumetric_multipliers();
   #endif
 #endif
 
-void safe_delay(uint16_t del);
+/**
+ * Blocking movement and shorthand functions
+ */
+static void do_blocking_move_to(float x, float y, float z, float fr_mm_m=0.0);
+static void do_blocking_move_to_axis_pos(AxisEnum axis, float where, float fr_mm_m=0.0);
+static void do_blocking_move_to_x(float x, float fr_mm_m=0.0);
+static void do_blocking_move_to_y(float y);
+static void do_blocking_move_to_z(float z, float fr_mm_m=0.0);
+static void do_blocking_move_to_xy(float x, float y, float fr_mm_m=0.0);
 
 #endif //MARLIN_H

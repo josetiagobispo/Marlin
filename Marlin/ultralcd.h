@@ -73,16 +73,6 @@
     void lcd_ignore_click(bool b=true);
 
     #if ENABLED(FILAMENT_CHANGE_FEATURE)
-      enum FilamentChangeMessage {
-        FILAMENT_CHANGE_MESSAGE_INIT,
-        FILAMENT_CHANGE_MESSAGE_UNLOAD,
-        FILAMENT_CHANGE_MESSAGE_INSERT,
-        FILAMENT_CHANGE_MESSAGE_LOAD,
-        FILAMENT_CHANGE_MESSAGE_EXTRUDE,
-        FILAMENT_CHANGE_MESSAGE_OPTION,
-        FILAMENT_CHANGE_MESSAGE_RESUME,
-        FILAMENT_CHANGE_MESSAGE_STATUS
-      };
       void lcd_filament_change_show_message(FilamentChangeMessage message);
     #endif // FILAMENT_CHANGE_FEATURE
 
@@ -127,11 +117,23 @@
 
     #define REPRAPWORLD_KEYPAD_MOVE_Z_DOWN  (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_F3)
     #define REPRAPWORLD_KEYPAD_MOVE_Z_UP    (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_F2)
+    #define REPRAPWORLD_KEYPAD_MOVE_MENU    (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_F1)
     #define REPRAPWORLD_KEYPAD_MOVE_Y_DOWN  (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_DOWN)
     #define REPRAPWORLD_KEYPAD_MOVE_X_RIGHT (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_RIGHT)
     #define REPRAPWORLD_KEYPAD_MOVE_HOME    (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_MIDDLE)
     #define REPRAPWORLD_KEYPAD_MOVE_Y_UP    (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_UP)
     #define REPRAPWORLD_KEYPAD_MOVE_X_LEFT  (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_LEFT)
+
+    #define REPRAPWORLD_KEYPAD_PRESSED      (buttons_reprapworld_keypad & ( \
+                                              EN_REPRAPWORLD_KEYPAD_F3 | \
+                                              EN_REPRAPWORLD_KEYPAD_F2 | \
+                                              EN_REPRAPWORLD_KEYPAD_F1 | \
+                                              EN_REPRAPWORLD_KEYPAD_DOWN | \
+                                              EN_REPRAPWORLD_KEYPAD_RIGHT | \
+                                              EN_REPRAPWORLD_KEYPAD_MIDDLE | \
+                                              EN_REPRAPWORLD_KEYPAD_UP | \
+                                              EN_REPRAPWORLD_KEYPAD_LEFT) \
+                                            )
 
   #endif // REPRAPWORLD_KEYPAD
 

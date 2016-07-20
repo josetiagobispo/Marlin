@@ -499,6 +499,10 @@
 
 // X and Y axis travel speed (mm/m) between probes
 #define XY_PROBE_SPEED 8000
+// Speed for the first approach when probing
+#define Z_PROBE_SPEED_FAST HOMING_FEEDRATE_Z
+// Speed for the second approach when probing
+#define Z_PROBE_SPEED_SLOW (Z_PROBE_SPEED_FAST / 2)
 
 //
 // Allen Key Probe is defined in the Delta example configurations.
@@ -749,14 +753,14 @@
   #define Z_SAFE_HOMING_Y_POINT ((Y_MIN_POS + Y_MAX_POS) / 2)    // Y point for Z homing when homing all axis (G28).
 #endif
 
+// Homing speeds (mm/m)
+#define HOMING_FEEDRATE_XY (50*60)
+#define HOMING_FEEDRATE_Z  (8*60)
 
+//
+// MOVEMENT SETTINGS
 // @section motion
-
-/**
- * MOVEMENT SETTINGS
- */
-
-#define HOMING_FEEDRATE {50*60, 50*60, 8*60, 0}  // set the homing speeds (mm/min)
+//
 
 // default settings
 
@@ -894,12 +898,12 @@
   // Number of pattern repetitions
   #define NOZZLE_CLEAN_STROKES  12
 
-  //                            {  X,  Y,               Z}
-  #define NOZZLE_CLEAN_START_PT { 30, 30, (Z_MIN_POS + 5)}
-  #define NOZZLE_CLEAN_END_PT   {100, 60, (Z_MIN_POS + 5)}
+  // Specify positions as { X, Y, Z }
+  #define NOZZLE_CLEAN_START_POINT { 30, 30, (Z_MIN_POS + 1)}
+  #define NOZZLE_CLEAN_END_POINT   {100, 60, (Z_MIN_POS + 1)}
 
-  // Moves the nozzle to the parked position
-  #define NOZZLE_CLEAN_PARK
+  // Moves the nozzle to the initial position
+  #define NOZZLE_CLEAN_GOBACK
 #endif
 
 //

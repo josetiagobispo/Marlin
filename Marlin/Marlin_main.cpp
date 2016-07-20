@@ -64,6 +64,7 @@
 #include "language.h"
 #include "pins_arduino.h"
 #include "math.h"
+#include "nozzle.h"
 
 #if ENABLED(USE_WATCHDOG)
   #include "watchdog.h"
@@ -319,7 +320,14 @@ static uint8_t cmd_queue_index_r = 0,
  * Feed rates are often configured with mm/m
  * but the planner and stepper like mm/s units.
  */
-const float homing_feedrate_mm_m[] = HOMING_FEEDRATE;
+const float homing_feedrate_mm_m[] = {
+  #if ENABLED(DELTA)
+    HOMING_FEEDRATE_Z, HOMING_FEEDRATE_Z,
+  #else
+    HOMING_FEEDRATE_XY, HOMING_FEEDRATE_XY,
+  #endif
+  HOMING_FEEDRATE_Z, 0
+};
 static float feedrate_mm_m = 1500.0, saved_feedrate_mm_m;
 int feedrate_percentage = 100, saved_feedrate_percentage;
 
@@ -549,17 +557,6 @@ static bool send_ok[BUFSIZE];
 #endif
 
 #if ENABLED(HOST_KEEPALIVE_FEATURE)
-
-  // States for managing Marlin and host communication
-  // Marlin sends messages if blocked or busy
-  enum MarlinBusyState {
-    NOT_BUSY,           // Not in a handler
-    IN_HANDLER,         // Processing a GCode
-    IN_PROCESS,         // Known to be blocking command input (as in G29)
-    PAUSED_FOR_USER,    // Blocking pending any input
-    PAUSED_FOR_INPUT    // Blocking pending text input (concept)
-  };
-
   static MarlinBusyState busy_state = NOT_BUSY;
   static millis_t next_busy_signal_ms = 0;
   uint8_t host_keepalive_interval = DEFAULT_KEEPALIVE_INTERVAL;
@@ -1642,7 +1639,7 @@ static void set_axis_is_at_home(AxisEnum axis) {
 /**
  * Some planner shorthand inline functions
  */
-inline float set_homing_bump_feedrate(AxisEnum axis) {
+inline float get_homing_bump_feedrate(AxisEnum axis) {
   const int homing_bump_divisor[] = HOMING_BUMP_DIVISOR;
   int hbd = homing_bump_divisor[axis];
   if (hbd < 1) {
@@ -1650,8 +1647,7 @@ inline float set_homing_bump_feedrate(AxisEnum axis) {
     SERIAL_ECHO_START;
     SERIAL_ECHOLNPGM("Warning: Homing Bump Divisor < 1");
   }
-  feedrate_mm_m = homing_feedrate_mm_m[axis] / hbd;
-  return feedrate_mm_m;
+  return homing_feedrate_mm_m[axis] / hbd;
 }
 //
 // line_to_current_position
@@ -1661,9 +1657,20 @@ inline float set_homing_bump_feedrate(AxisEnum axis) {
 inline void line_to_current_position() {
   planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], MMM_TO_MMS(feedrate_mm_m), active_extruder);
 }
+
 inline void line_to_z(float zPosition) {
   planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], MMM_TO_MMS(feedrate_mm_m), active_extruder);
 }
+
+inline void line_to_axis_pos(AxisEnum axis, float where, float fr_mm_m = 0.0) {
+  float old_feedrate_mm_m = feedrate_mm_m;
+  current_position[axis] = where;
+  feedrate_mm_m = (fr_mm_m != 0.0) ? fr_mm_m : homing_feedrate_mm_m[axis];
+  planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], MMM_TO_MMS(feedrate_mm_m), active_extruder);
+  stepper.synchronize();
+  feedrate_mm_m = old_feedrate_mm_m;
+}
+
 //
 // line_to_destination
 // Move the planner, not necessarily synced with current_position
@@ -1708,7 +1715,7 @@ inline void set_destination_to_current() { memcpy(destination, current_position,
  *  Plan a move to (X, Y, Z) and set the current_position
  *  The final current_position may not be the one that was requested
  */
-static void do_blocking_move_to(float x, float y, float z, float fr_mm_m = 0.0) {
+void do_blocking_move_to(float x, float y, float z, float fr_mm_m /*=0.0*/) {
   float old_feedrate_mm_m = feedrate_mm_m;
 
   #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -1756,26 +1763,14 @@ static void do_blocking_move_to(float x, float y, float z, float fr_mm_m = 0.0) 
   feedrate_mm_m = old_feedrate_mm_m;
 }
 
-inline void do_blocking_move_to_axis_pos(AxisEnum axis, float where, float fr_mm_m = 0.0) {
+void do_blocking_move_to_axis_pos(AxisEnum axis, float where, float fr_mm_m/*=0.0*/) {
   current_position[axis] = where;
   do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], fr_mm_m);
 }
-
-inline void do_blocking_move_to_x(float x, float fr_mm_m = 0.0) {
-  do_blocking_move_to(x, current_position[Y_AXIS], current_position[Z_AXIS], fr_mm_m);
-}
-
-inline void do_blocking_move_to_y(float y) {
-  do_blocking_move_to(current_position[X_AXIS], y, current_position[Z_AXIS]);
-}
-
-inline void do_blocking_move_to_xy(float x, float y, float fr_mm_m = 0.0) {
-  do_blocking_move_to(x, y, current_position[Z_AXIS], fr_mm_m);
-}
-
-inline void do_blocking_move_to_z(float z, float fr_mm_m = 0.0) {
-  do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], z, fr_mm_m);
-}
+void do_blocking_move_to_x(float x, float fr_mm_m/*=0.0*/) { do_blocking_move_to_axis_pos(X_AXIS, x, fr_mm_m); }
+void do_blocking_move_to_y(float y) { do_blocking_move_to_axis_pos(Y_AXIS, y); }
+void do_blocking_move_to_z(float z, float fr_mm_m/*=0.0*/) { do_blocking_move_to_axis_pos(Z_AXIS, z, fr_mm_m); }
+void do_blocking_move_to_xy(float x, float y, float fr_mm_m/*=0.0*/) { do_blocking_move_to(x, y, current_position[Z_AXIS], fr_mm_m); }
 
 //
 // Prepare to do endstop or probe moves
@@ -2120,85 +2115,35 @@ static void clean_up_after_endstop_or_probe_move() {
   // at the height where the probe triggered.
   static float run_z_probe() {
 
-    float old_feedrate_mm_m = feedrate_mm_m;
-
     // Prevent stepper_inactive_time from running out and EXTRUDER_RUNOUT_PREVENT from extruding
     refresh_cmd_timeout();
 
-    #if ENABLED(DELTA)
+    #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+      planner.bed_level_matrix.set_to_identity();
+    #endif
 
-      float start_z = current_position[Z_AXIS];
-      long start_steps = stepper.position(Z_AXIS);
+    current_position[Z_AXIS] = -(Z_MAX_LENGTH + 10);
+    do_blocking_move_to_z(current_position[Z_AXIS], Z_PROBE_SPEED_FAST);
+    endstops.hit_on_purpose(); // clear endstop hit flags
+    // Get the current stepper position after bumping an endstop
+    current_position[Z_AXIS] = stepper.get_axis_position_mm(Z_AXIS);
+    SYNC_PLAN_POSITION_KINEMATIC(); // tell the planner where we are      feedrate_mm_m = homing_feedrate_mm_m[Z_AXIS];
 
-      #if ENABLED(DEBUG_LEVELING_FEATURE)
-        if (DEBUGGING(LEVELING)) DEBUG_POS("run_z_probe (DELTA) 1", current_position);
-      #endif
+    // move up the retract distance
+    current_position[Z_AXIS] += home_bump_mm(Z_AXIS);
+    do_blocking_move_to_z(current_position[Z_AXIS], Z_PROBE_SPEED_FAST);
 
-      // move down slowly until you find the bed
-      feedrate_mm_m = homing_feedrate_mm_m[Z_AXIS] / 4;
-      destination[Z_AXIS] = -10;
-      prepare_move_to_destination_raw(); // this will also set_current_to_destination
-      stepper.synchronize();
-      endstops.hit_on_purpose(); // clear endstop hit flags
+    // move back down slowly to find bed
+    current_position[Z_AXIS] -= home_bump_mm(Z_AXIS) * 2;
+    do_blocking_move_to_z(current_position[Z_AXIS], Z_PROBE_SPEED_SLOW);
+    endstops.hit_on_purpose(); // clear endstop hit flags
+    // Get the current stepper position after bumping an endstop
+    current_position[Z_AXIS] = stepper.get_axis_position_mm(Z_AXIS);
+    SYNC_PLAN_POSITION_KINEMATIC(); // tell the planner where we are
 
-      /**
-       * We have to let the planner know where we are right now as it
-       * is not where we said to go.
-       */
-      long stop_steps = stepper.position(Z_AXIS);
-      float mm = start_z - float(start_steps - stop_steps) / planner.axis_steps_per_mm[Z_AXIS];
-      current_position[Z_AXIS] = mm;
-
-      #if ENABLED(DEBUG_LEVELING_FEATURE)
-        if (DEBUGGING(LEVELING)) DEBUG_POS("run_z_probe (DELTA) 2", current_position);
-      #endif
-
-    #else // !DELTA
-
-      #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-        planner.bed_level_matrix.set_to_identity();
-      #endif
-
-      feedrate_mm_m = homing_feedrate_mm_m[Z_AXIS];
-
-      // Move down until the Z probe (or endstop?) is triggered
-      float zPosition = -(Z_MAX_LENGTH + 10);
-      line_to_z(zPosition);
-      stepper.synchronize();
-
-      // Tell the planner where we ended up - Get this from the stepper handler
-      zPosition = stepper.get_axis_position_mm(Z_AXIS);
-      planner.set_position_mm(
-        current_position[X_AXIS], current_position[Y_AXIS], zPosition,
-        current_position[E_AXIS]
-      );
-
-      // move up the retract distance
-      zPosition += home_bump_mm(Z_AXIS);
-      line_to_z(zPosition);
-      stepper.synchronize();
-      endstops.hit_on_purpose(); // clear endstop hit flags
-
-      // move back down slowly to find bed
-      set_homing_bump_feedrate(Z_AXIS);
-
-      zPosition -= home_bump_mm(Z_AXIS) * 2;
-      line_to_z(zPosition);
-      stepper.synchronize();
-      endstops.hit_on_purpose(); // clear endstop hit flags
-
-      // Get the current stepper position after bumping an endstop
-      current_position[Z_AXIS] = stepper.get_axis_position_mm(Z_AXIS);
-
-      #if ENABLED(DEBUG_LEVELING_FEATURE)
-        if (DEBUGGING(LEVELING)) DEBUG_POS("run_z_probe", current_position);
-      #endif
-
-    #endif // !DELTA
-
-    SYNC_PLAN_POSITION_KINEMATIC();
-
-    feedrate_mm_m = old_feedrate_mm_m;
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (DEBUGGING(LEVELING)) DEBUG_POS("run_z_probe", current_position);
+    #endif
 
     return current_position[Z_AXIS];
   }
@@ -2473,19 +2418,17 @@ static void homeaxis(AxisEnum axis) {
   #endif
 
   // Move towards the endstop until an endstop is triggered
-  do_blocking_move_to_axis_pos(axis, 1.5 * max_length(axis) * axis_home_dir, homing_feedrate_mm_m[axis]);
+  line_to_axis_pos(axis, 1.5 * max_length(axis) * axis_home_dir);
 
   // Set the axis position as setup for the move
   current_position[axis] = 0;
   sync_plan_position();
 
   // Move away from the endstop by the axis HOME_BUMP_MM
-  do_blocking_move_to_axis_pos(axis, -home_bump_mm(axis) * axis_home_dir, homing_feedrate_mm_m[axis]);
-
-  // Slow down the feedrate for the next move
+  line_to_axis_pos(axis, -home_bump_mm(axis) * axis_home_dir);
 
   // Move slowly towards the endstop until triggered
-  do_blocking_move_to_axis_pos(axis, 2 * home_bump_mm(axis) * axis_home_dir, set_homing_bump_feedrate(axis));
+  line_to_axis_pos(axis, 2 * home_bump_mm(axis) * axis_home_dir, get_homing_bump_feedrate(axis));
 
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) DEBUG_POS("> TRIGGER ENDSTOP", current_position);
@@ -2506,7 +2449,7 @@ static void homeaxis(AxisEnum axis) {
       sync_plan_position();
 
       // Move to the adjusted endstop height
-      do_blocking_move_to_z(adj, homing_feedrate_mm_m[axis]);
+      line_to_axis_pos(axis, adj);
 
       if (lockZ1) stepper.set_z_lock(false); else stepper.set_z2_lock(false);
       stepper.set_homing_flag(false);
@@ -2523,7 +2466,7 @@ static void homeaxis(AxisEnum axis) {
           DEBUG_POS("", current_position);
         }
       #endif
-      do_blocking_move_to_axis_pos(axis, endstop_adj[axis], set_homing_bump_feedrate(axis));
+      line_to_axis_pos(axis, endstop_adj[axis]);
     }
   #endif
 
@@ -2839,9 +2782,7 @@ inline void gcode_G4() {
 
 #endif //FWRETRACT
 
-#if ENABLED(NOZZLE_CLEAN_FEATURE) && HAS_BED_PROBE
-  #include "nozzle.h"
-
+#if ENABLED(NOZZLE_CLEAN_FEATURE)
   /**
    * G12: Clean the nozzle
    */
@@ -2873,9 +2814,25 @@ inline void gcode_G4() {
   }
 #endif
 
+#if ENABLED(NOZZLE_PARK_FEATURE)
+  /**
+   * G27: Park the nozzle
+   */
+  inline void gcode_G27() {
+    // Don't allow nozzle parking without homing first
+    if (axis_unhomed_error(true, true, true)) { return; }
+    uint8_t const z_action = code_seen('P') ? code_value_ushort() : 0;
+    Nozzle::park(z_action);
+  }
+#endif // NOZZLE_PARK_FEATURE
+
 #if ENABLED(QUICK_HOME)
 
   static void quick_home_xy() {
+
+    // Pretend the current position is 0,0
+    current_position[X_AXIS] = current_position[Y_AXIS] = 0.0;
+    sync_plan_position();
 
     #if ENABLED(DUAL_X_CARRIAGE)
       int x_axis_home_dir = x_home_dir(active_extruder);
@@ -2887,29 +2844,15 @@ inline void gcode_G4() {
     float mlx = max_length(X_AXIS),
           mly = max_length(Y_AXIS),
           mlratio = mlx > mly ? mly / mlx : mlx / mly,
-          fr_mm_m = min(homing_feedrate_mm_m[X_AXIS], homing_feedrate_mm_m[Y_AXIS]) * sqrt(sq(mlratio) + 1);
+          fr_mm_m = min(homing_feedrate_mm_m[X_AXIS], homing_feedrate_mm_m[Y_AXIS]) * sqrt(sq(mlratio) + 1.0);
 
     do_blocking_move_to_xy(1.5 * mlx * x_axis_home_dir, 1.5 * mly * home_dir(Y_AXIS), fr_mm_m);
     endstops.hit_on_purpose(); // clear endstop hit flags
-    current_position[X_AXIS] = current_position[Y_AXIS] = 0;
+    current_position[X_AXIS] = current_position[Y_AXIS] = 0.0;
 
   }
 
 #endif // QUICK_HOME
-
-#if ENABLED(NOZZLE_PARK_FEATURE)
-  #include "nozzle.h"
-
-  /**
-   * G27: Park the nozzle
-   */
-  inline void gcode_G27() {
-    // Don't allow nozzle parking without homing first
-    if (axis_unhomed_error(true, true, true)) { return; }
-    uint8_t const z_action = code_seen('P') ? code_value_ushort() : 0;
-    Nozzle::park(z_action);
-  }
-#endif // NOZZLE_PARK_FEATURE
 
 /**
  * G28: Home all axes according to settings
@@ -2979,20 +2922,19 @@ inline void gcode_G28() {
      */
 
     // Pretend the current position is 0,0,0
-    for (int i = X_AXIS; i <= Z_AXIS; i++) current_position[i] = 0;
+    // This is like quick_home_xy() but for 3 towers.
+    current_position[X_AXIS] = current_position[Y_AXIS] = current_position[Z_AXIS] = 0.0;
     sync_plan_position();
 
     // Move all carriages up together until the first endstop is hit.
-    for (int i = X_AXIS; i <= Z_AXIS; i++) destination[i] = 3 * (Z_MAX_LENGTH);
+    current_position[X_AXIS] = current_position[Y_AXIS] = current_position[Z_AXIS] = 3.0 * (Z_MAX_LENGTH);
     feedrate_mm_m = 1.732 * homing_feedrate_mm_m[X_AXIS];
-    line_to_destination();
+    line_to_current_position();
     stepper.synchronize();
     endstops.hit_on_purpose(); // clear endstop hit flags
+    current_position[X_AXIS] = current_position[Y_AXIS] = current_position[Z_AXIS] = 0.0;
 
-    // Destination reached
-    for (int i = X_AXIS; i <= Z_AXIS; i++) current_position[i] = destination[i];
-
-    // take care of back off and rehome now we are all at the top
+    // take care of back off and rehome. Now one carriage is at the top.
     HOMEAXIS(X);
     HOMEAXIS(Y);
     HOMEAXIS(Z);
@@ -3261,9 +3203,6 @@ inline void gcode_G28() {
 #endif
 
 #if ENABLED(MESH_BED_LEVELING)
-
-  enum MeshLevelingState { MeshReport, MeshStart, MeshNext, MeshSet, MeshSetZOffset, MeshReset };
-
   inline void _mbl_goto_xy(float x, float y) {
     float old_feedrate_mm_m = feedrate_mm_m;
     feedrate_mm_m = homing_feedrate_mm_m[X_AXIS];
@@ -3356,7 +3295,7 @@ inline void gcode_G28() {
         }
         // For each G29 S2...
         if (probe_point == 0) {
-          // For the intial G29 S2 make Z a positive value (e.g., 4.0)
+          // For the initial G29 S2 make Z a positive value (e.g., 4.0)
           current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
             #if Z_HOME_DIR > 0
               + Z_MAX_POS
@@ -4475,7 +4414,7 @@ inline void gcode_M76() { print_job_timer.pause(); }
 inline void gcode_M77() { print_job_timer.stop(); }
 
 #if ENABLED(PRINTCOUNTER)
-  /*+
+  /**
    * M78: Show print statistics
    */
   inline void gcode_M78() {
@@ -5377,7 +5316,7 @@ inline void gcode_M200() {
     if (volumetric_enabled) {
       filament_size[target_extruder] = code_value_linear_units();
       // make sure all extruders have some sane value for the filament size
-      for (int i = 0; i < COUNT(filament_size); i++)
+      for (uint8_t i = 0; i < COUNT(filament_size); i++)
         if (! filament_size[i]) filament_size[i] = DEFAULT_NOMINAL_FILAMENT_DIA;
     }
   }
@@ -6909,7 +6848,7 @@ inline void gcode_T(uint8_t tmp_extruder) {
             // <0 if the new nozzle is higher, >0 if lower. A bigger raise when lower.
             float z_diff = hotend_offset[Z_AXIS][active_extruder] - hotend_offset[Z_AXIS][tmp_extruder],
                   z_raise = 0.3 + (z_diff > 0.0 ? z_diff : 0.0);
-          
+
             // Always raise by some amount
             planner.buffer_line(
               current_position[X_AXIS],
@@ -6920,10 +6859,10 @@ inline void gcode_T(uint8_t tmp_extruder) {
               active_extruder
             );
             stepper.synchronize();
-          
+
             move_extruder_servo(active_extruder);
             delay(500);
-          
+
             // Move back down, if needed
             if (z_raise != z_diff) {
               planner.buffer_line(
@@ -6937,7 +6876,7 @@ inline void gcode_T(uint8_t tmp_extruder) {
               stepper.synchronize();
             }
           #endif
-          
+
           /**
            * Set current_position to the position of the new nozzle.
            * Offsets are based on linear distance, so we need to get
@@ -6990,7 +6929,7 @@ inline void gcode_T(uint8_t tmp_extruder) {
             current_position[Z_AXIS] += offset_vec.z;
 
           #else // !AUTO_BED_LEVELING_FEATURE
-  
+
             float xydiff[2] = {
               hotend_offset[X_AXIS][tmp_extruder] - hotend_offset[X_AXIS][active_extruder],
               hotend_offset[Y_AXIS][tmp_extruder] - hotend_offset[Y_AXIS][active_extruder]
@@ -7014,7 +6953,7 @@ inline void gcode_T(uint8_t tmp_extruder) {
               }
 
             #endif // MESH_BED_LEVELING
-  
+
           #endif // !AUTO_BED_LEVELING_FEATURE
 
           #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -7077,7 +7016,7 @@ inline void gcode_T(uint8_t tmp_extruder) {
         SERIAL_ECHOLNPGM("<<< gcode_T");
       }
     #endif
-  
+
     SERIAL_ECHO_START;
     SERIAL_ECHOPGM(MSG_ACTIVE_EXTRUDER);
     SERIAL_PROTOCOLLN((int)active_extruder);
@@ -7175,7 +7114,7 @@ void process_next_command() {
           break;
       #endif // FWRETRACT
 
-      #if ENABLED(NOZZLE_CLEAN_FEATURE) && HAS_BED_PROBE
+      #if ENABLED(NOZZLE_CLEAN_FEATURE)
         case 12:
           gcode_G12(); // G12: Nozzle Clean
           break;
@@ -8797,6 +8736,6 @@ float calculate_volumetric_multiplier(float diameter) {
 }
 
 void calculate_volumetric_multipliers() {
-  for (int i = 0; i < COUNT(filament_size); i++)
+  for (uint8_t i = 0; i < COUNT(filament_size); i++)
     volumetric_multiplier[i] = calculate_volumetric_multiplier(filament_size[i]);
 }

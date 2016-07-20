@@ -541,6 +541,10 @@
 
 // X and Y axis travel speed (mm/m) between probes
 #define XY_PROBE_SPEED 4000
+// Speed for the first approach when probing
+#define Z_PROBE_SPEED_FAST HOMING_FEEDRATE_Z
+// Speed for the second approach when probing
+#define Z_PROBE_SPEED_SLOW (Z_PROBE_SPEED_FAST / 2)
 
 // Allen key retractable z-probe as seen on many Kossel delta printers - http://reprap.org/wiki/Kossel#Automatic_bed_leveling_probe
 // Deploys by touching z-axis belt. Retracts by pushing the probe down. Uses Z_MIN_PIN.
@@ -842,16 +846,13 @@
 #endif
 
 
+// Delta only homes to Z
+#define HOMING_FEEDRATE_Z  (200*30)
+
+//
+// MOVEMENT SETTINGS
 // @section motion
-
-/**
- * MOVEMENT SETTINGS
- */
-
-// delta homing speeds must be the same on xyz
-#define HOMING_FEEDRATE_XYZ (200*30)
-#define HOMING_FEEDRATE_E 0
-#define HOMING_FEEDRATE { HOMING_FEEDRATE_XYZ, HOMING_FEEDRATE_XYZ, HOMING_FEEDRATE_XYZ, HOMING_FEEDRATE_E }
+//
 
 // default settings
 // delta speeds must be the same on xyz
@@ -989,12 +990,12 @@
   // Number of pattern repetitions
   #define NOZZLE_CLEAN_STROKES  12
 
-  //                            {  X,  Y,               Z}
-  #define NOZZLE_CLEAN_START_PT { 30, 30, (Z_MIN_POS + 5)}
-  #define NOZZLE_CLEAN_END_PT   {100, 60, (Z_MIN_POS + 5)}
+  // Specify positions as { X, Y, Z }
+  #define NOZZLE_CLEAN_START_POINT { 30, 30, (Z_MIN_POS + 1)}
+  #define NOZZLE_CLEAN_END_POINT   {100, 60, (Z_MIN_POS + 1)}
 
-  // Moves the nozzle to the parked position
-  #define NOZZLE_CLEAN_PARK
+  // Moves the nozzle to the initial position
+  #define NOZZLE_CLEAN_GOBACK
 #endif
 
 //
@@ -1267,7 +1268,7 @@
 // is pressed, a value of 10.0 means 10mm per click.
 //
 //#define REPRAPWORLD_KEYPAD
-//#define REPRAPWORLD_KEYPAD_MOVE_STEP 10.0
+//#define REPRAPWORLD_KEYPAD_MOVE_STEP 1.0
 
 //
 // RigidBot Panel V1.0
