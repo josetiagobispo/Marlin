@@ -1727,14 +1727,36 @@ void do_blocking_move_to(float x, float y, float z, float fr_mm_m /*=0.0*/) {
 
     feedrate_mm_m = (fr_mm_m != 0.0) ? fr_mm_m : XY_PROBE_FEEDRATE_MM_M;
 
+    // when in the danger zone
+    if (current_position[Z_AXIS] > delta_clip_start_height) {
+      if (delta_clip_start_height < z) { // staying in the danger zone
+        destination[X_AXIS] = x;         // move directly
+        destination[Y_AXIS] = y;
+        destination[Z_AXIS] = z;
+        prepare_move_to_destination_raw(); // this will also set_current_to_destination
+        return;
+      } else {                           // leave the danger zone
+        destination[X_AXIS] = current_position[X_AXIS];
+        destination[Y_AXIS] = current_position[Y_AXIS];
+        destination[Z_AXIS] = delta_clip_start_height;
+        prepare_move_to_destination_raw(); // this will also set_current_to_destination
+      }
+    }
+    if (current_position[Z_AXIS] < z) {  // raise
+      destination[X_AXIS] = current_position[X_AXIS];
+      destination[Y_AXIS] = current_position[Y_AXIS];
+      destination[Z_AXIS] = z;
+      prepare_move_to_destination_raw(); // this will also set_current_to_destination
+    }
     destination[X_AXIS] = x;
     destination[Y_AXIS] = y;
-    destination[Z_AXIS] = z;
+    destination[Z_AXIS] = current_position[Z_AXIS];
+    prepare_move_to_destination(); // this will also set_current_to_destination
 
-    if (x == current_position[X_AXIS] && y == current_position[Y_AXIS])
+    if (current_position[Z_AXIS] > z) { // lower
+      destination[Z_AXIS] = z;
       prepare_move_to_destination_raw(); // this will also set_current_to_destination
-    else
-      prepare_move_to_destination();     // this will also set_current_to_destination
+    }
 
   #else
 
@@ -2112,6 +2134,12 @@ static void clean_up_after_endstop_or_probe_move() {
     return false;
   }
 
+  #if ENABLED(DELTA)
+    #define SET_CURRENT_FROM_STEPPERS() current_position[Z_AXIS] = z_before - stepper.get_axis_position_mm(Z_AXIS) + z_mm
+  #else
+    #define SET_CURRENT_FROM_STEPPERS() current_position[Z_AXIS] = stepper.get_axis_position_mm(Z_AXIS)
+  #endif
+
   // Do a single Z probe and return with current_position[Z_AXIS]
   // at the height where the probe triggered.
   static float run_z_probe() {
@@ -2123,23 +2151,31 @@ static void clean_up_after_endstop_or_probe_move() {
       planner.bed_level_matrix.set_to_identity();
     #endif
 
+    #if ENABLED(DELTA)
+      float z_before = current_position[Z_AXIS];
+      float z_mm = stepper.get_axis_position_mm(Z_AXIS);
+    #endif
     current_position[Z_AXIS] = -(Z_MAX_LENGTH + 10);
     do_blocking_move_to_z(current_position[Z_AXIS], Z_PROBE_SPEED_FAST);
     endstops.hit_on_purpose(); // clear endstop hit flags
     // Get the current stepper position after bumping an endstop
-    current_position[Z_AXIS] = stepper.get_axis_position_mm(Z_AXIS);
-    SYNC_PLAN_POSITION_KINEMATIC(); // tell the planner where we are      feedrate_mm_m = homing_feedrate_mm_m[Z_AXIS];
+    SET_CURRENT_FROM_STEPPERS();
+    SYNC_PLAN_POSITION_KINEMATIC(); // tell the planner where we are
 
     // move up the retract distance
     current_position[Z_AXIS] += home_bump_mm(Z_AXIS);
     do_blocking_move_to_z(current_position[Z_AXIS], Z_PROBE_SPEED_FAST);
 
+    #if ENABLED(DELTA)
+      z_before = current_position[Z_AXIS];
+      z_mm = stepper.get_axis_position_mm(Z_AXIS);
+    #endif
     // move back down slowly to find bed
     current_position[Z_AXIS] -= home_bump_mm(Z_AXIS) * 2;
     do_blocking_move_to_z(current_position[Z_AXIS], Z_PROBE_SPEED_SLOW);
     endstops.hit_on_purpose(); // clear endstop hit flags
     // Get the current stepper position after bumping an endstop
-    current_position[Z_AXIS] = stepper.get_axis_position_mm(Z_AXIS);
+    SET_CURRENT_FROM_STEPPERS();
     SYNC_PLAN_POSITION_KINEMATIC(); // tell the planner where we are
 
     #if ENABLED(DEBUG_LEVELING_FEATURE)
