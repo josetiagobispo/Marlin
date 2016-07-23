@@ -154,7 +154,7 @@ void idle(
 
 void manage_inactivity(bool ignore_stepper_queue = false);
 
-#if ENABLED(DUAL_X_CARRIAGE)
+#if ENABLED(DUAL_X_CARRIAGE) || ENABLED(DUAL_NOZZLE_DUPLICATION_MODE)
   extern bool extruder_duplication_enabled;
 #endif
 
@@ -335,17 +335,16 @@ float code_value_temp_diff();
   extern float delta_diagonal_rod_trim_tower_1;
   extern float delta_diagonal_rod_trim_tower_2;
   extern float delta_diagonal_rod_trim_tower_3;
-  void calculate_delta(float cartesian[3]);
+  void inverse_kinematics(const float cartesian[3]);
   void recalc_delta_settings(float radius, float diagonal_rod);
-  float delta_safe_distance_from_top();
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
     extern int delta_grid_spacing[2];
     void adjust_delta(float cartesian[3]);
   #endif
 #elif ENABLED(SCARA)
   extern float axis_scaling[3];  // Build size scaling
-  void calculate_delta(float cartesian[3]);
-  void calculate_SCARA_forward_Transform(float f_scara[3]);
+  void inverse_kinematics(const float cartesian[3]);
+  void forward_kinematics_SCARA(float f_scara[3]);
 #endif
 
 #if ENABLED(Z_DUAL_ENDSTOPS)
@@ -428,9 +427,7 @@ void calculate_volumetric_multipliers();
  * Blocking movement and shorthand functions
  */
 inline void do_blocking_move_to(float x, float y, float z, float fr_mm_m=0.0);
-inline void do_blocking_move_to_axis_pos(AxisEnum axis, float where, float fr_mm_m=0.0);
 inline void do_blocking_move_to_x(float x, float fr_mm_m=0.0);
-inline void do_blocking_move_to_y(float y);
 inline void do_blocking_move_to_z(float z, float fr_mm_m=0.0);
 inline void do_blocking_move_to_xy(float x, float y, float fr_mm_m=0.0);
 
