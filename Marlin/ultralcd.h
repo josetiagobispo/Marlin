@@ -58,7 +58,6 @@
     void bootscreen();
   #endif
 
-
   #define LCD_MESSAGEPGM(x) lcd_setstatuspgm(PSTR(x))
   #define LCD_ALERTMESSAGEPGM(x) lcd_setalertstatuspgm(PSTR(x))
 
@@ -93,7 +92,31 @@
 
   bool lcd_blink();
 
-  #if ENABLED(REPRAPWORLD_KEYPAD)
+  #if ENABLED(ULTIPANEL)
+    #define BLEN_A 0
+    #define BLEN_B 1
+    // Encoder click is directly connected
+    #if BUTTON_EXISTS(ENC)
+      #define BLEN_C 2
+      #define EN_C (_BV(BLEN_C))
+      #ifdef __SAM3X8E__
+        #if HAS_BTN_BACK
+          #define BLEN_D 3
+          #define EN_D (_BV(BLEN_D))
+        #endif
+      #endif
+    #endif
+    #define EN_A (_BV(BLEN_A))
+    #define EN_B (_BV(BLEN_B))
+    #define EN_C (_BV(BLEN_C))
+    #ifdef __SAM3X8E__
+      #if HAS_BTN_BACK
+        #define EN_D (_BV(BLEN_D))
+      #endif
+    #endif
+  #endif
+
+  #if ENABLED(REPRAPWORLD_KEYPAD) // is also ULTIPANEL and NEWPANEL
 
     #define REPRAPWORLD_BTN_OFFSET 0 // bit offset into buttons for shift register values
 
@@ -135,41 +158,15 @@
                                               EN_REPRAPWORLD_KEYPAD_LEFT) \
                                             )
 
-  #endif // REPRAPWORLD_KEYPAD
-
-  #if ENABLED(NEWPANEL)
-
-    #define EN_C (_BV(BLEN_C))
-    #define EN_B (_BV(BLEN_B))
-    #define EN_A (_BV(BLEN_A))
-
+    #define LCD_CLICKED ((buttons & EN_C) || (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_F1))
+  #elif ENABLED(NEWPANEL)
+    #define LCD_CLICKED (buttons & EN_C)
     #ifdef __SAM3X8E__
       #if HAS_BTN_BACK
-        #define EN_D BIT(BLEN_D)
-        #define LCD_BACK_CLICKED (buttons&EN_D)
+        #define LCD_BACK_CLICKED (buttons & EN_D)
       #endif
     #endif
-    #if ENABLED(REPRAPWORLD_KEYPAD)
-      #define LCD_CLICKED ((buttons&EN_C) || (buttons_reprapworld_keypad&EN_REPRAPWORLD_KEYPAD_F1))
-    #else
-      #define LCD_CLICKED (buttons&EN_C)
-    #endif
-
-  #else //!NEWPANEL
-
-    //atomic, do not change
-    #define B_LE (_BV(BL_LE))
-    #define B_UP (_BV(BL_UP))
-    #define B_MI (_BV(BL_MI))
-    #define B_DW (_BV(BL_DW))
-    #define B_RI (_BV(BL_RI))
-    #define B_ST (_BV(BL_ST))
-    #define EN_B (_BV(BLEN_B))
-    #define EN_A (_BV(BLEN_A))
-
-    #define LCD_CLICKED ((buttons&B_MI)||(buttons&B_ST))
-
-  #endif //!NEWPANEL
+  #endif
 
 #else //no LCD
   FORCE_INLINE void lcd_update() {}

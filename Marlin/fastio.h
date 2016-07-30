@@ -161,312 +161,320 @@
 */
 
 #ifdef __SAM3X8E__
-/*
-** direct pins
-*/
+  // UART
+  #define RXD        DIO0
+  #define TXD        DIO1
 
-#define DIO0_PIN 8
-#define DIO0_WPORT PIOA
+  // TWI (I2C)
+  #define SCL        DIO21
+  #define SDA        DIO20
 
-#define DIO1_PIN 9
-#define DIO1_WPORT PIOA
+  /**
+  pins
+  */
 
-#define DIO2_PIN 25
-#define DIO2_WPORT PIOB
+  #define DIO0_PIN 8
+  #define DIO0_WPORT PIOA
 
-#define DIO3_PIN 28
-#define DIO3_WPORT PIOC
+  #define DIO1_PIN 9
+  #define DIO1_WPORT PIOA
 
-#define DIO4_PIN 26
-#define DIO4_WPORT PIOC
+  #define DIO2_PIN 25
+  #define DIO2_WPORT PIOB
 
-#define DIO5_PIN 25
-#define DIO5_WPORT PIOC
+  #define DIO3_PIN 28
+  #define DIO3_WPORT PIOC
 
-#define DIO6_PIN 24
-#define DIO6_WPORT PIOC
+  #define DIO4_PIN 26
+  #define DIO4_WPORT PIOC
 
-#define DIO7_PIN 23
-#define DIO7_WPORT PIOC
+  #define DIO5_PIN 25
+  #define DIO5_WPORT PIOC
 
-#define DIO8_PIN 22
-#define DIO8_WPORT PIOC
+  #define DIO6_PIN 24
+  #define DIO6_WPORT PIOC
 
-#define DIO9_PIN 21
-#define DIO9_WPORT PIOC
+  #define DIO7_PIN 23
+  #define DIO7_WPORT PIOC
 
-#define DIO10_PIN 29
-#define DIO10_WPORT PIOC
+  #define DIO8_PIN 22
+  #define DIO8_WPORT PIOC
 
-#define DIO11_PIN 7
-#define DIO11_WPORT PIOD
+  #define DIO9_PIN 21
+  #define DIO9_WPORT PIOC
 
-#define DIO12_PIN 8
-#define DIO12_WPORT PIOD
+  #define DIO10_PIN 29
+  #define DIO10_WPORT PIOC
 
-#define DIO13_PIN 27
-#define DIO13_WPORT PIOB
+  #define DIO11_PIN 7
+  #define DIO11_WPORT PIOD
 
-#define DIO14_PIN 4
-#define DIO14_WPORT PIOD
+  #define DIO12_PIN 8
+  #define DIO12_WPORT PIOD
 
-#define DIO15_PIN 5
-#define DIO15_WPORT PIOD
+  #define DIO13_PIN 27
+  #define DIO13_WPORT PIOB
 
-#define DIO16_PIN 13
-#define DIO16_WPORT PIOA
+  #define DIO14_PIN 4
+  #define DIO14_WPORT PIOD
 
-#define DIO17_PIN 12
-#define DIO17_WPORT PIOA
+  #define DIO15_PIN 5
+  #define DIO15_WPORT PIOD
 
-#define DIO18_PIN 11
-#define DIO18_WPORT PIOA
+  #define DIO16_PIN 13
+  #define DIO16_WPORT PIOA
 
-#define DIO19_PIN 10
-#define DIO19_WPORT PIOA
+  #define DIO17_PIN 12
+  #define DIO17_WPORT PIOA
 
-#define DIO20_PIN 12
-#define DIO20_WPORT PIOB
+  #define DIO18_PIN 11
+  #define DIO18_WPORT PIOA
 
-#define DIO21_PIN 13
-#define DIO21_WPORT PIOB
+  #define DIO19_PIN 10
+  #define DIO19_WPORT PIOA
 
-#define DIO22_PIN 26
-#define DIO22_WPORT PIOB
+  #define DIO20_PIN 12
+  #define DIO20_WPORT PIOB
 
-#define DIO23_PIN 14
-#define DIO23_WPORT PIOA
+  #define DIO21_PIN 13
+  #define DIO21_WPORT PIOB
 
-#define DIO24_PIN 15
-#define DIO24_WPORT PIOA
+  #define DIO22_PIN 26
+  #define DIO22_WPORT PIOB
 
-#define DIO25_PIN 0
-#define DIO25_WPORT PIOD
+  #define DIO23_PIN 14
+  #define DIO23_WPORT PIOA
 
-#define DIO26_PIN 1
-#define DIO26_WPORT PIOD
+  #define DIO24_PIN 15
+  #define DIO24_WPORT PIOA
 
-#define DIO27_PIN 2
-#define DIO27_WPORT PIOD
+  #define DIO25_PIN 0
+  #define DIO25_WPORT PIOD
 
-#define DIO28_PIN 3
-#define DIO28_WPORT PIOD
+  #define DIO26_PIN 1
+  #define DIO26_WPORT PIOD
 
-#define DIO29_PIN 6
-#define DIO29_WPORT PIOD
+  #define DIO27_PIN 2
+  #define DIO27_WPORT PIOD
 
-#define DIO30_PIN 9
-#define DIO30_WPORT PIOD
+  #define DIO28_PIN 3
+  #define DIO28_WPORT PIOD
 
-#define DIO31_PIN 7
-#define DIO31_WPORT PIOA
+  #define DIO29_PIN 6
+  #define DIO29_WPORT PIOD
 
-#define DIO32_PIN 10
-#define DIO32_WPORT PIOD
+  #define DIO30_PIN 9
+  #define DIO30_WPORT PIOD
 
-#define DIO33_PIN 1
-#define DIO33_WPORT PIOC
+  #define DIO31_PIN 7
+  #define DIO31_WPORT PIOA
 
-#define DIO34_PIN 2
-#define DIO34_WPORT PIOC
+  #define DIO32_PIN 10
+  #define DIO32_WPORT PIOD
 
-#define DIO35_PIN 3
-#define DIO35_WPORT PIOC
+  #define DIO33_PIN 1
+  #define DIO33_WPORT PIOC
 
-#define DIO36_PIN 4
-#define DIO36_WPORT PIOC
+  #define DIO34_PIN 2
+  #define DIO34_WPORT PIOC
 
-#define DIO37_PIN 5
-#define DIO37_WPORT PIOC
+  #define DIO35_PIN 3
+  #define DIO35_WPORT PIOC
 
-#define DIO38_PIN 6
-#define DIO38_WPORT PIOC
+  #define DIO36_PIN 4
+  #define DIO36_WPORT PIOC
 
-#define DIO39_PIN 7
-#define DIO39_WPORT PIOC
+  #define DIO37_PIN 5
+  #define DIO37_WPORT PIOC
 
-#define DIO40_PIN 8
-#define DIO40_WPORT PIOC
+  #define DIO38_PIN 6
+  #define DIO38_WPORT PIOC
 
-#define DIO41_PIN 9
-#define DIO41_WPORT PIOC
+  #define DIO39_PIN 7
+  #define DIO39_WPORT PIOC
 
-#define DIO42_PIN 19
-#define DIO42_WPORT PIOA
+  #define DIO40_PIN 8
+  #define DIO40_WPORT PIOC
 
-#define DIO43_PIN 20
-#define DIO43_WPORT PIOA
+  #define DIO41_PIN 9
+  #define DIO41_WPORT PIOC
 
-#define DIO44_PIN 19
-#define DIO44_WPORT PIOC
+  #define DIO42_PIN 19
+  #define DIO42_WPORT PIOA
 
-#define DIO45_PIN 18
-#define DIO45_WPORT PIOC
+  #define DIO43_PIN 20
+  #define DIO43_WPORT PIOA
 
-#define DIO46_PIN 17
-#define DIO46_WPORT PIOC
+  #define DIO44_PIN 19
+  #define DIO44_WPORT PIOC
 
-#define DIO47_PIN 16
-#define DIO47_WPORT PIOC
+  #define DIO45_PIN 18
+  #define DIO45_WPORT PIOC
 
-#define DIO48_PIN 15
-#define DIO48_WPORT PIOC
+  #define DIO46_PIN 17
+  #define DIO46_WPORT PIOC
 
-#define DIO49_PIN 14
-#define DIO49_WPORT PIOC
+  #define DIO47_PIN 16
+  #define DIO47_WPORT PIOC
 
-#define DIO50_PIN 13
-#define DIO50_WPORT PIOC
+  #define DIO48_PIN 15
+  #define DIO48_WPORT PIOC
 
-#define DIO51_PIN 12
-#define DIO51_WPORT PIOC
+  #define DIO49_PIN 14
+  #define DIO49_WPORT PIOC
 
-#define DIO52_PIN 21
-#define DIO52_WPORT PIOB
+  #define DIO50_PIN 13
+  #define DIO50_WPORT PIOC
 
-#define DIO53_PIN 14
-#define DIO53_WPORT PIOB
+  #define DIO51_PIN 12
+  #define DIO51_WPORT PIOC
 
-#define DIO54_PIN 16
-#define DIO54_WPORT PIOA
+  #define DIO52_PIN 21
+  #define DIO52_WPORT PIOB
 
-#define DIO55_PIN 24
-#define DIO55_WPORT PIOA
+  #define DIO53_PIN 14
+  #define DIO53_WPORT PIOB
 
-#define DIO56_PIN 23
-#define DIO56_WPORT PIOA
+  #define DIO54_PIN 16
+  #define DIO54_WPORT PIOA
 
-#define DIO57_PIN 22
-#define DIO57_WPORT PIOA
+  #define DIO55_PIN 24
+  #define DIO55_WPORT PIOA
 
-#define DIO58_PIN 6
-#define DIO58_WPORT PIOA
+  #define DIO56_PIN 23
+  #define DIO56_WPORT PIOA
 
-#define DIO59_PIN 4
-#define DIO59_WPORT PIOA
+  #define DIO57_PIN 22
+  #define DIO57_WPORT PIOA
 
-#define DIO60_PIN 3
-#define DIO60_WPORT PIOA
+  #define DIO58_PIN 6
+  #define DIO58_WPORT PIOA
 
-#define DIO61_PIN 2
-#define DIO61_WPORT PIOA
+  #define DIO59_PIN 4
+  #define DIO59_WPORT PIOA
 
-#define DIO62_PIN 17
-#define DIO62_WPORT PIOB
+  #define DIO60_PIN 3
+  #define DIO60_WPORT PIOA
 
-#define DIO63_PIN 18
-#define DIO63_WPORT PIOB
+  #define DIO61_PIN 2
+  #define DIO61_WPORT PIOA
 
-#define DIO64_PIN 19
-#define DIO64_WPORT PIOB
+  #define DIO62_PIN 17
+  #define DIO62_WPORT PIOB
 
-#define DIO65_PIN 20
-#define DIO65_WPORT PIOB
+  #define DIO63_PIN 18
+  #define DIO63_WPORT PIOB
 
-#define DIO66_PIN 15
-#define DIO66_WPORT PIOB
+  #define DIO64_PIN 19
+  #define DIO64_WPORT PIOB
 
-#define DIO67_PIN 16
-#define DIO67_WPORT PIOB
+  #define DIO65_PIN 20
+  #define DIO65_WPORT PIOB
 
-#define DIO68_PIN 1
-#define DIO68_WPORT PIOA
+  #define DIO66_PIN 15
+  #define DIO66_WPORT PIOB
 
-#define DIO69_PIN 0
-#define DIO69_WPORT PIOA
+  #define DIO67_PIN 16
+  #define DIO67_WPORT PIOB
 
-#define DIO70_PIN 17
-#define DIO70_WPORT PIOA
+  #define DIO68_PIN 1
+  #define DIO68_WPORT PIOA
 
-#define DIO71_PIN 18
-#define DIO71_WPORT PIOA
+  #define DIO69_PIN 0
+  #define DIO69_WPORT PIOA
 
-#define DIO72_PIN 30
-#define DIO72_WPORT PIOC
+  #define DIO70_PIN 17
+  #define DIO70_WPORT PIOA
 
-#define DIO73_PIN 21
-#define DIO73_WPORT PIOA
+  #define DIO71_PIN 18
+  #define DIO71_WPORT PIOA
 
-#define DIO74_PIN 25
-#define DIO74_WPORT PIOA
+  #define DIO72_PIN 30
+  #define DIO72_WPORT PIOC
 
-#define DIO75_PIN 26
-#define DIO75_WPORT PIOA
+  #define DIO73_PIN 21
+  #define DIO73_WPORT PIOA
 
-#define DIO76_PIN 27
-#define DIO76_WPORT PIOA
+  #define DIO74_PIN 25
+  #define DIO74_WPORT PIOA
 
-#define DIO77_PIN 28
-#define DIO77_WPORT PIOA
+  #define DIO75_PIN 26
+  #define DIO75_WPORT PIOA
 
-#define DIO78_PIN 23
-#define DIO78_WPORT PIOB
+  #define DIO76_PIN 27
+  #define DIO76_WPORT PIOA
 
-#define DIO79_PIN 17
-#define DIO79_WPORT PIOA
+  #define DIO77_PIN 28
+  #define DIO77_WPORT PIOA
 
-#define DIO80_PIN 12
-#define DIO80_WPORT PIOB
+  #define DIO78_PIN 23
+  #define DIO78_WPORT PIOB
 
-#define DIO81_PIN 8
-#define DIO81_WPORT PIOA
+  #define DIO79_PIN 17
+  #define DIO79_WPORT PIOA
 
-#define DIO82_PIN 11
-#define DIO82_WPORT PIOA
+  #define DIO80_PIN 12
+  #define DIO80_WPORT PIOB
 
-#define DIO83_PIN 13
-#define DIO83_WPORT PIOA
+  #define DIO81_PIN 8
+  #define DIO81_WPORT PIOA
 
-#define DIO84_PIN 4
-#define DIO84_WPORT PIOD
+  #define DIO82_PIN 11
+  #define DIO82_WPORT PIOA
 
-#define DIO85_PIN 11
-#define DIO85_WPORT PIOB
+  #define DIO83_PIN 13
+  #define DIO83_WPORT PIOA
 
-#define DIO86_PIN 21
-#define DIO86_WPORT PIOB
+  #define DIO84_PIN 4
+  #define DIO84_WPORT PIOD
 
-#define DIO87_PIN 29
-#define DIO87_WPORT PIOA
+  #define DIO85_PIN 11
+  #define DIO85_WPORT PIOB
 
-#define DIO88_PIN 15
-#define DIO88_WPORT PIOB
+  #define DIO86_PIN 21
+  #define DIO86_WPORT PIOB
 
-#define DIO89_PIN 14
-#define DIO89_WPORT PIOB
+  #define DIO87_PIN 29
+  #define DIO87_WPORT PIOA
 
-#define DIO90_PIN 1
-#define DIO90_WPORT PIOA
+  #define DIO88_PIN 15
+  #define DIO88_WPORT PIOB
 
-#define DIO91_PIN 15
-#define DIO91_WPORT PIOB
+  #define DIO89_PIN 14
+  #define DIO89_WPORT PIOB
 
-#define DIO92_PIN 5
-#define DIO92_WPORT PIOA
+  #define DIO90_PIN 1
+  #define DIO90_WPORT PIOA
 
-#define DIO93_PIN 12
-#define DIO93_WPORT PIOB
+  #define DIO91_PIN 15
+  #define DIO91_WPORT PIOB
 
-#define DIO94_PIN 22
-#define DIO94_WPORT PIOB
+  #define DIO92_PIN 5
+  #define DIO92_WPORT PIOA
 
-#define DIO95_PIN 23
-#define DIO95_WPORT PIOB
+  #define DIO93_PIN 12
+  #define DIO93_WPORT PIOB
 
-#define DIO96_PIN 24
-#define DIO96_WPORT PIOB
+  #define DIO94_PIN 22
+  #define DIO94_WPORT PIOB
 
-#define DIO97_PIN 20
-#define DIO97_WPORT PIOC
+  #define DIO95_PIN 23
+  #define DIO95_WPORT PIOB
 
-#define DIO98_PIN 27
-#define DIO98_WPORT PIOC
+  #define DIO96_PIN 24
+  #define DIO96_WPORT PIOB
 
-#define DIO99_PIN 10
-#define DIO99_WPORT PIOC
+  #define DIO97_PIN 20
+  #define DIO97_WPORT PIOC
 
-#define DIO100_PIN 11
-#define DIO100_WPORT PIOC
+  #define DIO98_PIN 27
+  #define DIO98_WPORT PIOC
+
+  #define DIO99_PIN 10
+  #define DIO99_WPORT PIOC
+
+  #define DIO100_PIN 11
+  #define DIO100_WPORT PIOC
 #else //__SAM3X8E__
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328__) || defined(__AVR_ATmega328P__)
   // UART
@@ -2402,11 +2410,6 @@
 #endif
 
 #if defined(__AVR_AT90USB1287__) || defined(__AVR_AT90USB1286__) || defined(__AVR_AT90USB646__) || defined(__AVR_AT90USB647__)
-  // SPI
-  #define SCK         DIO9
-  #define MISO        DIO11
-  #define MOSI        DIO10
-  #define SS          DIO8
 
   // change for your board
   #define DEBUG_LED   DIO31 /* led D5 red */
@@ -2417,6 +2420,12 @@
 
   //#define AT90USBxx_TEENSYPP_ASSIGNMENTS // Use Teensy++ 2.0 assignments
   #ifndef AT90USBxx_TEENSYPP_ASSIGNMENTS // Use traditional Marlin pin assignments
+
+    // SPI
+    #define SCK         DIO9   // 21
+    #define MISO        DIO11  // 23
+    #define MOSI        DIO10  // 22
+    #define SS          DIO8   // 20
 
     #define DIO0_PIN        PINA0
     #define DIO0_RPORT      PINA
@@ -3061,6 +3070,12 @@
     Teensy   28 29 30 31 32 33 34 35 20 21 22 23 24 25 26 27 10 11 12 13 14 15 16 17 00 01 02 03 04 05 06 07 08 09(46*47)36 37 18 19 38 39 40 41 42 43 44 45
              The pins 46 and 47 are not supported by Teensyduino, but are supported below.
     */
+
+    // SPI
+    #define SCK             DIO21 // 9
+    #define MISO            DIO23 // 11
+    #define MOSI            DIO22 // 10
+    #define SS              DIO20 // 8
 
     #define DIO0_PIN PIND0
     #define DIO0_RPORT PIND

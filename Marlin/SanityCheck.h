@@ -25,14 +25,10 @@
  *
  * Test configuration values for errors at compile-time.
  */
-#ifndef SANITYCHECK_H
-#define SANITYCHECK_H
 
 /**
  * Due to the high number of issues related with old versions of Arduino IDE
- * we are now warning our users to update their toolkits. In a future Marlin
- * release we will stop supporting old IDE versions and will require user
- * action to proceed with compilation in such environments.
+ * we now prevent Marlin from compiling with older toolkits.
  */
 #if !defined(ARDUINO) || ARDUINO < 10600
   #error "Versions of Arduino IDE prior to 1.6.0 are no longer supported, please update your toolkit."
@@ -338,10 +334,10 @@
     #error "You must set Z_RAISE_PROBE_DEPLOY_STOW in your configuration."
   #elif !defined(Z_RAISE_BETWEEN_PROBINGS)
     #error "You must set Z_RAISE_BETWEEN_PROBINGS in your configuration."
-  #elif Z_RAISE_PROBE_DEPLOY_STOW < 1
-    #error "Probes need Z_RAISE_PROBE_DEPLOY_STOW >= 1."
-  #elif Z_RAISE_BETWEEN_PROBINGS < 1
-    #error "Probes need Z_RAISE_BETWEEN_PROBINGS >= 1."
+  #elif Z_RAISE_PROBE_DEPLOY_STOW < 0
+    #error "Probes need Z_RAISE_PROBE_DEPLOY_STOW >= 0."
+  #elif Z_RAISE_BETWEEN_PROBINGS < 0
+    #error "Probes need Z_RAISE_BETWEEN_PROBINGS >= 0."
   #endif
 
 #else
@@ -356,6 +352,25 @@
   #endif
 
 #endif
+
+/**
+ * Make sure Z_SAFE_HOMING point is reachable
+ */
+#if ENABLED(Z_SAFE_HOMING)
+  #if Z_SAFE_HOMING_X_POINT < MIN_PROBE_X || Z_SAFE_HOMING_X_POINT > MAX_PROBE_X
+    #if HAS_BED_PROBE
+      #error "Z_SAFE_HOMING_X_POINT can't be reached by the Z probe."
+    #else
+      #error "Z_SAFE_HOMING_X_POINT can't be reached by the nozzle."
+    #endif
+  #elif Z_SAFE_HOMING_Y_POINT < MIN_PROBE_Y || Z_SAFE_HOMING_Y_POINT > MAX_PROBE_Y
+    #if HAS_BED_PROBE
+      #error "Z_SAFE_HOMING_Y_POINT can't be reached by the Z probe."
+    #else
+      #error "Z_SAFE_HOMING_Y_POINT can't be reached by the nozzle."
+    #endif
+  #endif
+#endif // Z_SAFE_HOMING
 
 /**
  * Auto Bed Leveling
@@ -564,8 +579,20 @@
       #elif !PIN_EXISTS(TEMP_3)
         #error "TEMP_3_PIN not defined for this board."
       #endif
+    #elif TEMP_SENSOR_3 != 0
+      #error "TEMP_SENSOR_3 shouldn't be set with only 3 extruders."
     #endif
+  #elif TEMP_SENSOR_2 != 0
+    #error "TEMP_SENSOR_2 shouldn't be set with only 2 extruders."
+  #elif TEMP_SENSOR_3 != 0
+    #error "TEMP_SENSOR_3 shouldn't be set with only 2 extruders."
   #endif
+#elif TEMP_SENSOR_1 != 0 && DISABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+  #error "TEMP_SENSOR_1 shouldn't be set with only 1 extruder."
+#elif TEMP_SENSOR_2 != 0
+  #error "TEMP_SENSOR_2 shouldn't be set with only 1 extruder."
+#elif TEMP_SENSOR_3 != 0
+  #error "TEMP_SENSOR_3 shouldn't be set with only 1 extruder."
 #endif
 
 #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT) && TEMP_SENSOR_1 == 0
@@ -643,6 +670,7 @@
     #error "EMERGENCY_PARSER is not supported by ARM platform yet."
   #endif
 #endif
+
 /**
  * Endstops
  */
@@ -708,8 +736,8 @@
   #error "EXTRUDER_OFFSET_[XY] is deprecated. Use HOTEND_OFFSET_[XY] instead."
 #elif defined(PID_PARAMS_PER_EXTRUDER)
   #error "PID_PARAMS_PER_EXTRUDER is deprecated. Use PID_PARAMS_PER_HOTEND instead."
-#elif defined(EXTRUDER_WATTS)
-  #error "EXTRUDER_WATTS is deprecated. Use HOTEND_WATTS instead."
+#elif defined(EXTRUDER_WATTS) || defined(BED_WATTS)
+  #error "EXTRUDER_WATTS and BED_WATTS are deprecated. Remove them from your configuration."
 #elif defined(SERVO_ENDSTOP_ANGLES)
   #error "SERVO_ENDSTOP_ANGLES is deprecated. Use Z_SERVO_ANGLES instead."
 #elif defined(X_ENDSTOP_SERVO_NR) || defined(Y_ENDSTOP_SERVO_NR)
@@ -738,6 +766,6 @@
   #error "ENDSTOPS_ONLY_FOR_HOMING is deprecated. Use (disable) ENDSTOPS_ALWAYS_ON_DEFAULT instead."
 #elif defined(HOMING_FEEDRATE)
   #error "HOMING_FEEDRATE is deprecated. Set individual rates with HOMING_FEEDRATE_(XY|Z|E) instead."
+#elif defined(MANUAL_HOME_POSITIONS)
+  #error "MANUAL_HOME_POSITIONS is deprecated. Set MANUAL_[XYZ]_HOME_POS as-needed instead."
 #endif
-
-#endif //SANITYCHECK_H

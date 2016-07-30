@@ -175,7 +175,6 @@
 #define MSG_SHORT_DAY                       "d"                          // One character only
 #define MSG_SHORT_HOUR                      "h"                          // One character only
 #define MSG_SHORT_MINUTE                    "m"                          // One character only
-#define MSG_PRINT_TIME                      "プリントジカン"                  // "Print time"
 #define MSG_HEATING                         "カネツチュウ"                   // "Heating..."
 #define MSG_HEATING_COMPLETE                "カネツカンリョウ"                 // "Heating done."
 #define MSG_BED_HEATING                     "ベッド カネツチュウ"              // "Bed Heating."
@@ -193,9 +192,11 @@
 #define MSG_INFO_EXTRUDERS                  "エクストルーダースウ"             // "Extruders"
 #define MSG_INFO_BAUDRATE                   "ボーレート"                    // "Baud"
 #define MSG_INFO_PROTOCOL                   "プロトコル"                    // "Protocol"
-#define MSG_INFO_PRINT_COUNT                "プリントスウ "                  // "Print Count "
-#define MSG_INFO_COMPLETED_PRINTS           "カンリョウスウ"                  // "Finished    "
-#define MSG_INFO_PRINT_TIME                 "ゴウケイジカン"                 // "Total Time  "
+#define MSG_INFO_PRINT_COUNT                "プリントスウ   "                // "Print Count"
+#define MSG_INFO_COMPLETED_PRINTS           "カンリョウスウ"                  // "Completed"
+#define MSG_INFO_PRINT_TIME                 "プリントジカンルイケイ"            // "Total print time"
+#define MSG_INFO_PRINT_LONGEST              "サイチョウプリントジカン"           // "Longest job time"
+#define MSG_INFO_PRINT_FILAMENT             "フィラメントシヨウリョウルイケイ"       // "Extruded total"
 #define MSG_INFO_MIN_TEMP                   "セッテイサイテイオン"              // "Min Temp"
 #define MSG_INFO_MAX_TEMP                   "セッテイサイコウオン"              // "Max Temp"
 #define MSG_INFO_PSU                        "デンゲンシュベツ"                // "Power Supply"

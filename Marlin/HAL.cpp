@@ -29,8 +29,7 @@
 // Includes
 // --------------------------------------------------------------------------
 
-#include "HAL.h"
-#include "Configuration.h"
+#include "Marlin.h"
 #include <Wire.h>
 
 uint8_t MCUSR;
@@ -92,8 +91,8 @@ int freeMemory() {
   }
 
   void spiBegin() {
-    SET_OUTPUT(SDSS);
-    WRITE(SDSS, HIGH);
+    SET_OUTPUT(SS_PIN);
+    WRITE(SS_PIN, HIGH);
     SET_OUTPUT(SCK_PIN);
     SET_INPUT(MISO_PIN);
     SET_OUTPUT(MOSI_PIN);
@@ -101,56 +100,56 @@ int freeMemory() {
 
   void spiInit(uint8_t spiRate) {
     UNUSED(spiRate);
-    WRITE(SDSS, HIGH);
+    WRITE(SS_PIN, HIGH);
     WRITE(MOSI_PIN, HIGH);
     WRITE(SCK_PIN, LOW);
   }
 
   uint8_t spiRec() {
-    WRITE(SDSS, LOW);
+    WRITE(SS_PIN, LOW);
     uint8_t b = spiTransfer(0xff);
-    WRITE(SDSS, HIGH);
+    WRITE(SS_PIN, HIGH);
     return b;
   }
 
   void spiRead(uint8_t*buf, uint16_t nbyte) {
     if (nbyte == 0) return;
-    WRITE(SDSS, LOW);
+    WRITE(SS_PIN, LOW);
     for (int i = 0; i < nbyte; i++) {
       buf[i] = spiTransfer(0xff);
     }
-    WRITE(SDSS, HIGH);
+    WRITE(SS_PIN, HIGH);
   }
 
   void spiSend(uint8_t b) {
-    WRITE(SDSS, LOW);
+    WRITE(SS_PIN, LOW);
     uint8_t response = spiTransfer(b);
     UNUSED(response);
-    WRITE(SDSS, HIGH);
+    WRITE(SS_PIN, HIGH);
   }
 
   void spiSend(const uint8_t* buf , size_t n) {
     uint8_t response;
     if (n == 0) return;
-    WRITE(SDSS, LOW);
+    WRITE(SS_PIN, LOW);
     for (uint16_t i = 0; i < n; i++) {
       response = spiTransfer(buf[i]);
     }
     UNUSED(response);
-    WRITE(SDSS, HIGH);
+    WRITE(SS_PIN, HIGH);
   }
 
   void spiSendBlock(uint8_t token, const uint8_t* buf) {
     uint8_t response;
 
-    WRITE(SDSS, LOW);
+    WRITE(SS_PIN, LOW);
     response = spiTransfer(token);
 
     for (uint16_t i = 0; i < 512; i++) {
       response = spiTransfer(buf[i]);
     }
     UNUSED(response);
-    WRITE(SDSS, HIGH);
+    WRITE(SS_PIN, HIGH);
   }
 
 #else
@@ -195,7 +194,7 @@ int freeMemory() {
         WRITE(SPI_EEPROM1_CS, HIGH );
         WRITE(SPI_EEPROM2_CS, HIGH );
         WRITE(SPI_FLASH_CS, HIGH );
-        WRITE(SDSS, HIGH );
+        WRITE(SS_PIN, HIGH );
       #endif // MB(ALLIGATOR)
       PIO_Configure(
         g_APinDescription[SPI_PIN].pPort,

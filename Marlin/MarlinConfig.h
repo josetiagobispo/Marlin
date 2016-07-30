@@ -20,24 +20,22 @@
  *
  */
 
-/**
- * FELIXprinters v2.0/3.0 (RAMPS v1.4) pin assignments
- */
+#ifndef MARLIN_CONFIG_H
+#define MARLIN_CONFIG_H
 
-#define BOARD_NAME "Felix 2.0+"
+#include "fastio.h"
+#include "macros.h"
+#include "boards.h"
+#include "Version.h"
+#include "Configuration.h"
+#include "Conditionals_LCD.h"
+#include "Configuration_adv.h"
+#include "pins.h"
+#ifndef USBCON
+  #define HardwareSerial_h // trick to disable the standard HWserial
+#endif
+#include "Arduino.h"
+#include "Conditionals_post.h"
+#include "SanityCheck.h"
 
-#include "pins_RAMPS_14_EFB.h"
-
-#undef HEATER_1_PIN
-#define HEATER_1_PIN        7 // EXTRUDER 2
-
-#undef SDPOWER
-#define SDPOWER             1
-
-#define PS_ON_PIN          12
-
-#if ENABLED(ULTRA_LCD) && ENABLED(NEWPANEL)
-
-  #define SD_DETECT_PIN 6
-
-#endif // NEWPANEL && ULTRA_LCD
+#endif // MARLIN_CONFIG_H

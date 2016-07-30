@@ -112,10 +112,3 @@
 #else
   #define MAX6675_SS        53
 #endif
-
-#if DISABLED(SDSUPPORT)
-  // these pins are defined in the SD library if building with SD support
-  #define SCK_PIN           76
-  #define MISO_PIN          74
-  #define MOSI_PIN          75
-#endif

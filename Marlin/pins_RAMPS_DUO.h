@@ -41,19 +41,25 @@
 #define TEMP_BED_PIN       10 // ANALOG NUMBERING
 
 #if ENABLED(ULTRA_LCD)
+  #if ENABLED(NEWPANEL) && ENABLED(PANEL_ONE)
+    #undef LCD_PINS_D4
+    #define LCD_PINS_D4  68
+
+    #undef LCD_PINS_D5
+    #define LCD_PINS_D5  69
+
+    #undef LCD_PINS_D7
+    #define LCD_PINS_D7  67
+  #endif
+
   #if ENABLED(NEWPANEL)
-    #if ENABLED(PANEL_ONE)
-      #undef LCD_PINS_D4
-      #define LCD_PINS_D4  68
+    #if ENABLED(REPRAPWORLD_GRAPHICAL_LCD)
+      #undef BTN_EN1
+      #define BTN_EN1 67
 
-      #undef LCD_PINS_D5
-      #define LCD_PINS_D5  69
-
-      #undef LCD_PINS_D7
-      #define LCD_PINS_D7  67
-    #endif
-
-    #if ENABLED(MINIPANEL)
+      #undef BTN_ENC
+      #define BTN_ENC 66
+    #elif ENABLED(MINIPANEL)
       #undef DOGLCD_CS
       #define DOGLCD_CS    69
 
@@ -77,14 +83,12 @@
         #define BTN_EN2    66 // AUX2 PIN 4
       #endif
     #endif
-  #endif // !NEWPANEL
+  #endif // NEWPANEL
 #endif // ULTRA_LCD
 
 #undef MAX6675_SS
 #if DISABLED(SDSUPPORT)
-  #undef MAX6675_SS
   #define MAX6675_SS       69 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
 #else
-  #undef MAX6675_SS
   #define MAX6675_SS       69 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
 #endif

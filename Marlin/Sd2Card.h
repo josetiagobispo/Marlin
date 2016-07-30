@@ -37,7 +37,6 @@
  * \brief Sd2Card class for V2 SD/SDHC cards
  */
 #include "SdFatConfig.h"
-#include "Sd2PinMap.h"
 #include "SdInfo.h"
 //------------------------------------------------------------------------------
 #ifdef __SAM3X8E__

@@ -29,6 +29,7 @@
 
 #include "Marlin.h"
 #include "planner.h"
+#include "thermistortables.h"
 
 #if ENABLED(PID_ADD_EXTRUSION_RATE)
   #include "stepper.h"
@@ -39,7 +40,7 @@
 #endif
 
 #if HOTENDS == 1
-  #define HOTEND_LOOP() const uint8_t e = 0;
+  #define HOTEND_LOOP() const int8_t e = 0;
   #define HOTEND_INDEX  0
   #define EXTRUDER_IDX  0
 #else

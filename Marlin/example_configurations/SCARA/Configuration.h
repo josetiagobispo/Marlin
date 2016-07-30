@@ -51,9 +51,6 @@
  */
 #define CONFIGURATION_H_VERSION 010100
 
-#include "boards.h"
-#include "macros.h"
-
 //===========================================================================
 //============================= Getting Started =============================
 //===========================================================================
@@ -111,12 +108,6 @@
 
 // @section info
 
-#if ENABLED(USE_AUTOMATIC_VERSIONING)
-  #include "_Version.h"
-#else
-  #include "Version.h"
-#endif
-
 // User-specified version info of this build to display in [Pronterface, etc] terminal window during
 // startup. Implementation of an idea by Prof Braino to inform user that any changes made to this
 // build by the user have been successfully uploaded into firmware.
@@ -137,10 +128,6 @@
 // example configuration folder.
 //
 //#define SHOW_CUSTOM_BOOTSCREEN
-#if ENABLED(SHOW_BOOTSCREEN) && ENABLED(SHOW_CUSTOM_BOOTSCREEN)
-  #include "_bootscreen.h"
-#endif
-
 // @section machine
 
 // SERIAL_PORT selects which serial port should be used for communication with the host.
@@ -300,10 +287,6 @@
 #define HEATER_2_MAXTEMP 275
 #define HEATER_3_MAXTEMP 275
 #define BED_MAXTEMP 150
-
-// If you want the M105 heater power reported in watts, define the BED_WATTS, and (shared for all extruders) EXTRUDER_WATTS
-#define HOTEND_WATTS (2*2/5.9)       // P=U^2/R
-#define BED_WATTS (5.45*5.45/2.2)    // P=U^2/R
 
 //===========================================================================
 //============================= PID Settings ================================
@@ -507,10 +490,12 @@
 
 // X and Y axis travel speed (mm/m) between probes
 #define XY_PROBE_SPEED 8000
-// Speed for the first approach when probing
+// Speed for the first approach when double-probing (with PROBE_DOUBLE_TOUCH)
 #define Z_PROBE_SPEED_FAST HOMING_FEEDRATE_Z
-// Speed for the second approach when probing
+// Speed for the "accurate" probe of each point
 #define Z_PROBE_SPEED_SLOW (Z_PROBE_SPEED_FAST / 2)
+// Use double touch for probing
+//#define PROBE_DOUBLE_TOUCH
 
 //
 // Allen Key Probe is defined in the Delta example configurations.
@@ -737,18 +722,14 @@
 
 // @section homing
 
-// The position of the homing switches
-#define MANUAL_HOME_POSITIONS  // If defined, MANUAL_*_HOME_POS below will be used
-//#define BED_CENTER_AT_0_0  // If defined, the center of the bed is at (X=0, Y=0)
+// The center of the bed is at (X=0, Y=0)
+//#define BED_CENTER_AT_0_0
 
-// Manual homing switch locations:
-// For deltabots this means top and center of the Cartesian print volume.
-#if ENABLED(MANUAL_HOME_POSITIONS)
-  // For SCARA: Offset between HomingPosition and Bed X=0 / Y=0
-  #define MANUAL_X_HOME_POS -22.
-  #define MANUAL_Y_HOME_POS -52.
-  #define MANUAL_Z_HOME_POS 0.1  // Distance between nozzle and print surface after homing.
-#endif
+// Manually set the home position. Leave these undefined for automatic settings.
+// For DELTA this is the top-center of the Cartesian print volume.
+#define MANUAL_X_HOME_POS -22
+#define MANUAL_Y_HOME_POS -52
+#define MANUAL_Z_HOME_POS 0.1 // Distance between the nozzle to printbed after homing
 
 // Use "Z Safe Homing" to avoid homing with a Z probe outside the bed area.
 //
@@ -756,7 +737,7 @@
 //
 // - Allow Z homing only after X and Y homing AND stepper drivers still enabled.
 // - If stepper drivers time out, it will need X and Y homing again before Z homing.
-// - Position the Z probe in a defined XY point before Z Homing when homing all axes (G28).
+// - Move the Z probe (or nozzle) to a defined XY point before Z Homing when homing all axes (G28).
 // - Prevent Z homing when the Z probe is outside bed area.
 //#define Z_SAFE_HOMING
 
@@ -1139,6 +1120,12 @@
 //#define MAKRPANEL
 
 //
+// ReprapWorld Graphical LCD
+// https://reprapworld.com/?products_details&products_id/1218
+//
+//#define REPRAPWORLD_GRAPHICAL_LCD
+
+//
 // Activate one of these if you have a Panucatt Devices
 // Viki 2.0 or mini Viki with Graphic LCD
 // http://panucatt.com
@@ -1357,7 +1344,4 @@
   //#define FILAMENT_LCD_DISPLAY
 #endif
 
-#include "Configuration_adv.h"
-#include "thermistortables.h"
-
-#endif //CONFIGURATION_H
+#endif // CONFIGURATION_H

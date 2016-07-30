@@ -27,7 +27,7 @@
 * Implementation of the LCD display routines for a Hitachi HD44780 display. These are common LCD character displays.
 **/
 
-#include "timestamp_t.h"
+#include "duration_t.h"
 
 extern volatile uint8_t buttons;  //an extended version of the last checked buttons in a bit array.
 
@@ -39,25 +39,6 @@ extern volatile uint8_t buttons;  //an extended version of the last checked butt
 // via a shift/i2c register.
 
 #if ENABLED(ULTIPANEL)
-  // All UltiPanels might have an encoder - so this is always be mapped onto first two bits
-  #define BLEN_B 1
-  #define BLEN_A 0
-
-  #define EN_B (_BV(BLEN_B)) // The two encoder pins are connected through BTN_EN1 and BTN_EN2
-  #define EN_A (_BV(BLEN_A))
-
-  #if BUTTON_EXISTS(ENC)
-    // encoder click is directly connected
-    #define BLEN_C 2
-    #define EN_C (_BV(BLEN_C))
-  #endif
-
-  #ifdef __SAM3X8E__
-    #if HAS_BTN_BACK
-      #define BLEN_D 3
-      #define EN_D BIT(BLEN_D)
-    #endif
-  #endif
 
   //
   // Setup other button mappings of each panel
@@ -87,56 +68,35 @@ extern volatile uint8_t buttons;  //an extended version of the last checked butt
 
   #elif ENABLED(LCD_I2C_PANELOLU2)
 
-    #if BUTTON_EXISTS(ENC)
-
-      #undef LCD_CLICKED
-      #define LCD_CLICKED (buttons&EN_C)
-
-    #else // Read through I2C if not directly connected to a pin
+    #if !BUTTON_EXISTS(ENC) // Use I2C if not directly connected to a pin
 
       #define B_I2C_BTN_OFFSET 3 // (the first three bit positions reserved for EN_A, EN_B, EN_C)
 
       #define B_MI (PANELOLU2_ENCODER_C<<B_I2C_BTN_OFFSET) // requires LiquidTWI2 library v1.2.3 or later
 
       #undef LCD_CLICKED
-      #define LCD_CLICKED (buttons&B_MI)
+      #define LCD_CLICKED (buttons & B_MI)
 
       // I2C buttons take too long to read inside an interrupt context and so we read them during lcd_update
       #define LCD_HAS_SLOW_BUTTONS
 
     #endif
 
-  #elif ENABLED(REPRAPWORLD_KEYPAD)
-
-    // REPRAPWORLD_KEYPAD defined in ultralcd.h
-
-  #elif ENABLED(NEWPANEL)
-    #define LCD_CLICKED (buttons&EN_C)
-    #ifdef __SAM3X8E__
-      #if HAS_BTN_BACK
-        #define LCD_BACK_CLICKED (buttons&EN_D)
-      #endif
-    #endif
-
-  #else // old style ULTIPANEL
-    //bits in the shift register that carry the buttons for:
-    // left up center down right red(stop)
-    #define BL_LE 7
-    #define BL_UP 6
-    #define BL_MI 5
-    #define BL_DW 4
-    #define BL_RI 3
-    #define BL_ST 2
-
-    //automatic, do not change
+  #elif DISABLED(NEWPANEL) // old style ULTIPANEL
+    // Shift register bits correspond to buttons:
+    #define BL_LE 7   // Left
+    #define BL_UP 6   // Up
+    #define BL_MI 5   // Middle
+    #define BL_DW 4   // Down
+    #define BL_RI 3   // Right
+    #define BL_ST 2   // Red Button
     #define B_LE (_BV(BL_LE))
     #define B_UP (_BV(BL_UP))
     #define B_MI (_BV(BL_MI))
     #define B_DW (_BV(BL_DW))
     #define B_RI (_BV(BL_RI))
     #define B_ST (_BV(BL_ST))
-
-    #define LCD_CLICKED (buttons&(B_MI|B_ST))
+    #define LCD_CLICKED ((buttons & B_MI) || (buttons & B_ST))
   #endif
 
 #endif //ULTIPANEL
@@ -786,10 +746,9 @@ static void lcd_implementation_status_screen() {
     lcd.print(LCD_STR_CLOCK[0]);
 
     char buffer[10];
-    timestamp_t time(print_job_timer.duration());
-    time.toString(buffer, true);
-    if (time.timestamp != 0) lcd_print(buffer);
-    else lcd_printPGM(PSTR("--:--"));
+    duration_t elapsed = print_job_timer.duration();
+    elapsed.toDigital(buffer);
+    lcd_print(buffer);
 
   #endif // LCD_HEIGHT > 3
 

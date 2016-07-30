@@ -22,12 +22,6 @@
 #ifndef MARLIN_H
 #define MARLIN_H
 
-#define  FORCE_INLINE __attribute__((always_inline)) inline
-/**
- * Compiler warning on unused variable.
- */
-#define UNUSED(x) (void) (x)
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,43 +33,19 @@
 #else
   #include <util/delay.h>
   #include <avr/eeprom.h>
-  #include "fastio.h"
 #endif
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 
-#include "Configuration.h"
-#include "pins.h"
-
-#include "utility.h"
-
-#ifndef SANITYCHECK_H
-  #error "Your Configuration.h and Configuration_adv.h files are outdated!"
-#endif
-
-#include "Arduino.h"
+#include "MarlinConfig.h"
 
 #include "enum.h"
-
-typedef unsigned long millis_t;
+#include "types.h"
+#include "fastio.h"
+#include "utility.h"
 
 #ifdef USBCON
   #include "HardwareSerial.h"
-#endif
-
-#ifndef __SAM3X8E__
-  #include "MarlinSerial.h"
-#endif
-
-#include "WString.h"
-
-#if ENABLED(PRINTCOUNTER)
-  #include "printcounter.h"
-#else
-  #include "stopwatch.h"
-#endif
-
-#ifdef USBCON
   #if ENABLED(BLUETOOTH)
     #define MYSERIAL bluetoothSerial
   #else
@@ -95,8 +65,17 @@ typedef unsigned long millis_t;
       #define MYSERIAL Serial3
     #endif
   #else
+    #include "MarlinSerial.h"
     #define MYSERIAL customizedSerial
   #endif
+#endif
+
+#include "WString.h"
+
+#if ENABLED(PRINTCOUNTER)
+  #include "printcounter.h"
+#else
+  #include "stopwatch.h"
 #endif
 
 #define SERIAL_CHAR(x) MYSERIAL.write(x)
@@ -134,6 +113,8 @@ void serial_echopair_P(const char* s_P, long v);
 void serial_echopair_P(const char* s_P, float v);
 void serial_echopair_P(const char* s_P, double v);
 void serial_echopair_P(const char* s_P, unsigned long v);
+FORCE_INLINE void serial_echopair_P(const char* s_P, uint8_t v) { serial_echopair_P(s_P, (int)v); }
+FORCE_INLINE void serial_echopair_P(const char* s_P, uint16_t v) { serial_echopair_P(s_P, (int)v); }
 FORCE_INLINE void serial_echopair_P(const char* s_P, bool v) { serial_echopair_P(s_P, (int)v); }
 FORCE_INLINE void serial_echopair_P(const char* s_P, void *v) { serial_echopair_P(s_P, (unsigned long)v); }
 
@@ -291,11 +272,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
   void setPwmFrequency(uint8_t pin, int val);
 #endif
 
-#ifndef CRITICAL_SECTION_START
-  #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
-  #define CRITICAL_SECTION_END    SREG = _sreg;
-#endif
-
 /**
  * Feedrate scaling and conversion
  */
@@ -312,13 +288,25 @@ extern bool volumetric_enabled;
 extern int extruder_multiplier[EXTRUDERS]; // sets extrude multiply factor (in percent) for each extruder individually
 extern float filament_size[EXTRUDERS]; // cross-sectional area of filament (in millimeters), typically around 1.75 or 2.85, 0 disables the volumetric calculations for the extruder.
 extern float volumetric_multiplier[EXTRUDERS]; // reciprocal of cross-sectional area of filament (in square millimeters), stored this way to reduce computational burden in planner
-extern float current_position[NUM_AXIS];
-extern float home_offset[3]; // axis[n].home_offset
-extern float sw_endstop_min[3]; // axis[n].sw_endstop_min
-extern float sw_endstop_max[3]; // axis[n].sw_endstop_max
 extern bool axis_known_position[3]; // axis[n].is_known
 extern bool axis_homed[3]; // axis[n].is_homed
 extern volatile bool wait_for_heatup;
+
+extern float current_position[NUM_AXIS];
+extern float position_shift[3];
+extern float home_offset[3];
+extern float sw_endstop_min[3];
+extern float sw_endstop_max[3];
+
+#define LOGICAL_POSITION(POS, AXIS) (POS + home_offset[AXIS] + position_shift[AXIS])
+#define RAW_POSITION(POS, AXIS)     (POS - home_offset[AXIS] - position_shift[AXIS])
+#define LOGICAL_X_POSITION(POS)     LOGICAL_POSITION(POS, X_AXIS)
+#define LOGICAL_Y_POSITION(POS)     LOGICAL_POSITION(POS, Y_AXIS)
+#define LOGICAL_Z_POSITION(POS)     LOGICAL_POSITION(POS, Z_AXIS)
+#define RAW_X_POSITION(POS)         RAW_POSITION(POS, X_AXIS)
+#define RAW_Y_POSITION(POS)         RAW_POSITION(POS, Y_AXIS)
+#define RAW_Z_POSITION(POS)         RAW_POSITION(POS, Z_AXIS)
+#define RAW_CURRENT_POSITION(AXIS)  RAW_POSITION(current_position[AXIS], AXIS)
 
 // GCode support for external objects
 bool code_seen(char);
@@ -342,6 +330,7 @@ float code_value_temp_diff();
     void adjust_delta(float cartesian[3]);
   #endif
 #elif ENABLED(SCARA)
+  extern float delta[3];
   extern float axis_scaling[3];  // Build size scaling
   void inverse_kinematics(const float cartesian[3]);
   void forward_kinematics_SCARA(float f_scara[3]);
@@ -414,13 +403,8 @@ void calculate_volumetric_multipliers();
 
 // Buzzer
 #if HAS_BUZZER
-  #if ENABLED(SPEAKER)
-    #include "speaker.h"
-    extern Speaker buzzer;
-  #else
-    #include "buzzer.h"
-    extern Buzzer buzzer;
-  #endif
+  #include "buzzer.h"
+  extern Buzzer buzzer;
 #endif
 
 /**

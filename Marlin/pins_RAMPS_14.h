@@ -143,7 +143,11 @@
 
 #if ENABLED(ULTRA_LCD)
 
-  #if ENABLED(NEWPANEL) && ENABLED(PANEL_ONE)
+  #if ENABLED(REPRAPWORLD_GRAPHICAL_LCD)
+    #define LCD_PINS_RS     49 //CS chip select /SS chip slave select
+    #define LCD_PINS_ENABLE 51 //SID (MOSI)
+    #define LCD_PINS_D4     52 //SCK (CLK) clock
+  #elif ENABLED(NEWPANEL) && ENABLED(PANEL_ONE)
     #define LCD_PINS_RS 40
     #define LCD_PINS_ENABLE 42
     #define LCD_PINS_D4 65
@@ -184,6 +188,11 @@
         #define LCD_PIN_BL 39
       #endif
 
+    #elif ENABLED(REPRAPWORLD_GRAPHICAL_LCD)
+      #define BTN_EN1 64
+      #define BTN_EN2 59
+      #define BTN_ENC 63
+      #define SD_DETECT_PIN 42
     #elif ENABLED(LCD_I2C_PANELOLU2)
       #define BTN_EN1 47  // reverse if the encoder turns the wrong way.
       #define BTN_EN2 43
@@ -249,7 +258,7 @@
       //The encoder and click button
       #define BTN_EN1 40
       #define BTN_EN2 63
-      #define BTN_ENC 59  //the click switch
+      #define BTN_ENC 59
       //not connected to a pin
       #define SD_DETECT_PIN 49
 
@@ -295,9 +304,3 @@
   #define MAX6675_SS       66 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
 #endif
 
-#if DISABLED(SDSUPPORT)
-  // these pins are defined in the SD library if building with SD support
-  #define SCK_PIN          52
-  #define MISO_PIN         50
-  #define MOSI_PIN         51
-#endif

@@ -31,7 +31,7 @@
 
 #if ENABLED(PRINTCOUNTER)
   #include "printcounter.h"
-  #include "timestamp_t.h"
+  #include "duration_t.h"
 #endif
 
 int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
@@ -700,7 +700,7 @@ void kill_screen(const char* lcd_msg) {
       }
       if (lcdDrawUpdate)
         lcd_implementation_drawedit(msg, ftostr43sign(
-          ((1000 * babysteps_done) / planner.axis_steps_per_mm[axis]) * 0.001f
+          ((1000 * babysteps_done) * planner.steps_to_mm[axis]) * 0.001f
         ));
     }
 
@@ -1338,11 +1338,11 @@ void kill_screen(const char* lcd_msg) {
    * to "current_position" after a short delay.
    */
   inline void manual_move_to_current(AxisEnum axis
-    #if EXTRUDERS > 1
+    #if E_MANUAL > 1
       , int8_t eindex=-1
     #endif
   ) {
-    #if EXTRUDERS > 1
+    #if E_MANUAL > 1
       if (axis == E_AXIS) manual_move_e_index = eindex >= 0 ? eindex : active_extruder;
     #endif
     manual_move_start_time = millis() + (move_menu_scale < 0.99 ? 0UL : 250UL); // delay for bigger moves
@@ -1379,9 +1379,9 @@ void kill_screen(const char* lcd_msg) {
     static void lcd_move_y() { _lcd_move_xyz(PSTR(MSG_MOVE_Y), Y_AXIS, sw_endstop_min[Y_AXIS], sw_endstop_max[Y_AXIS]); }
   #endif
   static void lcd_move_z() { _lcd_move_xyz(PSTR(MSG_MOVE_Z), Z_AXIS, sw_endstop_min[Z_AXIS], sw_endstop_max[Z_AXIS]); }
-  static void lcd_move_e(
-    #if E_STEPPERS > 1
-      int8_t eindex = -1
+  static void _lcd_move_e(
+    #if E_MANUAL > 1
+      int8_t eindex
     #endif
   ) {
     if (LCD_CLICKED) { lcd_goto_previous_menu(true); return; }
@@ -1390,7 +1390,7 @@ void kill_screen(const char* lcd_msg) {
       current_position[E_AXIS] += float((int32_t)encoderPosition) * move_menu_scale;
       encoderPosition = 0;
       manual_move_to_current(E_AXIS
-        #if E_STEPPERS > 1
+        #if E_MANUAL > 1
           , eindex
         #endif
       );
@@ -1398,15 +1398,15 @@ void kill_screen(const char* lcd_msg) {
     }
     if (lcdDrawUpdate) {
       PGM_P pos_label;
-      #if E_STEPPERS == 1
+      #if E_MANUAL == 1
         pos_label = PSTR(MSG_MOVE_E);
       #else
         switch (eindex) {
           default: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E1); break;
           case 1: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E2); break;
-          #if E_STEPPERS > 2
+          #if E_MANUAL > 2
             case 2: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E3); break;
-            #if E_STEPPERS > 3
+            #if E_MANUAL > 3
               case 3: pos_label = PSTR(MSG_MOVE_E MSG_MOVE_E4); break;
             #endif
           #endif
@@ -1416,13 +1416,14 @@ void kill_screen(const char* lcd_msg) {
     }
   }
 
-  #if E_STEPPERS > 1
-    static void lcd_move_e0() { lcd_move_e(0); }
-    static void lcd_move_e1() { lcd_move_e(1); }
-    #if E_STEPPERS > 2
-      static void lcd_move_e2() { lcd_move_e(2); }
-      #if E_STEPPERS > 3
-        static void lcd_move_e3() { lcd_move_e(3); }
+  static void lcd_move_e() { _lcd_move_e(); }
+  #if E_MANUAL > 1
+    static void lcd_move_e0() { _lcd_move_e(0); }
+    static void lcd_move_e1() { _lcd_move_e(1); }
+    #if E_MANUAL > 2
+      static void lcd_move_e2() { _lcd_move_e(2); }
+      #if E_MANUAL > 3
+        static void lcd_move_e3() { _lcd_move_e(3); }
       #endif
     #endif
   #endif
@@ -1458,14 +1459,14 @@ void kill_screen(const char* lcd_msg) {
           MENU_ITEM(gcode, MSG_SELECT MSG_E2, PSTR("T1"));
       #endif
 
-      #if E_STEPPERS == 1
+      #if E_MANUAL == 1
         MENU_ITEM(submenu, MSG_MOVE_E, lcd_move_e);
       #else
         MENU_ITEM(submenu, MSG_MOVE_E MSG_MOVE_E1, lcd_move_e0);
         MENU_ITEM(submenu, MSG_MOVE_E MSG_MOVE_E2, lcd_move_e1);
-        #if E_STEPPERS > 2
+        #if E_MANUAL > 2
           MENU_ITEM(submenu, MSG_MOVE_E MSG_MOVE_E3, lcd_move_e2);
-          #if E_STEPPERS > 3
+          #if E_MANUAL > 3
             MENU_ITEM(submenu, MSG_MOVE_E MSG_MOVE_E4, lcd_move_e3);
           #endif
         #endif
@@ -1791,6 +1792,7 @@ void kill_screen(const char* lcd_msg) {
   }
 
   static void _reset_acceleration_rates() { planner.reset_acceleration_rates(); }
+  static void _planner_refresh_positioning() { planner.refresh_positioning(); }
 
   /**
    *
@@ -1828,22 +1830,22 @@ void kill_screen(const char* lcd_msg) {
     MENU_ITEM_EDIT(float5, MSG_A_RETRACT, &planner.retract_acceleration, 100, 99000);
     MENU_ITEM_EDIT(float5, MSG_A_TRAVEL, &planner.travel_acceleration, 100, 99000);
     #ifdef __SAM3X8E__
-      MENU_ITEM_EDIT(float62, MSG_XSTEPS, &planner.axis_steps_per_mm[X_AXIS], 5, 9999);
-      MENU_ITEM_EDIT(float62, MSG_YSTEPS, &planner.axis_steps_per_mm[Y_AXIS], 5, 9999);
+      MENU_ITEM_EDIT_CALLBACK(float62, MSG_XSTEPS, &planner.axis_steps_per_mm[X_AXIS], 5, 9999, _planner_refresh_positioning);
+      MENU_ITEM_EDIT_CALLBACK(float62, MSG_YSTEPS, &planner.axis_steps_per_mm[Y_AXIS], 5, 9999, _planner_refresh_positioning);
     #else
-      MENU_ITEM_EDIT(float52, MSG_XSTEPS, &planner.axis_steps_per_mm[X_AXIS], 5, 9999);
-      MENU_ITEM_EDIT(float52, MSG_YSTEPS, &planner.axis_steps_per_mm[Y_AXIS], 5, 9999);
+      MENU_ITEM_EDIT_CALLBACK(float52, MSG_XSTEPS, &planner.axis_steps_per_mm[X_AXIS], 5, 9999, _planner_refresh_positioning);
+      MENU_ITEM_EDIT_CALLBACK(float52, MSG_YSTEPS, &planner.axis_steps_per_mm[Y_AXIS], 5, 9999, _planner_refresh_positioning);
     #endif
     #if ENABLED(DELTA)
       #ifdef __SAM3X8E__
-        MENU_ITEM_EDIT(float62, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999);
+        MENU_ITEM_EDIT_CALLBACK(float62, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999, _planner_refresh_positioning);
       #else
-        MENU_ITEM_EDIT(float52, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999);
+        MENU_ITEM_EDIT_CALLBACK(float52, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999, _planner_refresh_positioning);
       #endif
     #else
-      MENU_ITEM_EDIT(float51, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999);
+      MENU_ITEM_EDIT_CALLBACK(float51, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999, _planner_refresh_positioning);
     #endif
-    MENU_ITEM_EDIT(float51, MSG_ESTEPS, &planner.axis_steps_per_mm[E_AXIS], 5, 9999);
+    MENU_ITEM_EDIT_CALLBACK(float51, MSG_ESTEPS, &planner.axis_steps_per_mm[E_AXIS], 5, 9999, _planner_refresh_positioning);
     #if ENABLED(ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
       MENU_ITEM_EDIT(bool, MSG_ENDSTOP_ABORT, &stepper.abort_on_endstop_hit);
     #endif
@@ -2010,13 +2012,15 @@ void kill_screen(const char* lcd_msg) {
         STATIC_ITEM(MSG_INFO_PRINT_COUNT ": ", false, false, itostr3left(stats.totalPrints));          // Print Count: 999
         STATIC_ITEM(MSG_INFO_COMPLETED_PRINTS"  : ", false, false, itostr3left(stats.finishedPrints)); // Completed  : 666
 
-        timestamp_t time(stats.printTime);
-        time.toString(buffer);
+        duration_t elapsed = stats.printTime;
+        elapsed.toString(buffer);
+
         STATIC_ITEM(MSG_INFO_PRINT_TIME ": ", false, false);                                           // Total print Time:
         STATIC_ITEM("", false, false, buffer);                                                         // 99y 364d 23h 59m 59s
 
-        time.timestamp = stats.longestPrint;
-        time.toString(buffer);
+        elapsed = stats.longestPrint;
+        elapsed.toString(buffer);
+
         STATIC_ITEM(MSG_INFO_PRINT_LONGEST ": ", false, false);                                        // Longest job time:
         STATIC_ITEM("", false, false, buffer);                                                         // 99y 364d 23h 59m 59s
 
