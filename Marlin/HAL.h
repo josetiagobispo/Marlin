@@ -29,7 +29,9 @@
 
   #include <stdint.h>
   #include "Arduino.h"
+#if 0
   #include "types.h"
+#endif
   #include "fastio.h"
 
   // --------------------------------------------------------------------------
@@ -100,6 +102,7 @@
   // Enable interrupts
   void sei(void);
 
+#if 0
   static inline void HAL_delay(millis_t ms) {
     unsigned int del;
     while (ms > 0) {
@@ -108,6 +111,7 @@
       ms -= del;
     }
   }
+#endif
 
   static FORCE_INLINE void HAL_delayMicroseconds(uint32_t usec) { //usec += 3;
     uint32_t n = usec * (F_CPU / 3000000);

@@ -2395,18 +2395,10 @@ void kill_screen(const char* lcd_msg) {
     // Buzz and wait. The delay is needed for buttons to settle!
     #if ENABLED(LCD_USE_I2C_BUZZER)
       lcd.buzz(LCD_FEEDBACK_FREQUENCY_DURATION_MS, LCD_FEEDBACK_FREQUENCY_HZ);
-      #ifdef __SAM3X8E__
-        HAL_delay(10);
-      #else
-        delay(10);
-      #endif
+      delay(10);
     #elif PIN_EXISTS(BEEPER)
       buzzer.tone(LCD_FEEDBACK_FREQUENCY_DURATION_MS, LCD_FEEDBACK_FREQUENCY_HZ);
-      #ifdef __SAM3X8E__
-        for (int8_t i = 5; i--;) { buzzer.tick(); HAL_delay(2); }
-      #else
-        for (int8_t i = 5; i--;) { buzzer.tick(); delay(2); }
-      #endif
+      for (int8_t i = 5; i--;) { buzzer.tick(); delay(2); }
     #endif
   }
 

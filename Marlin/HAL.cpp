@@ -369,7 +369,7 @@ static void eeprom_init(void) {
     digitalWrite( SPI_EEPROM1_CS, LOW );
     spiSend(SPI_CHAN_EEPROM1, eeprom_temp , 1);
     digitalWrite(SPI_EEPROM1_CS, HIGH);
-    HAL_delay(1);
+    delay(1);
 
     /*write addr*/
     eeprom_temp[0] = 2;//WRITE
@@ -380,7 +380,7 @@ static void eeprom_init(void) {
 
     spiSend(SPI_CHAN_EEPROM1 ,newvalue , 1);
     digitalWrite(SPI_EEPROM1_CS, HIGH);
-    HAL_delay(7);   // wait for page write to complete
+    delay(7);   // wait for page write to complete
   }
 
   // Read any data type from EEPROM that was previously written by eprBurnValue
@@ -453,7 +453,7 @@ void eeprom_write_byte(uint8_t* pos, uint8_t value) {
 
     // wait for write cycle to complete
     // this could be done more efficiently with "acknowledge polling"
-    HAL_delay(5);
+    delay(5);
   #endif// MB(ALLIGATOR)
 }
 
@@ -484,7 +484,7 @@ void eeprom_update_block(const void* pos, void* eeprom_address, size_t n) {
  
     // wait for write cycle to complete
     // this could be done more efficiently with "acknowledge polling"
-    HAL_delay(5);
+    delay(5);
   }
 }
 

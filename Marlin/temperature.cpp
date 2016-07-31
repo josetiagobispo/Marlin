@@ -1131,11 +1131,7 @@ void Temperature::init() {
   #endif
 
   // Wait for temperature measurement to settle
-  #ifdef __SAM3X8E__
-    HAL_delay(250);
-  #else
-    delay(250);
-  #endif
+  delay(250);
 
   #define TEMP_MIN_ROUTINE(NR) \
     minttemp[NR] = HEATER_ ## NR ## _MINTEMP; \

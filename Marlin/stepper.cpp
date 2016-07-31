@@ -1204,11 +1204,7 @@ void Stepper::report_positions() {
     SPI.transfer(value);
     digitalWrite(DIGIPOTSS_PIN, HIGH); // take the SS pin high to de-select the chip:
     /*
-    #ifdef __SAM3X8E__
-      //HAL_delay(10);
-    #else
-      //delay(10);
-    #endif
+    //delay(10);
     */
   }
 

@@ -5096,11 +5096,7 @@ inline void gcode_M81() {
       fanSpeeds[0] = 0;
     #endif
   #endif
-  #ifdef __SAM3X8E__
-    HAL_delay(1000); // Wait 1 second before switching off
-  #else
-    delay(1000); // Wait 1 second before switching off
-  #endif
+  delay(1000); // Wait 1 second before switching off
   #if HAS_SUICIDE
     stepper.synchronize();
     suicide();
@@ -5817,36 +5813,16 @@ inline void gcode_M226() {
       const float PULSE_LENGTH = 0.01524;
       for (int i = 0; i < NUM_PULSES; i++) {
         WRITE(PHOTOGRAPH_PIN, HIGH);
-        #ifdef __SAM3X8E__
-          HAL_delay(PULSE_LENGTH);
-        #else
-          _delay_ms(PULSE_LENGTH);
-        #endif
+        _delay_ms(PULSE_LENGTH);
         WRITE(PHOTOGRAPH_PIN, LOW);
-        #ifdef __SAM3X8E__
-          HAL_delay(PULSE_LENGTH);
-        #else
-          _delay_ms(PULSE_LENGTH);
-        #endif
+        _delay_ms(PULSE_LENGTH);
       }
-      #ifdef __SAM3X8E__
-        HAL_delay(7.33);
-      #else
-        delay(7.33);
-      #endif
+      delay(7.33);
       for (int i = 0; i < NUM_PULSES; i++) {
         WRITE(PHOTOGRAPH_PIN, HIGH);
-        #ifdef __SAM3X8E__
-          HAL_delay(PULSE_LENGTH);
-        #else
-          _delay_ms(PULSE_LENGTH);
-        #endif
+        _delay_ms(PULSE_LENGTH);
         WRITE(PHOTOGRAPH_PIN, LOW);
-        #ifdef __SAM3X8E__
-          HAL_delay(PULSE_LENGTH);
-        #else
-          _delay_ms(PULSE_LENGTH);
-        #endif
+        _delay_ms(PULSE_LENGTH);
       }
 
     #endif // !CHDK && HAS_PHOTOGRAPH
@@ -6393,11 +6369,7 @@ inline void gcode_M503() {
     disable_e1();
     disable_e2();
     disable_e3();
-    #ifdef __SAM3X8E__
-      HAL_delay(100);
-    #else
-      delay(100);
-    #endif
+    delay(100);
 
     #if HAS_BUZZER
       millis_t next_tick = 0;
@@ -6416,17 +6388,9 @@ inline void gcode_M503() {
       #endif
       idle(true);
     }
-    #ifdef __SAM3X8E__
-      HAL_delay(100);
-    #else
-      delay(100);
-    #endif
+    delay(100);
     while (lcd_clicked()) idle(true);
-    #ifdef __SAM3X8E__
-      HAL_delay(100);
-    #else
-      delay(100);
-    #endif
+    delay(100);
 
     // Show load message
     lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_LOAD);
@@ -8759,11 +8723,7 @@ void kill(const char* lcd_msg) {
     UNUSED(lcd_msg);
   #endif
 
-  #ifdef __SAM3X8E__
-    for (int i = 5; i--;) HAL_delay(100); // Wait a short time
-  #else
-    for (int i = 5; i--;) delay(100); // Wait a short time
-  #endif
+  for (int i = 5; i--;) delay(100); // Wait a short time
 
   cli(); // Stop interrupts
   thermalManager.disable_all_heaters();

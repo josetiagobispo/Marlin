@@ -413,11 +413,7 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
       strncpy_P(tmp, text + i, min(len, LCD_WIDTH));
       lcd.setCursor(col, line);
       lcd_print(tmp);
-      #ifdef __SAM3X8E__
-        HAL_delay(time / max(n, 1));
-      #else
-        delay(time / max(n, 1));
-      #endif
+      delay(time / max(n, 1));
     }
   }
 
