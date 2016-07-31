@@ -2462,6 +2462,10 @@ static void homeaxis(AxisEnum axis) {
   // Move slowly towards the endstop until triggered
   line_to_axis_pos(axis, 2 * home_bump_mm(axis) * axis_home_dir, get_homing_bump_feedrate(axis));
 
+  // reset current_position to 0 to reflect hitting endpoint
+  current_position[axis] = 0;
+  sync_plan_position();
+
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) DEBUG_POS("> TRIGGER ENDSTOP", current_position);
   #endif
@@ -2478,7 +2482,6 @@ static void homeaxis(AxisEnum axis) {
         lockZ1 = (z_endstop_adj < 0);
 
       if (lockZ1) stepper.set_z_lock(true); else stepper.set_z2_lock(true);
-      sync_plan_position();
 
       // Move to the adjusted endstop height
       line_to_axis_pos(axis, adj);
@@ -2491,7 +2494,6 @@ static void homeaxis(AxisEnum axis) {
   #if ENABLED(DELTA)
     // retrace by the amount specified in endstop_adj
     if (endstop_adj[axis] * axis_home_dir < 0) {
-      sync_plan_position();
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (DEBUGGING(LEVELING)) {
           SERIAL_ECHOPAIR("> endstop_adj = ", endstop_adj[axis]);
@@ -4517,7 +4519,7 @@ inline void gcode_M104() {
       SERIAL_PROTOCOL_F(thermalManager.degTargetHotend(target_extruder), 1);
       #if ENABLED(SHOW_TEMP_ADC_VALUES)
         SERIAL_PROTOCOLPAIR(" (", thermalManager.current_temperature_raw[target_extruder] / OVERSAMPLENR);
-        SERIAL_CHAR(')')
+        SERIAL_CHAR(')');
       #endif
     #endif
     #if HAS_TEMP_BED
@@ -4527,7 +4529,7 @@ inline void gcode_M104() {
       SERIAL_PROTOCOL_F(thermalManager.degTargetBed(), 1);
       #if ENABLED(SHOW_TEMP_ADC_VALUES)
         SERIAL_PROTOCOLPAIR(" (", thermalManager.current_temperature_bed_raw / OVERSAMPLENR);
-        SERIAL_CHAR(')')
+        SERIAL_CHAR(')');
       #endif
     #endif
     #if HOTENDS > 1
@@ -4539,7 +4541,7 @@ inline void gcode_M104() {
         SERIAL_PROTOCOL_F(thermalManager.degTargetHotend(e), 1);
         #if ENABLED(SHOW_TEMP_ADC_VALUES)
           SERIAL_PROTOCOLPAIR(" (", thermalManager.current_temperature_raw[e] / OVERSAMPLENR);
-          SERIAL_CHAR(')')
+          SERIAL_CHAR(')');
         #endif
       }
     #endif

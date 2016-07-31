@@ -5,35 +5,15 @@
 
 <img align="top" width=175 src="buildroot/share/pixmaps/logo/marlin-250.png" />
 
-## Release Candidate -- Marlin Duo 1.1.0-RCBugFix - 27 April 2016
+## Marlin Duo 1.1.0-RCBugFix - 26 July 2016
 
 ## Information
 Marlin Duo is modified version of [Marlin](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix).
 This branch is compatible with both Arduino MEGA and Due. 
-
-__Not for production use – use with caution!__
-
-## Recent Changes
-- RCBugFix
   - based on [original Marlin 1.1.0-RCBugFix](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
   - Due part was ported [from Marlinkimbra4due 4.2.4 - 4.2.8 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
 
-- RC6 - 24 Apr 2016
-  - based on [original Marlin RCBugFix 1.1.0-RC6](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
-  - Due part was ported [from Marlinkimbra4due 4.2.4 - 4.2.8 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
-
-- RC5 - 01 Apr 2016
-  - based on [original Marlin RCBugFix 1.1.0-RC5](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
-  - Due part was ported [from Marlinkimbra4due 4.2.4 - 4.2.8 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
-
-- RC4 - 24 Mar 2016
-  - based on [original Marlin RCBugFix 1.1.0-RC4](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
-  - Due part was ported [from Marlinkimbra4due 4.2.4 - 4.2.8 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
-
-- RC3 - 01 Dec 2015
-  - First release<br>
-  - based on [original Marlin RCBugFix 1.1.0-RC3](https://github.com/MarlinFirmware/Marlin/tree/RCBugFix)<br>
-  - Due part was ported [from Marlinkimbra4due 4.2.4 dev](https://github.com/MagoKimbra/MarlinKimbra4due) and [Marlin4Due 1.0.3 dev](https://github.com/Wurstnase/Marlin4Due)<br>
+__Not for production use – use with caution!__
 
 ## Current Status: Experimental
 
