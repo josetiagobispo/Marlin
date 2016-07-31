@@ -810,7 +810,11 @@ void Planner::check_axes_activity() {
   #endif
   delta_mm[E_AXIS] = 0.01 * (de * steps_to_mm[E_AXIS]) * volumetric_multiplier[extruder] * extruder_multiplier[extruder];
 
-  if (block->steps[X_AXIS] <= dropsegments && block->steps[Y_AXIS] <= dropsegments && block->steps[Z_AXIS] <= dropsegments) {
+  #ifdef __SAM3X8E__
+    if (block->steps[X_AXIS] <= (long)dropsegments && block->steps[Y_AXIS] <= (long)dropsegments && block->steps[Z_AXIS] <= (long)dropsegments) {
+  #else
+    if (block->steps[X_AXIS] <= dropsegments && block->steps[Y_AXIS] <= dropsegments && block->steps[Z_AXIS] <= dropsegments) {
+  #endif
     block->millimeters = fabs(delta_mm[E_AXIS]);
   }
   else {

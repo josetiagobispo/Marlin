@@ -2781,10 +2781,17 @@ inline void gcode_G4() {
       gcode_get_destination();
 
       float offset[] = {
-        code_seen('I') ? code_value_axis_units(X_AXIS) : 0.0,
-        code_seen('J') ? code_value_axis_units(Y_AXIS) : 0.0,
-        code_seen('P') ? code_value_axis_units(X_AXIS) : 0.0,
-        code_seen('Q') ? code_value_axis_units(Y_AXIS) : 0.0
+        #ifdef __SAM3X8E__
+          code_seen('I') ? code_value_axis_units(X_AXIS) : 0.0f,
+          code_seen('J') ? code_value_axis_units(Y_AXIS) : 0.0f,
+          code_seen('P') ? code_value_axis_units(X_AXIS) : 0.0f,
+          code_seen('Q') ? code_value_axis_units(Y_AXIS) : 0.0f
+        #else
+          code_seen('I') ? code_value_axis_units(X_AXIS) : 0.0,
+          code_seen('J') ? code_value_axis_units(Y_AXIS) : 0.0,
+          code_seen('P') ? code_value_axis_units(X_AXIS) : 0.0,
+          code_seen('Q') ? code_value_axis_units(Y_AXIS) : 0.0
+        #endif
       };
 
       plan_cubic_move(offset);

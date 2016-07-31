@@ -1421,7 +1421,11 @@ bool SdBaseFile::rmRfStar() {
       if (!f.remove()) goto fail;
     }
     // position to next entry if required
-    if (curPosition_ != (32 * (index + 1))) {
+    #ifdef __SAM3X8E__
+      if (curPosition_ != (uint32_t)(32 * (index + 1))) {
+    #else
+      if (curPosition_ != (32 * (index + 1))) {
+    #endif
       if (!seekSet(32 * (index + 1))) goto fail;
     }
   }
