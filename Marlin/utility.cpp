@@ -27,16 +27,8 @@
 void safe_delay(millis_t ms) {
   while (ms > 50) {
     ms -= 50;
-    #ifdef __SAM3X8E__
-      HAL_delay(50);
-    #else
-      delay(50);
-    #endif
+    delay(50);
     thermalManager.manage_heater();
   }
-  #ifdef __SAM3X8E__
-    HAL_delay(ms);
-  #else
-    delay(ms);
-  #endif
+  delay(ms);
 }
