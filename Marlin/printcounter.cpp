@@ -141,7 +141,11 @@ void PrintCounter::showStats() {
   SERIAL_PROTOCOLPGM(MSG_STATS);
 
   SERIAL_ECHOPGM("Filament used: ");
-  SERIAL_ECHO(this->data.filamentUsed / 1000);
+  #ifdef __SAM3X8E__
+    SERIAL_ECHO((float)(this->data.filamentUsed / 1000));
+  #else
+    SERIAL_ECHO(this->data.filamentUsed / 1000);
+  #endif
   SERIAL_ECHOPGM("m");
 
   SERIAL_EOL;

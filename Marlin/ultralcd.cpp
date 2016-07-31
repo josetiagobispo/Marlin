@@ -2024,7 +2024,11 @@ void kill_screen(const char* lcd_msg) {
         STATIC_ITEM(MSG_INFO_PRINT_LONGEST ": ", false, false);                                        // Longest job time:
         STATIC_ITEM("", false, false, buffer);                                                         // 99y 364d 23h 59m 59s
 
-        sprintf_P(buffer, PSTR("%im"), stats.filamentUsed / 1000);
+        #ifdef __SAM3X8E__
+          sprintf_P(buffer, PSTR("%im"), (int16_t)(stats.filamentUsed / 1000));
+        #else
+          sprintf_P(buffer, PSTR("%im"), stats.filamentUsed / 1000);
+        #endif
         STATIC_ITEM(MSG_INFO_PRINT_FILAMENT ": ", false, false);                                       // Extruded total:
         STATIC_ITEM("", false, false, buffer);                                                         // 125m
         END_SCREEN();

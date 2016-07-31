@@ -53,7 +53,11 @@ class PrintCounter: public Stopwatch {
      * @brief EEPROM address
      * @details Defines the start offset address where the data is stored.
      */
-    const uint16_t address = 0x32;
+    #ifdef __SAM3X8E__
+      const uint32_t address = 0x40;
+    #else
+      const uint16_t address = 0x32;
+    #endif
 
     /**
      * @brief Interval in seconds between counter updates
