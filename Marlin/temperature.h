@@ -31,7 +31,7 @@
 #include "planner.h"
 #include "thermistortables.h"
 
-#if ENABLED(PID_ADD_EXTRUSION_RATE)
+#if ENABLED(PID_EXTRUSION_SCALING)
   #include "stepper.h"
 #endif
 
@@ -83,7 +83,7 @@ class Temperature {
       #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
 
         static float Kp[HOTENDS], Ki[HOTENDS], Kd[HOTENDS];
-        #if ENABLED(PID_ADD_EXTRUSION_RATE)
+        #if ENABLED(PID_EXTRUSION_SCALING)
           static float Kc[HOTENDS];
         #endif
         #define PID_PARAM(param, h) Temperature::param[h]
@@ -91,7 +91,7 @@ class Temperature {
       #else
 
         static float Kp, Ki, Kd;
-        #if ENABLED(PID_ADD_EXTRUSION_RATE)
+        #if ENABLED(PID_EXTRUSION_SCALING)
           static float Kc;
         #endif
         #define PID_PARAM(param, h) Temperature::param
@@ -153,7 +153,7 @@ class Temperature {
                    iTerm[HOTENDS],
                    dTerm[HOTENDS];
 
-      #if ENABLED(PID_ADD_EXTRUSION_RATE)
+      #if ENABLED(PID_EXTRUSION_SCALING)
         static float cTerm[HOTENDS];
         static long last_e_position;
         static long lpq[LPQ_MAX_LEN];

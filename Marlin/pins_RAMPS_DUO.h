@@ -29,7 +29,7 @@
 #endif
 
 #define IS_RAMPS_DUO
-#include "pins_RAMPS_14.h"
+#include "pins_RAMPS.h"
 
 #undef TEMP_0_PIN
 #define TEMP_0_PIN          9 // ANALOG NUMBERING

@@ -109,22 +109,22 @@
   // define software SPI pins so Mega can use unmodified 168/328 shields
   #ifdef __SAM3X8E__
     /** Software SPI chip select pin for the SD */
-    uint8_t const SOFT_SPI_CS_PIN = SDSS;
+    #define SOFT_SPI_CS_PIN = SS_PIN;
     /** Software SPI Master Out Slave In pin */
-    uint8_t const SOFT_SPI_MOSI_PIN = MOSI_PIN;
+    #define SOFT_SPI_MOSI_PIN = MOSI_PIN;
     /** Software SPI Master In Slave Out pin */
-    uint8_t const SOFT_SPI_MISO_PIN = MISO_PIN;
+    #define SOFT_SPI_MISO_PIN = MISO_PIN;
     /** Software SPI Clock pin */
-    uint8_t const SOFT_SPI_SCK_PIN = SCK_PIN;
+    #define SOFT_SPI_SCK_PIN = SCK_PIN;
   #else
     /** Software SPI chip select pin for the SD */
-    uint8_t const SOFT_SPI_CS_PIN = 10;
+    #define SOFT_SPI_CS_PIN 10
     /** Software SPI Master Out Slave In pin */
-    uint8_t const SOFT_SPI_MOSI_PIN = 11;
+    #define SOFT_SPI_MOSI_PIN 11
     /** Software SPI Master In Slave Out pin */
-    uint8_t const SOFT_SPI_MISO_PIN = 12;
+    #define SOFT_SPI_MISO_PIN 12
     /** Software SPI Clock pin */
-    uint8_t const SOFT_SPI_SCK_PIN = 13;
+    #define SOFT_SPI_SCK_PIN 13
   #endif
   //------------------------------------------------------------------------------
   /**
