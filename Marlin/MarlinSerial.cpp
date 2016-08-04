@@ -30,9 +30,11 @@
 */
 #ifndef __SAM3X8E__
 
-#include "Marlin.h"
 #include "MarlinSerial.h"
+
 #include "stepper.h"
+
+#include "Marlin.h"
 
 #ifndef USBCON
 // this next line disables the entire HardwareSerial.cpp,

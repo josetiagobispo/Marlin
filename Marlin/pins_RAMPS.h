@@ -65,25 +65,29 @@
 #define SERVO2_PIN          5
 #define SERVO3_PIN          4
 
-#define X_STEP_PIN         54
-#define X_DIR_PIN          55
-#define X_ENABLE_PIN       38
 #define X_MIN_PIN           3
 #ifndef X_MAX_PIN
   #define X_MAX_PIN         2
 #endif
+#define Y_MIN_PIN          14
+#define Y_MAX_PIN          15
+#define Z_MIN_PIN          18
+#define Z_MAX_PIN          19
+#ifndef Z_MIN_PROBE_PIN
+  #define Z_MIN_PROBE_PIN  32
+#endif
+
+#define X_STEP_PIN         54
+#define X_DIR_PIN          55
+#define X_ENABLE_PIN       38
 
 #define Y_STEP_PIN         60
 #define Y_DIR_PIN          61
 #define Y_ENABLE_PIN       56
-#define Y_MIN_PIN          14
-#define Y_MAX_PIN          15
 
 #define Z_STEP_PIN         46
 #define Z_DIR_PIN          48
 #define Z_ENABLE_PIN       62
-#define Z_MIN_PIN          18
-#define Z_MAX_PIN          19
 
 #define E0_STEP_PIN        26
 #define E0_DIR_PIN         28
@@ -99,11 +103,6 @@
 // Use the RAMPS 1.4 Analog input 5 on the AUX2 connector
 #define FILWIDTH_PIN        5 // ANALOG NUMBERING
 
-#if ENABLED(Z_MIN_PROBE_ENDSTOP)
-  // Define a pin to use as the signal pin on Arduino for the Z_PROBE endstop.
-  #define Z_MIN_PROBE_PIN  32
-#endif
-
 // define digital pin 4 for the filament runout sensor. Use the RAMPS 1.4 digital input 4 on the servos connector
 #define FIL_RUNOUT_PIN      4
 
@@ -116,11 +115,8 @@
   #define SLED_PIN           -1
 #endif
 
-/*
-
 // Augmentation for auto-assigning RAMPS plugs
-
-#if DISABLED(IS_RAMPS_EEB) && DISABLED(IS_RAMPS_EEF) && DISABLED(IS_RAMPS_EFB) && DISABLED(IS_RAMPS_EFF) && DISABLED(IS_RAMPS_SF)
+#if DISABLED(IS_RAMPS_EEB) && DISABLED(IS_RAMPS_EEF) && DISABLED(IS_RAMPS_EFB) && DISABLED(IS_RAMPS_EFF) && DISABLED(IS_RAMPS_SF) && !PIN_EXISTS(MOSFET_D)
   #if HOTENDS > 1
     #if TEMP_SENSOR_BED
       #define IS_RAMPS_EEB
@@ -133,8 +129,6 @@
     #define IS_RAMPS_EFF
   #endif
 #endif
-
-*/
 
 /**
  * Hi Voltage PWM Pin Assignments
@@ -170,7 +164,7 @@
   #define CONTROLLERFAN_PIN  -1
 #elif ENABLED(IS_RAMPS_SF)                     // Spindle, Fan
   #define FAN_PIN        RAMPS_D8_PIN
-#else                                          // Non-specific are "EFB" by legacy
+#else                                          // Non-specific are "EFB" (i.e., "EFBF" or "EFBE")
   #define FAN_PIN        RAMPS_D9_PIN
   #define HEATER_BED_PIN RAMPS_D8_PIN
   #if HOTENDS == 1

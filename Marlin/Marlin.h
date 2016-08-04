@@ -233,7 +233,6 @@ void manage_inactivity(bool ignore_stepper_queue = false);
 /**
  * The axis order in all axis related arrays is X, Y, Z, E
  */
-#define NUM_AXIS 4
 #define _AXIS(AXIS) AXIS ##_AXIS
 
 void enable_all_steppers();
@@ -279,7 +278,7 @@ extern int feedrate_percentage;
 
 #define MMM_TO_MMS(MM_M) ((MM_M)/60.0)
 #define MMS_TO_MMM(MM_S) ((MM_S)*60.0)
-#define MMM_SCALED(MM_M) ((MM_M)*feedrate_percentage/100.0)
+#define MMM_SCALED(MM_M) ((MM_M)*feedrate_percentage*0.01)
 #define MMS_SCALED(MM_S) MMM_SCALED(MM_S)
 #define MMM_TO_MMS_SCALED(MM_M) (MMS_SCALED(MMM_TO_MMS(MM_M)))
 
@@ -402,9 +401,8 @@ extern uint8_t active_extruder;
 void calculate_volumetric_multipliers();
 
 // Buzzer
-#if HAS_BUZZER
+#if HAS_BUZZER && PIN_EXISTS(BEEPER)
   #include "buzzer.h"
-  extern Buzzer buzzer;
 #endif
 
 /**

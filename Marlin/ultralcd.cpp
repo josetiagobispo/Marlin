@@ -183,75 +183,95 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
     static void menu_action_sddirectory(const char* filename, char* longFilename);
   #endif
 
-  #if DISABLED(LCD_I2C_VIKI)
-    #ifndef ENCODER_FEEDRATE_DEADZONE
-      #define ENCODER_FEEDRATE_DEADZONE 10
-    #endif
-    #ifndef ENCODER_STEPS_PER_MENU_ITEM
-      #define ENCODER_STEPS_PER_MENU_ITEM 5
-    #endif
-    #ifndef ENCODER_PULSES_PER_STEP
-      #define ENCODER_PULSES_PER_STEP 1
-    #endif
-  #else
-    #ifndef ENCODER_FEEDRATE_DEADZONE
-      #define ENCODER_FEEDRATE_DEADZONE 4
-    #endif
-    #ifndef ENCODER_STEPS_PER_MENU_ITEM
-      #define ENCODER_STEPS_PER_MENU_ITEM 2 // VIKI LCD rotary encoder uses a different number of steps per rotation
-    #endif
-    #ifndef ENCODER_PULSES_PER_STEP
-      #define ENCODER_PULSES_PER_STEP 1
-    #endif
-  #endif
-
-
   /* Helper macros for menus */
 
+  #ifndef ENCODER_FEEDRATE_DEADZONE
+    #define ENCODER_FEEDRATE_DEADZONE 10
+  #endif
+  #ifndef ENCODER_STEPS_PER_MENU_ITEM
+    #define ENCODER_STEPS_PER_MENU_ITEM 5
+  #endif
+  #ifndef ENCODER_PULSES_PER_STEP
+    #define ENCODER_PULSES_PER_STEP 1
+  #endif
+
   /**
-   * START_SCREEN generates the init code for a screen function
+   * START_SCREEN_OR_MENU generates init code for a screen or menu
    *
    *   encoderLine is the position based on the encoder
    *   encoderTopLine is the top menu line to display
    *   _lcdLineNr is the index of the LCD line (e.g., 0-3)
    *   _menuLineNr is the menu item to draw and process
    *   _thisItemNr is the index of each MENU_ITEM or STATIC_ITEM
+   *   _countedItems is the total number of items in the menu (after one call)
    */
-  #define _START_SCREEN(CODE, SKIP) \
+  #define START_SCREEN_OR_MENU(LIMIT) \
     ENCODER_DIRECTION_MENUS(); \
     encoderRateMultiplierEnabled = false; \
     if (encoderPosition > 0x8000) encoderPosition = 0; \
+    static int8_t _countedItems = 0; \
     int8_t encoderLine = encoderPosition / ENCODER_STEPS_PER_MENU_ITEM; \
-    NOMORE(encoderTopLine, encoderLine); \
-    int8_t _menuLineNr = encoderTopLine, _thisItemNr; \
-    bool _skipStatic = SKIP; \
-    CODE; \
-    for (int8_t _lcdLineNr = 0; _lcdLineNr < LCD_HEIGHT; _lcdLineNr++, _menuLineNr++) { \
-      _thisItemNr = 0;
+    if (_countedItems > 0 && encoderLine >= _countedItems - LIMIT) { \
+      encoderLine = _countedItems - LIMIT; \
+      encoderPosition = encoderLine * (ENCODER_STEPS_PER_MENU_ITEM); \
+    }
 
-  #define START_SCREEN() _START_SCREEN(NOOP, false)
+  #define SCREEN_OR_MENU_LOOP() \
+    int8_t _menuLineNr = encoderTopLine, _thisItemNr; \
+    for (int8_t _lcdLineNr = 0; _lcdLineNr < LCD_HEIGHT; _lcdLineNr++, _menuLineNr++) { \
+      _thisItemNr = 0
 
   /**
-   * START_MENU generates the init code for a menu function
+   * START_SCREEN  Opening code for a screen having only static items.
+   *               Do simplified scrolling of the entire screen.
    *
-   *   wasClicked indicates the controller was clicked
+   * START_MENU    Opening code for a screen with menu items.
+   *               Scroll as-needed to keep the selected line in view.
+   *               'wasClicked' indicates the controller was clicked.
    */
+  #define START_SCREEN() \
+    START_SCREEN_OR_MENU(LCD_HEIGHT); \
+    encoderTopLine = encoderLine; \
+    bool _skipStatic = false; \
+    SCREEN_OR_MENU_LOOP()
+
   #ifdef __SAM3X8E__
     #if HAS_BTN_BACK
-      #define START_MENU() _START_SCREEN( \
+      #define START_MENU() \
+        START_SCREEN_OR_MENU(1); \
+        NOMORE(encoderTopLine, encoderLine); \
+        if (encoderLine >= encoderTopLine + LCD_HEIGHT) { \
+          encoderTopLine = encoderLine - (LCD_HEIGHT - 1); \
+        } \
         bool wasClicked = LCD_CLICKED; \
         bool wasBackClicked = LCD_BACK_CLICKED; \
+        bool _skipStatic = true; \
         if (wasBackClicked) { \
           lcd_quick_feedback(); \
           menu_action_back(); \
-          return; }, \
-        true \
-      )
+          return; } \
+        SCREEN_OR_MENU_LOOP()
     #else
-      #define START_MENU() _START_SCREEN(bool wasClicked = LCD_CLICKED, true)
+      #define START_MENU() \
+        START_SCREEN_OR_MENU(1); \
+        NOMORE(encoderTopLine, encoderLine); \
+        if (encoderLine >= encoderTopLine + LCD_HEIGHT) { \
+          encoderTopLine = encoderLine - (LCD_HEIGHT - 1); \
+        } \
+        bool wasClicked = LCD_CLICKED; \
+        bool _skipStatic = true; \
+        SCREEN_OR_MENU_LOOP()
     #endif
   #else
-    #define START_MENU() _START_SCREEN(bool wasClicked = LCD_CLICKED, true)
+    #define START_MENU() \
+      START_SCREEN_OR_MENU(1); \
+      NOMORE(encoderTopLine, encoderLine); \
+      if (encoderLine >= encoderTopLine + LCD_HEIGHT) { \
+        encoderTopLine = encoderLine - (LCD_HEIGHT - 1); \
+      } \
+      bool wasClicked = LCD_CLICKED; \
+      bool _skipStatic = true; \
+      SCREEN_OR_MENU_LOOP()
   #endif
 
   /**
@@ -287,7 +307,7 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
         return; \
       } \
     } \
-    _thisItemNr++
+    ++_thisItemNr
 
   #define MENU_ITEM(TYPE, LABEL, ARGS...) do { \
       _skipStatic = false; \
@@ -305,42 +325,15 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
       if (lcdDrawUpdate) \
         lcd_implementation_drawmenu_static(_lcdLineNr, PSTR(LABEL), ## ARGS); \
     } \
-    _thisItemNr++
+    ++_thisItemNr
 
-  /**
-   *
-   * END_SCREEN  Closing code for a screen having only static items.
-   *             Do simplified scrolling of the entire screen.
-   *
-   * END_MENU    Closing code for a screen with menu items.
-   *             Scroll as-needed to keep the selected line in view.
-   *
-   * At this point _thisItemNr equals the total number of items.
-   *
-   */
-
-  // Simple-scroll by using encoderLine as encoderTopLine
   #define END_SCREEN() \
     } \
-    NOMORE(encoderLine, _thisItemNr - LCD_HEIGHT); \
-    NOLESS(encoderLine, 0); \
-    encoderPosition = encoderLine * (ENCODER_STEPS_PER_MENU_ITEM); \
-    if (encoderTopLine != encoderLine) { \
-      encoderTopLine = encoderLine; \
-      lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT; \
-    }
+    _countedItems = _thisItemNr
 
-  // Scroll through menu items, scrolling as-needed to stay in view
   #define END_MENU() \
     } \
-    if (encoderLine >= _thisItemNr) { \
-      encoderLine = _thisItemNr - 1; \
-      encoderPosition = encoderLine * (ENCODER_STEPS_PER_MENU_ITEM); \
-    } \
-    if (encoderLine >= encoderTopLine + LCD_HEIGHT) { \
-      encoderTopLine = encoderLine - (LCD_HEIGHT - 1); \
-      lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT; \
-    } \
+    _countedItems = _thisItemNr; \
     UNUSED(_skipStatic)
 
   #if ENABLED(ENCODER_RATE_MULTIPLIER)
@@ -1096,8 +1089,8 @@ void kill_screen(const char* lcd_msg) {
             lcd_return_to_status();
             //LCD_MESSAGEPGM(MSG_LEVEL_BED_DONE);
             #if HAS_BUZZER
-              buzzer.tone(200, 659);
-              buzzer.tone(200, 698);
+              lcd_buzz(200, 659);
+              lcd_buzz(200, 698);
             #endif
           }
           else {
@@ -2380,23 +2373,23 @@ void kill_screen(const char* lcd_msg) {
    * Audio feedback for controller clicks
    *
    */
-
-  #if ENABLED(LCD_USE_I2C_BUZZER)
-    void lcd_buzz(long duration, uint16_t freq) { // called from buzz() in Marlin_main.cpp where lcd is unknown
+  void lcd_buzz(long duration, uint16_t freq) {
+    #if ENABLED(LCD_USE_I2C_BUZZER)
       lcd.buzz(duration, freq);
-    }
-  #endif
+    #elif PIN_EXISTS(BEEPER)
+      buzzer.tone(duration, freq);
+    #endif
+  }
 
   void lcd_quick_feedback() {
     lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
     next_button_update_ms = millis() + 500;
 
     // Buzz and wait. The delay is needed for buttons to settle!
+    lcd_buzz(LCD_FEEDBACK_FREQUENCY_DURATION_MS, LCD_FEEDBACK_FREQUENCY_HZ);
     #if ENABLED(LCD_USE_I2C_BUZZER)
-      lcd.buzz(LCD_FEEDBACK_FREQUENCY_DURATION_MS, LCD_FEEDBACK_FREQUENCY_HZ);
       delay(10);
     #elif PIN_EXISTS(BEEPER)
-      buzzer.tone(LCD_FEEDBACK_FREQUENCY_DURATION_MS, LCD_FEEDBACK_FREQUENCY_HZ);
       for (int8_t i = 5; i--;) { buzzer.tick(); delay(2); }
     #endif
   }
