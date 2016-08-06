@@ -586,6 +586,7 @@ void set_current_from_steppers_for_axis(AxisEnum axis);
   void plan_cubic_move(const float offset[4]);
 #endif
 
+void serial_echopair_P(const char* s_P, const char *v)   { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, char v)          { serialprintPGM(s_P); SERIAL_CHAR(v); }
 void serial_echopair_P(const char* s_P, int v)           { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, long v)          { serialprintPGM(s_P); SERIAL_ECHO(v); }
@@ -1850,10 +1851,6 @@ static void clean_up_after_endstop_or_probe_move() {
       }
     #endif
     float z_dest = LOGICAL_Z_POSITION(z_raise);
-
-    if (zprobe_zoffset < 0)
-      z_dest -= zprobe_zoffset;
-
     if (z_dest > current_position[Z_AXIS])
       do_blocking_move_to_z(z_dest);
   }
@@ -2102,7 +2099,7 @@ static void clean_up_after_endstop_or_probe_move() {
     if (endstops.z_probe_enabled == deploy) return false;
 
     // Make room for probe
-    do_probe_raise(_Z_RAISE_PROBE_DEPLOY_STOW);
+    do_probe_raise(_Z_PROBE_DEPLOY_HEIGHT);
 
     #if ENABLED(Z_PROBE_SLED)
       if (axis_unhomed_error(true, false, false)) { stop(); return true; }
@@ -2211,7 +2208,7 @@ static void clean_up_after_endstop_or_probe_move() {
     float old_feedrate_mm_m = feedrate_mm_m;
 
     // Ensure a minimum height before moving the probe
-    do_probe_raise(Z_RAISE_BETWEEN_PROBINGS);
+    do_probe_raise(Z_PROBE_TRAVEL_HEIGHT);
 
     // Move to the XY where we shall probe
     #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -2241,7 +2238,7 @@ static void clean_up_after_endstop_or_probe_move() {
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("> do_probe_raise");
       #endif
-      do_probe_raise(Z_RAISE_BETWEEN_PROBINGS);
+      do_probe_raise(Z_PROBE_TRAVEL_HEIGHT);
     }
 
     if (verbose_level > 2) {
@@ -3026,7 +3023,7 @@ inline void gcode_G28() {
 
       if (home_all_axis || homeX || homeY) {
         // Raise Z before homing any other axes and z is not already high enough (never lower z)
-        destination[Z_AXIS] = LOGICAL_Z_POSITION(MIN_Z_HEIGHT_FOR_HOMING);
+        destination[Z_AXIS] = LOGICAL_Z_POSITION(Z_HOMING_HEIGHT);
         if (destination[Z_AXIS] > current_position[Z_AXIS]) {
 
           #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -3107,7 +3104,7 @@ inline void gcode_G28() {
           if (home_all_axis) {
 
             /**
-             * At this point we already have Z at MIN_Z_HEIGHT_FOR_HOMING height
+             * At this point we already have Z at Z_HOMING_HEIGHT height
              * No need to move Z any more as this height should already be safe
              * enough to reach Z_SAFE_HOMING XY positions.
              * Just make sure the planner is in sync.
@@ -3271,10 +3268,10 @@ inline void gcode_G28() {
     feedrate_mm_m = homing_feedrate_mm_m[X_AXIS];
 
     current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-      #if Z_RAISE_BETWEEN_PROBINGS > MIN_Z_HEIGHT_FOR_HOMING
-        + Z_RAISE_BETWEEN_PROBINGS
-      #elif MIN_Z_HEIGHT_FOR_HOMING > 0
-        + MIN_Z_HEIGHT_FOR_HOMING
+      #if Z_PROBE_TRAVEL_HEIGHT > Z_HOMING_HEIGHT
+        + Z_PROBE_TRAVEL_HEIGHT
+      #elif Z_HOMING_HEIGHT > 0
+        + Z_HOMING_HEIGHT
       #endif
     ;
     line_to_current_position();
@@ -3283,7 +3280,7 @@ inline void gcode_G28() {
     current_position[Y_AXIS] = LOGICAL_Y_POSITION(y);
     line_to_current_position();
 
-    #if Z_RAISE_BETWEEN_PROBINGS > 0 || MIN_Z_HEIGHT_FOR_HOMING > 0
+    #if Z_PROBE_TRAVEL_HEIGHT > 0 || Z_HOMING_HEIGHT > 0
       current_position[Z_AXIS] = LOGICAL_Z_POSITION(MESH_HOME_SEARCH_Z);
       line_to_current_position();
     #endif
@@ -3379,10 +3376,10 @@ inline void gcode_G28() {
         else {
           // One last "return to the bed" (as originally coded) at completion
           current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-            #if Z_RAISE_BETWEEN_PROBINGS > MIN_Z_HEIGHT_FOR_HOMING
-              + Z_RAISE_BETWEEN_PROBINGS
-            #elif MIN_Z_HEIGHT_FOR_HOMING > 0
-              + MIN_Z_HEIGHT_FOR_HOMING
+            #if Z_PROBE_TRAVEL_HEIGHT > Z_HOMING_HEIGHT
+              + Z_PROBE_TRAVEL_HEIGHT
+            #elif Z_HOMING_HEIGHT > 0
+              + Z_HOMING_HEIGHT
             #endif
           ;
           line_to_current_position();
@@ -3716,7 +3713,7 @@ inline void gcode_G28() {
 
     #endif // !AUTO_BED_LEVELING_GRID
 
-    // Raise to _Z_RAISE_PROBE_DEPLOY_STOW. Stow the probe.
+    // Raise to _Z_PROBE_DEPLOY_HEIGHT. Stow the probe.
     if (STOW_PROBE()) return;
 
     // Restore state after probing
