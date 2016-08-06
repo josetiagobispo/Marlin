@@ -1362,27 +1362,40 @@ void Temperature::disable_all_heaters() {
 
     next_max6675_ms = ms + MAX6675_HEAT_INTERVAL;
 
-    CBI(
-      #ifdef PRR
-        PRR
-      #elif defined(PRR0)
-        PRR0
-      #endif
-        , PRSPI);
-    SPCR = _BV(MSTR) | _BV(SPE) | MAX6675_SPEED_BITS;
+    #ifdef __SAM3X8E__
+      spiBegin();
+      spiInit(2);
+    #else
+      CBI(
+        #ifdef PRR
+          PRR
+        #elif defined(PRR0)
+          PRR0
+        #endif
+          , PRSPI);
+      SPCR = _BV(MSTR) | _BV(SPE) | MAX6675_SPEED_BITS;
+    #endif
 
     WRITE(MAX6675_SS, 0); // enable TT_MAX6675
 
     // ensure 100ns delay - a bit extra is fine
-    asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
-    asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
+    #ifdef __SAM3X8E__
+      HAL_delayMicroseconds(1);
+    #else
+      asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
+      asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
+    #endif
 
     // Read a big-endian temperature value
     max6675_temp = 0;
     for (uint8_t i = sizeof(max6675_temp); i--;) {
-      SPDR = 0;
-      for (;!TEST(SPSR, SPIF););
-      max6675_temp |= SPDR;
+      #ifdef __SAM3X8E__
+        max6675_temp |= spiRec();
+      #else
+        SPDR = 0;
+        for (;!TEST(SPSR, SPIF););
+        max6675_temp |= SPDR;
+      #endif
       if (i > 0) max6675_temp <<= 8; // shift left if not the last byte
     }
 
