@@ -158,18 +158,34 @@
     #define DEFAULT_KEEPALIVE_INTERVAL 2
   #endif
 
+  #ifdef __SAM3X8E__
+    /**
+     * Hidden options for developer
+     */
+    // Double stepping start from STEP_DOUBLER_FREQUENCY + 1, quad stepping start from STEP_DOUBLER_FREQUENCY * 2 + 1
+    #ifndef STEP_DOUBLER_FREQUENCY
+      #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+        #define STEP_DOUBLER_FREQUENCY 60000 // Hz
+      #else
+        #define STEP_DOUBLER_FREQUENCY 80000 // Hz
+      #endif
+    #endif
+    // Disable double / quad stepping
+    //#define DISABLE_MULTI_STEPPING
+  #endif
+
   /**
    * MAX_STEP_FREQUENCY differs for TOSHIBA
    */
   #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
     #ifdef __SAM3X8E__
-      #define MAX_STEP_FREQUENCY 90000 // Max step frequency for Toshiba Stepper Controllers, 96kHz is close to maximum for an Arduino Due
+      #define MAX_STEP_FREQUENCY STEP_DOUBLER_FREQUENCY // Max step frequency for Toshiba Stepper Controllers, 96kHz is close to maximum for an Arduino Due
     #else
       #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
     #endif
   #else
     #ifdef __SAM3X8E__
-      #define MAX_STEP_FREQUENCY 320000 // Max step frequency for the Due is approx. 330kHz
+      #define MAX_STEP_FREQUENCY (STEP_DOUBLER_FREQUENCY * 4) // Max step frequency for the Due is approx. 330kHz
     #else
       #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
     #endif
@@ -777,6 +793,12 @@
 
   // Stepper pulse duration, in cycles
   #define STEP_PULSE_CYCLES ((MINIMUM_STEPPER_PULSE) * CYCLES_PER_MICROSECOND)
+  #ifdef __SAM3X8E__
+    // Add additional delay for between direction signal and pulse signal of stepper
+    #ifndef STEPPER_DIRECTION_DELAY
+      #define STEPPER_DIRECTION_DELAY 0 // time in microseconds
+    #endif
+  #endif
 
   #ifndef DELTA_ENDSTOP_ADJ
     #define DELTA_ENDSTOP_ADJ { 0 }
