@@ -29,8 +29,7 @@
 // Initialize watchdog with a 4 sec interrupt time
 void watchdog_init() {
   #ifdef __SAM3X8E__
-    const uint32_t wdtTicks = 256;	// number of watchdog ticks @ 32768Hz/128 before the watchdog times out (max 4095)
-    WDT_Enable(WDT, (wdtTicks << WDT_MR_WDV_Pos) | (wdtTicks << WDT_MR_WDD_Pos) | WDT_MR_WDRSTEN);	// enable watchdog, reset the mcu if it times out
+    watchdogEnable(4000U); // = 4000 ms = 4 sec (max 15996ms)
   #else
     #if ENABLED(WATCHDOG_RESET_MANUAL)
       // We enable the watchdog timer, but only for the interrupt.
