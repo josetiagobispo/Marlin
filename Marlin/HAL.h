@@ -151,11 +151,13 @@
   #define TEMP_TIMER_IRQN TC3_IRQn
   #define HAL_TEMP_TIMER_ISR 	void TC3_Handler()
 
+#if 0
   #define BEEPER_TIMER_NUM 4
   #define BEEPER_TIMER_COUNTER TC1
   #define BEEPER_TIMER_CHANNEL 1
   #define BEEPER_TIMER_IRQN TC4_IRQn
   #define HAL_BEEPER_TIMER_ISR  void TC4_Handler()
+#endif
 
   #define HAL_TIMER_RATE 		     (F_CPU/2)
   #define TICKS_PER_NANOSECOND   (HAL_TIMER_RATE)/1000
@@ -197,9 +199,11 @@
     stepperChannel->TC_RC = (counter_value <= count) ? count : counter_value;
   }
 
+#if 0
   void tone(uint8_t pin, int frequency);
   void noTone(uint8_t pin);
   //void tone(uint8_t pin, int frequency, long duration);
+#endif
 
   uint16_t getAdcReading(adc_channel_num_t chan);
   void startAdcConversion(adc_channel_num_t chan);

@@ -668,6 +668,7 @@ int HAL_timer_get_count (uint8_t timer_num) {
   return tc->TC_CHANNEL[channel].TC_RC;
 }
 
+#if 0
 // Due have no tone, this is from Repetier 0.92.3
 static uint32_t tone_pin;
 
@@ -717,7 +718,7 @@ HAL_BEEPER_TIMER_ISR {
     WRITE_VAR(tone_pin, toggle);
     toggle = !toggle;
 }
-
+#endif
 // --------------------------------------------------------------------------
 //
 // --------------------------------------------------------------------------
