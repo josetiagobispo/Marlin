@@ -283,8 +283,10 @@ volatile long Stepper::endstops_trigsteps[3];
 void Stepper::wake_up() {
   //  TCNT1 = 0;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
-  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-    ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
+  #ifdef __SAM3X8E__
+    #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+      ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
+    #endif
   #endif
 }
 
@@ -1079,8 +1081,10 @@ void Stepper::quick_stop() {
   while (planner.blocks_queued()) planner.discard_current_block();
   current_block = NULL;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
-  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-    ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
+  #ifdef __SAM3X8E__
+    #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+      ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
+    #endif
   #endif
 }
 
