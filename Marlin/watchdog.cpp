@@ -29,7 +29,7 @@
 // Initialize watchdog with a 4 sec interrupt time
 void watchdog_init() {
   #ifdef __SAM3X8E__
-    watchdogEnable(4000U); // = 4000 ms = 4 sec (max 15996ms)
+    watchdogEnable(4000U); // number of milliseconds before the watchdog times out (max 15996)
   #else
     #if ENABLED(WATCHDOG_RESET_MANUAL)
       // We enable the watchdog timer, but only for the interrupt.
