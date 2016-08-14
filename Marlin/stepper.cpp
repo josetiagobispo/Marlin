@@ -283,6 +283,9 @@ volatile long Stepper::endstops_trigsteps[3];
 void Stepper::wake_up() {
   //  TCNT1 = 0;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
+  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
+  #endif
 }
 
 /**
@@ -551,9 +554,11 @@ void Stepper::isr() {
       if (step_events_completed >= current_block->step_event_count) break;
     }
 
-    #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-      // If we have esteps to execute, fire the next ISR "now"
-      if (e_steps[TOOL_E_INDEX]) OCR0A = TCNT0 + 2;
+    #ifndef __SAM3X8E__
+      #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+        // If we have esteps to execute, fire the next ISR "now"
+        if (e_steps[TOOL_E_INDEX]) OCR0A = TCNT0 + 2;
+      #endif
     #endif
 
     // Calculate new timer value
@@ -713,28 +718,53 @@ void Stepper::isr() {
 
 #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
 
-  // Timer interrupt for E. e_steps is set in the main routine;
-  // Timer 0 is shared with millies
-  ISR(TIMER0_COMPA_vect) { Stepper::advance_isr(); }
+  #ifdef __SAM3X8E__
+    HAL_ADVANCE_EXTRUDER_TIMER_ISR { Stepper::advance_isr(); }
+  #else
+    // Timer interrupt for E. e_steps is set in the main routine;
+    // Timer 0 is shared with millies
+    ISR(TIMER0_COMPA_vect) { Stepper::advance_isr(); }
+  #endif
 
   void Stepper::advance_isr() {
 
-    old_OCR0A += eISR_Rate;
-    OCR0A = old_OCR0A;
+    #ifdef __SAM3X8E__
+      extruderChannel->TC_SR;
+    #else
+      old_OCR0A += eISR_Rate;
+      OCR0A = old_OCR0A;
+    #endif
 
-    #define STEP_E_ONCE(INDEX) \
-      if (e_steps[INDEX] != 0) { \
-        E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
-        if (e_steps[INDEX] < 0) { \
-          E## INDEX ##_DIR_WRITE(INVERT_E## INDEX ##_DIR); \
-          e_steps[INDEX]++; \
-        } \
-        else { \
-          E## INDEX ##_DIR_WRITE(!INVERT_E## INDEX ##_DIR); \
-          e_steps[INDEX]--; \
-        } \
-        E## INDEX ##_STEP_WRITE(!INVERT_E_STEP_PIN); \
-      }
+    #ifdef __SAM3X8E__
+      #define STEP_E_ONCE(INDEX) \
+        if (e_steps[INDEX] != 0) { \
+          E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
+          if (e_steps[INDEX] < 0) { \
+            E## INDEX ##_DIR_WRITE(INVERT_E## INDEX ##_DIR); \
+            e_steps[INDEX]++; \
+          } \
+          else { \
+            E## INDEX ##_DIR_WRITE(!INVERT_E## INDEX ##_DIR); \
+            e_steps[INDEX]--; \
+          } \
+          HAL_delayMicroseconds(2U); \
+          E## INDEX ##_STEP_WRITE(!INVERT_E_STEP_PIN); \
+        }
+    #else
+      #define STEP_E_ONCE(INDEX) \
+        if (e_steps[INDEX] != 0) { \
+          E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
+          if (e_steps[INDEX] < 0) { \
+            E## INDEX ##_DIR_WRITE(INVERT_E## INDEX ##_DIR); \
+            e_steps[INDEX]++; \
+          } \
+          else { \
+            E## INDEX ##_DIR_WRITE(!INVERT_E## INDEX ##_DIR); \
+            e_steps[INDEX]--; \
+          } \
+          E## INDEX ##_STEP_WRITE(!INVERT_E_STEP_PIN); \
+        }
+    #endif
 
     // Step all E steppers that have steps
     for (uint8_t i = 0; i < step_loops; i++) {
@@ -934,7 +964,8 @@ void Stepper::init() {
     }
 
     #ifdef __SAM3X8E__
-      //needs rework
+      HAL_advance_extruder_timer_start();
+      ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
     #else
       #if defined(TCCR0A) && defined(WGM01)
         CBI(TCCR0A, WGM01);
@@ -1048,6 +1079,9 @@ void Stepper::quick_stop() {
   while (planner.blocks_queued()) planner.discard_current_block();
   current_block = NULL;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
+  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
+  #endif
 }
 
 void Stepper::endstop_triggered(AxisEnum axis) {

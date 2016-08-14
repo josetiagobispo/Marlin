@@ -130,6 +130,14 @@
   void eeprom_update_block(const void* pos, void* eeprom_address, size_t n);
 
   // timers
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    #define ADVANCE_EXTRUDER_TIMER_NUM 1
+    #define ADVANCE_EXTRUDER_TIMER_COUNTER TC0
+    #define ADVANCE_EXTRUDER_TIMER_CHANNEL 1
+    #define ADVANCE_EXTRUDER_TIMER_IRQN TC1_IRQn
+    #define HAL_ADVANCE_EXTRUDER_TIMER_ISR 	void TC1_Handler()
+  //#endif
+
   #define STEP_TIMER_NUM 2
   #define STEP_TIMER_COUNTER TC0
   #define STEP_TIMER_CHANNEL 2
@@ -152,11 +160,24 @@
   #define HAL_TIMER_RATE 		     (F_CPU/2)
   #define TICKS_PER_NANOSECOND   (HAL_TIMER_RATE)/1000
 
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    #define ENABLE_ADVANCE_EXTRUDER_INTERRUPT()	HAL_timer_enable_interrupt (ADVANCE_EXTRUDER_TIMER_NUM)
+    #define DISABLE_ADVANCE_EXTRUDER_INTERRUPT()	HAL_timer_disable_interrupt (ADVANCE_EXTRUDER_TIMER_NUM)
+  //#endif
+
   #define ENABLE_STEPPER_DRIVER_INTERRUPT()	HAL_timer_enable_interrupt (STEP_TIMER_NUM)
   #define DISABLE_STEPPER_DRIVER_INTERRUPT()	HAL_timer_disable_interrupt (STEP_TIMER_NUM)
 
   //
 
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    extern  TcChannel *extruderChannel;
+  //#endif
+  extern TcChannel* stepperChannel;
+
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    void HAL_advance_extruder_timer_start(void);
+  //#endif
   void HAL_step_timer_start(void);
   void HAL_temp_timer_start (uint8_t timer_num);
 
@@ -170,7 +191,6 @@
   int HAL_timer_get_count (uint8_t timer_num);
   //
 
-  extern TcChannel* stepperChannel;
   static FORCE_INLINE void HAL_timer_stepper_count(uint32_t count) {
     uint32_t counter_value = stepperChannel->TC_CV + 42;  // we need time for other stuff!
     //if(count < 105) count = 105;

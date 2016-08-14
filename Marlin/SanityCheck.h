@@ -742,12 +742,6 @@
   #ifdef WATCHDOG_RESET_MANUAL
     #error "WATCHDOG_RESET_MANUAL is not supported by ARM platform yet."
   #endif
-  #ifdef ADVANCE
-    #error "ADVANCE is not supported by ARM platform yet."
-  #endif
-  #ifdef LIN_ADVANCE
-    #error "LIN_ADVANCE is not supported by ARM platform yet."
-  #endif
   #ifdef TX_BUFFER_SIZE
     #error "TX_BUFFER_SIZE is not supported by ARM platform yet."
   #endif

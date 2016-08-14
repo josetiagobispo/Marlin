@@ -481,7 +481,7 @@ void eeprom_update_block(const void* pos, void* eeprom_address, size_t n) {
     Wire.write((int)((unsigned)eeprom_address & 0xFF)); // LSB
     Wire.write((uint8_t*)(pos), n);
     Wire.endTransmission();
- 
+
     // wait for write cycle to complete
     // this could be done more efficiently with "acknowledge polling"
     delay(5);
@@ -514,83 +514,158 @@ static const tTimerConfig TimerConfig [NUM_HARDWARE_TIMERS] =
 };
 
 /*
-	Timer_clock1: Prescaler 2 -> 42MHz
-	Timer_clock2: Prescaler 8 -> 10.5MHz
-	Timer_clock3: Prescaler 32 -> 2.625MHz
-	Timer_clock4: Prescaler 128 -> 656.25kHz
+  Timer_clock1: Prescaler 2 -> 42MHz
+  Timer_clock2: Prescaler 8 -> 10.5MHz
+  Timer_clock3: Prescaler 32 -> 2.625MHz
+  Timer_clock4: Prescaler 128 -> 656.25kHz
 */
+
+// from DueTimer by Ivan Seidel
+// https://github.com/ivanseidel/DueTimer
+
+uint8_t bestClock(double frequency, uint32_t& retRC){
+  /*
+    Pick the best Clock, thanks to Ogle Basil Hall!
+    Timer         Definition
+    TIMER_CLOCK1  MCK /  2
+    TIMER_CLOCK2  MCK /  8
+    TIMER_CLOCK3  MCK / 32
+    TIMER_CLOCK4  MCK /128
+  */
+  const struct {
+    uint8_t flag;
+    uint8_t divisor;
+  } clockConfig[] = {
+    { TC_CMR_TCCLKS_TIMER_CLOCK1,   2 },
+    { TC_CMR_TCCLKS_TIMER_CLOCK2,   8 },
+    { TC_CMR_TCCLKS_TIMER_CLOCK3,  32 },
+    { TC_CMR_TCCLKS_TIMER_CLOCK4, 128 }
+  };
+  float ticks;
+  float error;
+  int clkId = 3;
+  int bestClock = 3;
+  float bestError = 9.999e99;
+  do
+  {
+    ticks = (float) VARIANT_MCK / frequency / (float) clockConfig[clkId].divisor;
+    // error = abs(ticks - round(ticks));
+    error = clockConfig[clkId].divisor * abs(ticks - round(ticks));  // Error comparison needs scaling
+    if (error < bestError)
+    {
+      bestClock = clkId;
+      bestError = error;
+    }
+  } while (clkId-- > 0);
+  ticks = (float) VARIANT_MCK / frequency / (float) clockConfig[bestClock].divisor;
+  retRC = (uint32_t) round(ticks);
+  return clockConfig[bestClock].flag;
+}
 
 // new timer by Ps991
 // thanks for that work
 // http://forum.arduino.cc/index.php?topic=297397.0
 
+#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+  TcChannel *extruderChannel = (ADVANCE_EXTRUDER_TIMER_COUNTER->TC_CHANNEL + ADVANCE_EXTRUDER_TIMER_CHANNEL);
+#endif
 TcChannel* stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL);
+
+#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+  void HAL_advance_extruder_timer_start() {
+    // Get the ISR from table
+    Tc *tc = ADVANCE_EXTRUDER_TIMER_COUNTER;
+    IRQn_Type irq = ADVANCE_EXTRUDER_TIMER_IRQN;
+    uint32_t channel = ADVANCE_EXTRUDER_TIMER_CHANNEL;
+    uint32_t rc = 0;
+    uint8_t clock;
+
+    // Find the best clock for the wanted frequency
+    clock = bestClock(10000, rc);
+
+    pmc_set_writeprotect(false); // remove write protection on registers
+    pmc_enable_periph_clk((uint32_t)irq);
+
+    tc->TC_CHANNEL[channel].TC_CCR = TC_CCR_CLKDIS;
+
+    tc->TC_CHANNEL[channel].TC_SR; // clear status register
+    tc->TC_CHANNEL[channel].TC_CMR =  TC_CMR_WAVSEL_UP_RC | TC_CMR_WAVE | clock;
+
+    tc->TC_CHANNEL[channel].TC_IER /*|*/= TC_IER_CPCS; // enable interrupt on timer match with register C
+    tc->TC_CHANNEL[channel].TC_IDR = ~TC_IER_CPCS;
+    tc->TC_CHANNEL[channel].TC_RC  = rc;
+
+    tc->TC_CHANNEL[channel].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
+
+    NVIC_EnableIRQ(irq); // enable Nested Vector Interrupt Controller
+  }
+#endif
 
 void HAL_step_timer_start() {
   pmc_set_writeprotect(false); //remove write protection on registers
-  
+
   // Timer for stepper
   // Timer 3 HAL.h STEP_TIMER_NUM
   // uint8_t timer_num = STEP_TIMER_NUM;
-  
+
   // Get the ISR from table
   Tc *tc = STEP_TIMER_COUNTER;
   IRQn_Type irq = STEP_TIMER_IRQN;
   uint32_t channel = STEP_TIMER_CHANNEL;
-  
+
   pmc_enable_periph_clk((uint32_t)irq); //we need a clock?
-  
+
   tc->TC_CHANNEL[channel].TC_CCR = TC_CCR_CLKDIS;
-  
+
   tc->TC_CHANNEL[channel].TC_SR; // clear status register
   tc->TC_CHANNEL[channel].TC_CMR =  TC_CMR_WAVSEL_UP_RC | TC_CMR_WAVE | TC_CMR_TCCLKS_TIMER_CLOCK1;
 
   tc->TC_CHANNEL[channel].TC_IER /*|*/= TC_IER_CPCS; //enable interrupt on timer match with register C
   tc->TC_CHANNEL[channel].TC_IDR = ~TC_IER_CPCS;
   tc->TC_CHANNEL[channel].TC_RC   = (VARIANT_MCK >> 1) / 1000; // start with 1kHz as frequency; //interrupt occurs every x interations of the timer counter
-  
+
   tc->TC_CHANNEL[channel].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
-  
+
   NVIC_EnableIRQ(irq); //enable Nested Vector Interrupt Controller
 }
 
 
 void HAL_temp_timer_start (uint8_t timer_num) {
-	Tc *tc = TimerConfig [timer_num].pTimerRegs;
-	IRQn_Type irq = TimerConfig [timer_num].IRQ_Id;
-	uint32_t channel = TimerConfig [timer_num].channel;
+  Tc *tc = TimerConfig [timer_num].pTimerRegs;
+  IRQn_Type irq = TimerConfig [timer_num].IRQ_Id;
+  uint32_t channel = TimerConfig [timer_num].channel;
 
-	pmc_set_writeprotect(false);
-	pmc_enable_periph_clk((uint32_t)irq);
-	
-	NVIC_SetPriorityGrouping(4);
-	
-	NVIC_SetPriority(irq, NVIC_EncodePriority(4, 6, 0));
-	
-	TC_Configure (tc, channel, TC_CMR_CPCTRG | TC_CMR_TCCLKS_TIMER_CLOCK4);
+  pmc_set_writeprotect(false);
+  pmc_enable_periph_clk((uint32_t)irq);
+
+  NVIC_SetPriorityGrouping(4);
+
+  NVIC_SetPriority(irq, NVIC_EncodePriority(4, 6, 0));
+
+  TC_Configure (tc, channel, TC_CMR_CPCTRG | TC_CMR_TCCLKS_TIMER_CLOCK4);
   tc->TC_CHANNEL[channel].TC_IER |= TC_IER_CPCS; //enable interrupt on timer match with register C
 
-	tc->TC_CHANNEL[channel].TC_RC   = (VARIANT_MCK >> 7) / TEMP_FREQUENCY;
-	TC_Start(tc, channel);
+  tc->TC_CHANNEL[channel].TC_RC   = (VARIANT_MCK >> 7) / TEMP_FREQUENCY;
+  TC_Start(tc, channel);
 
-	NVIC_EnableIRQ(irq);
+  NVIC_EnableIRQ(irq);
 }
 
 void HAL_timer_enable_interrupt (uint8_t timer_num) {
-	const tTimerConfig *pConfig = &TimerConfig [timer_num];
-	pConfig->pTimerRegs->TC_CHANNEL [pConfig->channel].TC_IER = TC_IER_CPCS; //enable interrupt
-	pConfig->pTimerRegs->TC_CHANNEL [pConfig->channel].TC_IDR = ~TC_IER_CPCS;//remove disable interrupt
+  const tTimerConfig *pConfig = &TimerConfig [timer_num];
+  pConfig->pTimerRegs->TC_CHANNEL [pConfig->channel].TC_IER = TC_IER_CPCS; //enable interrupt
+  pConfig->pTimerRegs->TC_CHANNEL [pConfig->channel].TC_IDR = ~TC_IER_CPCS;//remove disable interrupt
 }
 
 void HAL_timer_disable_interrupt (uint8_t timer_num) {
-	const tTimerConfig *pConfig = &TimerConfig [timer_num];
-	pConfig->pTimerRegs->TC_CHANNEL [pConfig->channel].TC_IDR = TC_IER_CPCS; //disable interrupt
+  const tTimerConfig *pConfig = &TimerConfig [timer_num];
+  pConfig->pTimerRegs->TC_CHANNEL [pConfig->channel].TC_IDR = TC_IER_CPCS; //disable interrupt
 }
 
 int HAL_timer_get_count (uint8_t timer_num) {
-	Tc *tc = TimerConfig [timer_num].pTimerRegs;
-	uint32_t channel = TimerConfig [timer_num].channel;
-	return tc->TC_CHANNEL[channel].TC_RC;
+  Tc *tc = TimerConfig [timer_num].pTimerRegs;
+  uint32_t channel = TimerConfig [timer_num].channel;
+  return tc->TC_CHANNEL[channel].TC_RC;
 }
 
 // Due have no tone, this is from Repetier 0.92.3
@@ -599,19 +674,19 @@ static uint32_t tone_pin;
 void tone(uint8_t pin, int frequency) {
   // set up timer counter 1 channel 0 to generate interrupts for
   // toggling output pin.  
-  
+
   /*TC1, 1, TC4_IRQn*/
   uint8_t timer_num = BEEPER_TIMER_NUM;
-  
+
   Tc *tc = TimerConfig [timer_num].pTimerRegs;
   IRQn_Type irq = TimerConfig [timer_num].IRQ_Id;
-	uint32_t channel = TimerConfig [timer_num].channel;
-  
+  uint32_t channel = TimerConfig [timer_num].channel;
+
   SET_OUTPUT(pin);
   tone_pin = pin;
   pmc_set_writeprotect(false);
   pmc_enable_periph_clk((uint32_t)irq);
-  
+
   TC_Configure(tc, channel, TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC | 
                TC_CMR_TCCLKS_TIMER_CLOCK4);  // TIMER_CLOCK4 -> 128 divisor
   uint32_t rc = VARIANT_MCK / 128 / frequency; 
@@ -625,10 +700,10 @@ void tone(uint8_t pin, int frequency) {
 
 void noTone(uint8_t pin) {
   uint8_t timer_num = BEEPER_TIMER_NUM;
-  
+
   Tc *tc = TimerConfig [timer_num].pTimerRegs;
   uint32_t channel = TimerConfig [timer_num].channel;
-  
+
   TC_Stop(tc, channel); 
   WRITE_VAR(pin, LOW);
 }

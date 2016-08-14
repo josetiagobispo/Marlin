@@ -22,8 +22,6 @@ __Not for production use – use with caution!__
  - M100_FREE_MEMORY_WATCHER does not work on Due
  - FAST_PWM_FAN does not work on Due
  - WATCHDOG_RESET_MANUAL does not work on Due
- - ADVANCE does not work on Due
- - LIN_ADVANCE does not work on Due
  - TX_BUFFER_SIZE does not work on Due
  - EMERGENCY_PARSER does not work on Due
  - Makefile needs update
