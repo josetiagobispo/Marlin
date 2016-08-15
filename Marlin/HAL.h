@@ -147,7 +147,7 @@
   #define TEMP_TIMER_NUM 3
   #define TEMP_TIMER_COUNTER TC1
   #define TEMP_TIMER_CHANNEL 0
-  #define TEMP_FREQUENCY 2000
+  #define TEMP_FREQUENCY 4000
   #define TEMP_TIMER_IRQN TC3_IRQn
   #define HAL_TEMP_TIMER_ISR 	void TC3_Handler()
 
