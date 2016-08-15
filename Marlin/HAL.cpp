@@ -581,10 +581,11 @@ TcChannel* stepperChannel = (STEP_TIMER_COUNTER->TC_CHANNEL + STEP_TIMER_CHANNEL
     uint8_t clock;
 
     // Find the best clock for the wanted frequency
-    clock = bestClock(10000, rc);
+    clock = bestClock(ADVANCE_EXTRUDER_FREQUENCY, rc);
 
     pmc_set_writeprotect(false); // remove write protection on registers
     pmc_enable_periph_clk((uint32_t)irq);
+    NVIC_SetPriority(irq, 6);
 
     tc->TC_CHANNEL[channel].TC_CCR = TC_CCR_CLKDIS;
 
@@ -614,6 +615,7 @@ void HAL_step_timer_start() {
   uint32_t channel = STEP_TIMER_CHANNEL;
 
   pmc_enable_periph_clk((uint32_t)irq); //we need a clock?
+  NVIC_SetPriority(irq, 1); // highest priority - no surprises here wanted
 
   tc->TC_CHANNEL[channel].TC_CCR = TC_CCR_CLKDIS;
 
@@ -622,7 +624,7 @@ void HAL_step_timer_start() {
 
   tc->TC_CHANNEL[channel].TC_IER /*|*/= TC_IER_CPCS; //enable interrupt on timer match with register C
   tc->TC_CHANNEL[channel].TC_IDR = ~TC_IER_CPCS;
-  tc->TC_CHANNEL[channel].TC_RC   = (VARIANT_MCK >> 1) / 1000; // start with 1kHz as frequency; //interrupt occurs every x interations of the timer counter
+  tc->TC_CHANNEL[channel].TC_RC   = (VARIANT_MCK >> 1) / STEP_FREQUENCY; // start with 1kHz as frequency; //interrupt occurs every x interations of the timer counter
 
   tc->TC_CHANNEL[channel].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 
@@ -638,9 +640,10 @@ void HAL_temp_timer_start (uint8_t timer_num) {
   pmc_set_writeprotect(false);
   pmc_enable_periph_clk((uint32_t)irq);
 
-  NVIC_SetPriorityGrouping(4);
+  //NVIC_SetPriorityGrouping(4);
 
-  NVIC_SetPriority(irq, NVIC_EncodePriority(4, 6, 0));
+  //NVIC_SetPriority(irq, NVIC_EncodePriority(4, 6, 0));
+  NVIC_SetPriority(irq, 15);
 
   TC_Configure (tc, channel, TC_CMR_CPCTRG | TC_CMR_TCCLKS_TIMER_CLOCK4);
   tc->TC_CHANNEL[channel].TC_IER |= TC_IER_CPCS; //enable interrupt on timer match with register C
