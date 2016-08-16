@@ -376,7 +376,7 @@ void Stepper::isr() {
         if (current_block->steps[Z_AXIS] > 0) {
           enable_z();
           #ifdef __SAM3X8E__
-            HAL_timer_set_count (STEP_TIMER_COUNTER, STEP_TIMER_CHANNEL, HAL_TIMER_RATE / 1000); //1ms wait
+            HAL_timer_stepper_count(HAL_TIMER_RATE / 1000); //1ms wait
           #else
             OCR1A = 2000; //1ms wait
           #endif
@@ -390,7 +390,7 @@ void Stepper::isr() {
     }
     else {
       #ifdef __SAM3X8E__
-        HAL_timer_stepper_count(HAL_TIMER_RATE / 1000); // 1kHz
+        HAL_timer_stepper_count(HAL_TIMER_RATE / 1000); // 1kHz.
       #else
         OCR1A = 2000; // 1kHz.
       #endif
