@@ -142,7 +142,7 @@
   #define STEP_TIMER_NUM 2
   #define STEP_TIMER_COUNTER TC0
   #define STEP_TIMER_CHANNEL 2
-  #define STEP_FREQUENCY 250
+  #define STEP_FREQUENCY 1000
   #define STEP_TIMER_IRQN TC2_IRQn
   #define HAL_STEP_TIMER_ISR 	void TC2_Handler()
 
