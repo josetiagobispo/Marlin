@@ -523,7 +523,11 @@ static void lcd_implementation_status_screen() {
 
     lcd_implementation_mark_as_selected(row, isSelected);
 
-    while (c = pgm_read_byte(pstr)) {
+    #ifdef __SAM3X8E__
+      while ((c = pgm_read_byte(pstr)) != 0) {
+    #else
+      while (c = pgm_read_byte(pstr)) {
+    #endif
       n -= lcd_print(c);
       pstr++;
     }
@@ -547,7 +551,11 @@ static void lcd_implementation_status_screen() {
 
     lcd_implementation_mark_as_selected(row, isSelected);
 
-    while (c = pgm_read_byte(pstr)) {
+    #ifdef __SAM3X8E__
+      while ((c = pgm_read_byte(pstr)) != 0) {
+    #else
+      while (c = pgm_read_byte(pstr)) {
+    #endif
       n -= lcd_print(c);
       pstr++;
     }

@@ -265,17 +265,19 @@ int freeMemory() {
     // clear status
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 1)
       dummy_read = SPI0->SPI_RDR;
+    UNUSED(dummy_read);
   }
 
   void spiSend(uint32_t chan, const uint8_t* buf, size_t n) {
     uint8_t dummy_read = 0;
     if (n == 0) return;
-    for (int i = 0; i < n - 1; i++) {
+    for (int i = 0; i < (int)n - 1; i++) {
       while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
       SPI0->SPI_TDR = (uint32_t)buf[i] | SPI_PCS(chan);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 1)
         dummy_read = SPI0->SPI_RDR;
+      UNUSED(dummy_read);
     }
     spiSend(chan, buf[n - 1]);
   }
