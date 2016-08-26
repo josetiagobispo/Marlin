@@ -8,29 +8,38 @@
 
 #define BOARD_NAME         "RADDS"
 
-// Servo support
+//
+// Servos
+//
 #define SERVO0_PIN          5
 #define SERVO1_PIN          6
 #define SERVO2_PIN         39
 #define SERVO3_PIN         40
 
+//
+// Limit Switches
+//
+#define X_MIN_PIN          28
+#define X_MAX_PIN          34
+#define Y_MIN_PIN          30
+#define Y_MAX_PIN          36
+#define Z_MIN_PIN          32
+#define Z_MAX_PIN          38
+
+//
+// Steppers
+//
 #define X_STEP_PIN         24
 #define X_DIR_PIN          23
 #define X_ENABLE_PIN       26
-#define X_MIN_PIN          28
-#define X_MAX_PIN          34
 
 #define Y_STEP_PIN         17
 #define Y_DIR_PIN          16
 #define Y_ENABLE_PIN       22
-#define Y_MIN_PIN          30
-#define Y_MAX_PIN          36
 
 #define Z_STEP_PIN          2
 #define Z_DIR_PIN           3
 #define Z_ENABLE_PIN       15
-#define Z_MIN_PIN          32
-#define Z_MAX_PIN          38
 
 #define E0_STEP_PIN        61
 #define E0_DIR_PIN         60
@@ -52,22 +61,34 @@
 #define E4_DIR_PIN         27
 #define E4_ENABLE_PIN      31
 
-#define SDSS                4
-
-#define FAN_PIN             9
-#define FAN1_PIN            8
-#define PS_ON_PIN          40
-
-#define HEATER_0_PIN       13
-#define HEATER_1_PIN       12
-#define HEATER_2_PIN       11
-#define HEATER_BED_PIN      7 // BED
-
+//
+// Temperature Sensors
+//
 #define TEMP_0_PIN          0 // ANALOG NUMBERING
 #define TEMP_1_PIN          1 // ANALOG NUMBERING
 #define TEMP_2_PIN          2 // ANALOG NUMBERING
 #define TEMP_BED_PIN        4 // ANALOG NUMBERING
 
+//
+// Misc. Functions
+//
+#define SDSS                4
+#define PS_ON_PIN          40
+
+//
+// Heaters / Fans
+//
+#define HEATER_0_PIN       13
+#define HEATER_1_PIN       12
+#define HEATER_2_PIN       11
+#define HEATER_BED_PIN      7 // BED
+
+#define FAN_PIN             9
+#define FAN1_PIN            8
+
+//
+// LCD / Controller
+//
 #if ENABLED(ULTRA_LCD)
   // RADDS LCD panel
   #if ENABLED(RADDS_DISPLAY)

@@ -31,6 +31,9 @@
 #define IS_RAMPS_DUO
 #include "pins_RAMPS.h"
 
+//
+// Temperature Sensors
+//
 #undef TEMP_0_PIN
 #define TEMP_0_PIN          9 // ANALOG NUMBERING
 
@@ -40,6 +43,9 @@
 #undef TEMP_BED_PIN
 #define TEMP_BED_PIN       10 // ANALOG NUMBERING
 
+//
+// LCD / Controller
+//
 #if ENABLED(ULTRA_LCD)
   #if ENABLED(NEWPANEL) && ENABLED(PANEL_ONE)
     #undef LCD_PINS_D4
@@ -86,6 +92,7 @@
   #endif // NEWPANEL
 #endif // ULTRA_LCD
 
+// SPI for Max6675 or Max31855 Thermocouple
 #undef MAX6675_SS
 #if DISABLED(SDSUPPORT)
   #define MAX6675_SS       69 // Do not use pin 53 if there is even the remote possibility of using Display/SD card

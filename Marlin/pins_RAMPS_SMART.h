@@ -38,6 +38,9 @@
 #define IS_RAMPS_SMART
 #include "pins_RAMPS.h"
 
+//
+// Temperature Sensors
+//
 #undef TEMP_0_PIN
 #define TEMP_0_PIN          9 // ANALOG NUMBERING
 
@@ -47,8 +50,10 @@
 #undef TEMP_BED_PIN
 #define TEMP_BED_PIN       11 // ANALOG NUMBERING
 
-// Support for AZSMZ 12864 LCD with SD Card 3D printer smart controller control panel
-// (not tested)
+//
+// LCD / Controller
+// Support for AZSMZ 12864 LCD with SD Card 3D printer smart controller control panel (not tested)
+//
 #if ENABLED(VIKI2)
   #undef BEEPER_PIN
   #define BEEPER_PIN       66

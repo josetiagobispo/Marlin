@@ -27,6 +27,9 @@
 #define IS_RAMPS4DUE
 #include "pins_RAMPS.h"
 
+//
+// Temperature Sensors
+//
 #undef TEMP_0_PIN
 #define TEMP_0_PIN          9 // ANALOG NUMBERING
 

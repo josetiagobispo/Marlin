@@ -9,29 +9,38 @@
 
 #define BOARD_NAME "DUE3DOM"
 
-// Servo support
+//
+// Servos
+//
 #define SERVO0_PIN          5
 #define SERVO1_PIN          6
 #define SERVO2_PIN         13
 #define SERVO3_PIN         -1
 
+//
+// Limit Switches
+//
+#define X_MIN_PIN          38
+#define X_MAX_PIN          36
+#define Y_MIN_PIN          34
+#define Y_MAX_PIN          32
+#define Z_MIN_PIN          30
+#define Z_MAX_PIN          28
+
+//
+// Steppers
+//
 #define X_STEP_PIN          2
 #define X_DIR_PIN           3
 #define X_ENABLE_PIN       22
-#define X_MIN_PIN          38
-#define X_MAX_PIN          36
 
 #define Y_STEP_PIN         17
 #define Y_DIR_PIN          16
 #define Y_ENABLE_PIN       26
-#define Y_MIN_PIN          34
-#define Y_MAX_PIN          32
 
 #define Z_STEP_PIN         61 // Z1 STP
 #define Z_DIR_PIN          60 // Z1 DIR
 #define Z_ENABLE_PIN       15 // Z1 ENA
-#define Z_MIN_PIN          30
-#define Z_MAX_PIN          28
 
 #define E0_STEP_PIN        64 // Z2 STP
 #define E0_DIR_PIN         63 // Z2 DIR
@@ -45,22 +54,34 @@
 #define E2_DIR_PIN         23 // E2 DIR
 #define E2_ENABLE_PIN      49 // E2 ENA
 
-#define SDSS                4
-#define PS_ON_PIN          40
-
-#define FAN_PIN            11 // FAN1 header on board - PRINT FAN
-#define FAN1_PIN            9 // FAN2 header on board - CONTROLLER FAN
-#define FAN2_PIN           12 // FAN3 header on board - EXTRUDER0 FAN
-
-#define HEATER_0_PIN        7 // HOTEND0 MOSFET
-#define HEATER_1_PIN        8 // HOTEND1 MOSFET
-#define HEATER_BED_PIN     39 // BED MOSFET
-
+//
+// Temperature Sensors
+//
 #define TEMP_0_PIN          0 // HOTEND0 thermistor
 #define TEMP_1_PIN          2 // HOTEND1 thermistor
 #define TEMP_2_PIN          5 // unused
 #define TEMP_BED_PIN        1 // BED thermistor
 
+//
+// Misc. Functions
+//
+#define SDSS                4
+#define PS_ON_PIN          40
+
+//
+// Heaters / Fans
+//
+#define HEATER_0_PIN        7 // HOTEND0 MOSFET
+#define HEATER_1_PIN        8 // HOTEND1 MOSFET
+#define HEATER_BED_PIN     39 // BED MOSFET
+
+#define FAN_PIN            11 // FAN1 header on board - PRINT FAN
+#define FAN1_PIN            9 // FAN2 header on board - CONTROLLER FAN
+#define FAN2_PIN           12 // FAN3 header on board - EXTRUDER0 FAN
+
+//
+// LCD / Controller
+//
 #if ENABLED(ULTRA_LCD)
   #define LCD_PINS_RS       42
   #define LCD_PINS_ENABLE   43

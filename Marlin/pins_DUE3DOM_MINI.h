@@ -9,50 +9,71 @@
 
 #define BOARD_NAME "DUE3DOM MINI"
 
-// Servo support
+//
+// Servos
+//
 #define SERVO0_PIN          5
 #define SERVO1_PIN          6
 #define SERVO2_PIN          8 // 4-pin header FAN0
 #define SERVO3_PIN         -1
 
+//
+// Limit Switches
+//
+#define X_MIN_PIN          38
+#define X_MAX_PIN          -1
+#define Y_MIN_PIN          34
+#define Y_MAX_PIN          -1
+#define Z_MIN_PIN          30
+#define Z_MAX_PIN          -1
+
+//
+// Steppers
+//
 #define X_STEP_PIN         17
 #define X_DIR_PIN          16
 #define X_ENABLE_PIN       22
-#define X_MIN_PIN          38
-#define X_MAX_PIN          -1
 
 #define Y_STEP_PIN          2
 #define Y_DIR_PIN           3
 #define Y_ENABLE_PIN       26
-#define Y_MIN_PIN          34
-#define Y_MAX_PIN          -1
 
 #define Z_STEP_PIN         64
 #define Z_DIR_PIN          63
 #define Z_ENABLE_PIN       15
-#define Z_MIN_PIN          30
-#define Z_MAX_PIN          -1
 
 #define E0_STEP_PIN        61
 #define E0_DIR_PIN         60
 #define E0_ENABLE_PIN      62
 
+//
+// Temperature Sensors
+//
+#define TEMP_0_PIN          0 // HOTEND0 thermistor
+#define TEMP_1_PIN          2 // unused
+#define TEMP_2_PIN          5 // OnBoard thermistor beta 3950
+#define TEMP_BED_PIN        1 // BED thermistor
+
+//
+// Misc. Functions
+//
 #define SDSS                4
 #define PS_ON_PIN          40
+
+//
+// Heaters / Fans
+//
+#define HEATER_0_PIN       13 // HOTEND0 MOSFET
+#define HEATER_BED_PIN      7 // BED MOSFET
 
 #define FAN_PIN            11 // FAN1 header on board - PRINT FAN
 #define FAN1_PIN           12 // FAN2 header on board - CONTROLLER FAN
 #define FAN2_PIN            9 // FAN3 header on board - EXTRUDER0 FAN
 //#define FAN3_PIN          8 // FAN0 4-pin header on board
 
-#define HEATER_0_PIN       13 // HOTEND0 MOSFET
-#define HEATER_BED_PIN      7 // BED MOSFET
-
-#define TEMP_0_PIN          0 // HOTEND0 thermistor
-#define TEMP_1_PIN          2 // unused
-#define TEMP_2_PIN          5 // OnBoard thermistor beta 3950
-#define TEMP_BED_PIN        1 // BED thermistor
-
+//
+// LCD / Controller
+//
 #if ENABLED(ULTRA_LCD)
   #define LCD_PINS_RS       42
   #define LCD_PINS_ENABLE   43

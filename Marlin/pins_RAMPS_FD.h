@@ -17,29 +17,38 @@
 #define INVERTED_BED_PINS
 #define INVERTED_FAN_PINS
 
-// Servo support
+//
+// Servos
+//
 #define SERVO0_PIN          7
 #define SERVO1_PIN          6
 #define SERVO2_PIN          5
 #define SERVO3_PIN          3
 
+//
+// Limit Switches
+//
+#define X_MIN_PIN          22
+#define X_MAX_PIN          30
+#define Y_MIN_PIN          24
+#define Y_MAX_PIN          38
+#define Z_MIN_PIN          26
+#define Z_MAX_PIN          34
+
+//
+// Steppers
+//
 #define X_STEP_PIN         63
 #define X_DIR_PIN          62
 #define X_ENABLE_PIN       48
-#define X_MIN_PIN          22
-#define X_MAX_PIN          30
 
 #define Y_STEP_PIN         65
 #define Y_DIR_PIN          64
 #define Y_ENABLE_PIN       46
-#define Y_MIN_PIN          24
-#define Y_MAX_PIN          38
 
 #define Z_STEP_PIN         67
 #define Z_DIR_PIN          66
 #define Z_ENABLE_PIN       44
-#define Z_MIN_PIN          26
-#define Z_MAX_PIN          34
 
 #define E0_STEP_PIN        36
 #define E0_DIR_PIN         28
@@ -53,22 +62,34 @@
 #define E2_DIR_PIN         47
 #define E2_ENABLE_PIN      45
 
-#define SDSS                4
-#define LED_PIN            13
-
-#define FAN_PIN            12
-#define CONTROLLER_FAN_PIN -1
-
-#define HEATER_0_PIN        9
-#define HEATER_1_PIN       10
-#define HEATER_2_PIN       11
-#define HEATER_BED_PIN      8 // BED
-
+//
+// Temperature Sensors
+//
 #define TEMP_0_PIN          1 // ANALOG NUMBERING
 #define TEMP_1_PIN          2 // ANALOG NUMBERING
 #define TEMP_2_PIN          3 // ANALOG NUMBERING
 #define TEMP_BED_PIN        0 // ANALOG NUMBERING
 
+//
+// Misc. Functions
+//
+#define SDSS                4
+#define LED_PIN            13
+
+//
+// Heaters / Fans
+//
+#define HEATER_0_PIN        9
+#define HEATER_1_PIN       10
+#define HEATER_2_PIN       11
+#define HEATER_BED_PIN      8 // BED
+
+#define FAN_PIN            12
+#define CONTROLLER_FAN_PIN -1
+
+//
+// LCD / Controller
+//
 #if ENABLED(ULTRA_LCD)
   #if ENABLED(NEWPANEL)
     // ramps-fd lcd adaptor
