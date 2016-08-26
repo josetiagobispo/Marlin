@@ -109,8 +109,13 @@ class Stepper {
     static volatile unsigned long step_events_completed; // The number of step events executed in the current block
 
     #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-      static unsigned char old_OCR0A;
-      static volatile unsigned char eISR_Rate;
+      #ifdef __SAM3X8E__
+        static uint16_t old_OCR0A;
+        static volatile uint16_t eISR_Rate;
+      #else
+        static unsigned char old_OCR0A;
+        static volatile unsigned char eISR_Rate;
+      #endif
       #if ENABLED(LIN_ADVANCE)
         static volatile int e_steps[E_STEPPERS];
         static int extruder_advance_k;
@@ -129,9 +134,9 @@ class Stepper {
     static long acceleration_time, deceleration_time;
     //unsigned long accelerate_until, decelerate_after, acceleration_rate, initial_rate, final_rate, nominal_rate;
     #ifdef __SAM3X8E__
-      static unsigned long acc_step_rate; // needed for deceleration start point
+      static HAL_TIMER_TYPE acc_step_rate; // needed for deceleration start point
       static uint8_t step_loops, step_loops_nominal;
-      static unsigned long OCR1A_nominal;
+      static HAL_TIMER_TYPE OCR1A_nominal;
     #else
       static unsigned short acc_step_rate; // needed for deceleration start point
       static uint8_t step_loops, step_loops_nominal;
@@ -284,8 +289,8 @@ class Stepper {
   private:
 
     #ifdef __SAM3X8E__
-      static FORCE_INLINE unsigned long calc_timer(unsigned long step_rate) {
-        unsigned long timer;
+      static FORCE_INLINE HAL_TIMER_TYPE calc_timer(HAL_TIMER_TYPE step_rate) {
+        HAL_TIMER_TYPE timer;
     #else
       static FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
         unsigned short timer;
@@ -314,7 +319,10 @@ class Stepper {
       }
 
       #ifdef __SAM3X8E__
+        // In case of high-performance processor, it is able to calculate in real-time 
         timer = HAL_TIMER_RATE / step_rate;
+        if (timer < (HAL_TIMER_RATE / 180000)) { // (180kHz - this should never happen)
+          timer = (HAL_TIMER_RATE / 180000);
       #else
         NOLESS(step_rate, F_CPU / 500000);
         step_rate -= F_CPU / 500000; // Correct for minimal speed
@@ -333,10 +341,10 @@ class Stepper {
         }
         if (timer < 100) { // (20kHz - this should never happen)
           timer = 100;
-          MYSERIAL.print(MSG_STEPPER_TOO_HIGH);
-          MYSERIAL.println(step_rate);
-        }
       #endif
+        MYSERIAL.print(MSG_STEPPER_TOO_HIGH);
+        MYSERIAL.println(step_rate);
+      }
       return timer;
     }
 
@@ -380,7 +388,7 @@ class Stepper {
       acc_step_rate = current_block->initial_rate;
       acceleration_time = calc_timer(acc_step_rate);
       #ifdef __SAM3X8E__
-        //HAL_timer_stepper_count(acceleration_time);
+        HAL_timer_stepper_count(acceleration_time);
       #else
         OCR1A = acceleration_time;
       #endif

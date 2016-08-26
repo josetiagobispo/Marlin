@@ -96,8 +96,13 @@ volatile unsigned long Stepper::step_events_completed = 0; // The number of step
 
 #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
 
-  unsigned char Stepper::old_OCR0A;
-  volatile unsigned char Stepper::eISR_Rate = 200; // Keep the ISR at a low rate until needed
+  #ifdef __SAM3X8E__
+    uint16_t Stepper::old_OCR0A;
+    volatile uint16_t Stepper::eISR_Rate = (HAL_TIMER_RATE / ADVANCE_EXTRUDER_FREQUENCY); // Keep the ISR at a low rate until needed
+  #else
+    unsigned char Stepper::old_OCR0A;
+    volatile unsigned char Stepper::eISR_Rate = 200; // Keep the ISR at a low rate until needed
+  #endif
 
   #if ENABLED(LIN_ADVANCE)
     volatile int Stepper::e_steps[E_STEPPERS];
@@ -124,9 +129,9 @@ volatile signed char Stepper::count_direction[NUM_AXIS] = { 1, 1, 1, 1 };
 #endif
 
 #ifdef __SAM3X8E__
-  unsigned long Stepper::acc_step_rate; // needed for deceleration start point
+  HAL_TIMER_TYPE Stepper::acc_step_rate; // needed for deceleration start point
   uint8_t Stepper::step_loops, Stepper::step_loops_nominal;
-  unsigned long Stepper::OCR1A_nominal;
+  HAL_TIMER_TYPE Stepper::OCR1A_nominal;
 #else
   unsigned short Stepper::acc_step_rate; // needed for deceleration start point
   uint8_t Stepper::step_loops, Stepper::step_loops_nominal;
@@ -283,11 +288,6 @@ volatile long Stepper::endstops_trigsteps[XYZ];
 void Stepper::wake_up() {
   //  TCNT1 = 0;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
-  #ifdef __SAM3X8E__
-    #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-      ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
-    #endif
-  #endif
 }
 
 /**
@@ -335,9 +335,7 @@ void Stepper::set_directions() {
 
 void Stepper::isr() {
   #ifdef __SAM3X8E__
-    //STEP_TIMER_COUNTER->TC_CHANNEL[STEP_TIMER_CHANNEL].TC_SR;
     stepperChannel->TC_SR;
-    //stepperChannel->TC_RC = 1000000;
   #endif
   if (cleaning_buffer_counter) {
     current_block = NULL;
@@ -347,7 +345,7 @@ void Stepper::isr() {
     #endif
     cleaning_buffer_counter--;
     #ifdef __SAM3X8E__
-      HAL_timer_stepper_count(HAL_TIMER_RATE / 200); //5ms wait
+      HAL_timer_stepper_count(HAL_TIMER_RATE / 10000); //0.1ms wait
     #else
       OCR1A = 200;
     #endif
@@ -390,7 +388,7 @@ void Stepper::isr() {
     }
     else {
       #ifdef __SAM3X8E__
-        HAL_timer_stepper_count(HAL_TIMER_RATE / 1000); // 1kHz.
+        HAL_timer_stepper_count(HAL_TIMER_RATE / STEP_FREQUENCY); // STEP_FREQUENCY Hz.
       #else
         OCR1A = 2000; // 1kHz.
       #endif
@@ -486,17 +484,9 @@ void Stepper::isr() {
       #define _APPLY_STEP(AXIS) AXIS ##_APPLY_STEP
       #define _INVERT_STEP_PIN(AXIS) INVERT_## AXIS ##_STEP_PIN
 
-      #ifdef __SAM3X8E__
-        #define STEP_ADD(AXIS) \
-          _COUNTER(AXIS) += current_block->steps[_AXIS(AXIS)]; \
-          if (_COUNTER(AXIS) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); \
-          _COUNTER(AXIS) -= current_block->step_event_count; \
-          count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; }
-      #else
-        #define STEP_ADD(AXIS) \
-          _COUNTER(AXIS) += current_block->steps[_AXIS(AXIS)]; \
-          if (_COUNTER(AXIS) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); }
-      #endif
+      #define STEP_ADD(AXIS) \
+        _COUNTER(AXIS) += current_block->steps[_AXIS(AXIS)]; \
+        if (_COUNTER(AXIS) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); }
 
       STEP_ADD(X);
       STEP_ADD(Y);
@@ -518,17 +508,12 @@ void Stepper::isr() {
         #endif
       #endif // !ADVANCE && !LIN_ADVANCE
 
-      #ifdef __SAM3X8E__
-        #define STEP_IF_COUNTER(AXIS) \
-          _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0)
-      #else
-        #define STEP_IF_COUNTER(AXIS) \
-          if (_COUNTER(AXIS) > 0) { \
-            _COUNTER(AXIS) -= current_block->step_event_count; \
-            count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; \
-            _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
-          }
-      #endif
+      #define STEP_IF_COUNTER(AXIS) \
+        if (_COUNTER(AXIS) > 0) { \
+          _COUNTER(AXIS) -= current_block->step_event_count; \
+          count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; \
+          _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
+        }
 
       STEP_IF_COUNTER(X);
       STEP_IF_COUNTER(Y);
@@ -556,9 +541,11 @@ void Stepper::isr() {
       if (step_events_completed >= current_block->step_event_count) break;
     }
 
-    #ifndef __SAM3X8E__
-      #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-        // If we have esteps to execute, fire the next ISR "now"
+    #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+      // If we have esteps to execute, fire the next ISR "now"
+      #ifdef __SAM3X8E__
+        if (e_steps[TOOL_E_INDEX]) HAL_advance_extruder_count(extruderChannel->TC_CV + (TICKS_PER_NANOSECOND / 1000) + (HAL_TIMER_RATE / 1000000));
+      #else
         if (e_steps[TOOL_E_INDEX]) OCR0A = TCNT0 + 2;
       #endif
     #endif
@@ -583,7 +570,9 @@ void Stepper::isr() {
 
       // step_rate to timer interval
       timer = calc_timer(acc_step_rate);
-      #ifndef __SAM3X8E__
+      #ifdef __SAM3X8E__
+        HAL_timer_stepper_count(timer);
+      #else
         OCR1A = timer;
       #endif
       acceleration_time += timer;
@@ -644,7 +633,9 @@ void Stepper::isr() {
 
       // step_rate to timer interval
       timer = calc_timer(step_rate);
-      #ifndef __SAM3X8E__
+      #ifdef __SAM3X8E__
+        HAL_timer_stepper_count(timer);
+      #else
         OCR1A = timer;
       #endif
       deceleration_time += timer;
@@ -696,7 +687,7 @@ void Stepper::isr() {
       #endif
 
       #ifdef __SAM3X8E__
-        timer = OCR1A_nominal;
+        HAL_timer_stepper_count(OCR1A_nominal);
       #else
         OCR1A = OCR1A_nominal;
       #endif
@@ -705,7 +696,7 @@ void Stepper::isr() {
     }
 
     #ifdef __SAM3X8E__
-      HAL_timer_stepper_count(timer);
+      HAL_timer_stepper_count(stepperChannel->TC_RC < ((stepperChannel->TC_CV + (TICKS_PER_NANOSECOND / 1000)) + (HAL_TIMER_RATE / 125000)) ? ((stepperChannel->TC_CV + (TICKS_PER_NANOSECOND / 1000)) + (HAL_TIMER_RATE / 125000)) : stepperChannel->TC_RC);
     #else
       OCR1A = (OCR1A < (TCNT1 + 16)) ? (TCNT1 + 16) : OCR1A;
     #endif
@@ -720,10 +711,10 @@ void Stepper::isr() {
 
 #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
 
+  // Timer interrupt for E. e_steps is set in the main routine;
   #ifdef __SAM3X8E__
     HAL_ADVANCE_EXTRUDER_TIMER_ISR { Stepper::advance_isr(); }
   #else
-    // Timer interrupt for E. e_steps is set in the main routine;
     // Timer 0 is shared with millies
     ISR(TIMER0_COMPA_vect) { Stepper::advance_isr(); }
   #endif
@@ -732,41 +723,28 @@ void Stepper::isr() {
 
     #ifdef __SAM3X8E__
       extruderChannel->TC_SR;
+    #endif
+
+    old_OCR0A += eISR_Rate;
+    #ifdef __SAM3X8E__
+      HAL_advance_extruder_count(old_OCR0A);
     #else
-      old_OCR0A += eISR_Rate;
       OCR0A = old_OCR0A;
     #endif
 
-    #ifdef __SAM3X8E__
-      #define STEP_E_ONCE(INDEX) \
-        if (e_steps[INDEX] != 0) { \
-          E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
-          if (e_steps[INDEX] < 0) { \
-            E## INDEX ##_DIR_WRITE(INVERT_E## INDEX ##_DIR); \
-            e_steps[INDEX]++; \
-          } \
-          else { \
-            E## INDEX ##_DIR_WRITE(!INVERT_E## INDEX ##_DIR); \
-            e_steps[INDEX]--; \
-          } \
-          HAL_delayMicroseconds(2U); \
-          E## INDEX ##_STEP_WRITE(!INVERT_E_STEP_PIN); \
-        }
-    #else
-      #define STEP_E_ONCE(INDEX) \
-        if (e_steps[INDEX] != 0) { \
-          E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
-          if (e_steps[INDEX] < 0) { \
-            E## INDEX ##_DIR_WRITE(INVERT_E## INDEX ##_DIR); \
-            e_steps[INDEX]++; \
-          } \
-          else { \
-            E## INDEX ##_DIR_WRITE(!INVERT_E## INDEX ##_DIR); \
-            e_steps[INDEX]--; \
-          } \
-          E## INDEX ##_STEP_WRITE(!INVERT_E_STEP_PIN); \
-        }
-    #endif
+    #define STEP_E_ONCE(INDEX) \
+      if (e_steps[INDEX] != 0) { \
+        E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
+        if (e_steps[INDEX] < 0) { \
+          E## INDEX ##_DIR_WRITE(INVERT_E## INDEX ##_DIR); \
+          e_steps[INDEX]++; \
+        } \
+        else { \
+          E## INDEX ##_DIR_WRITE(!INVERT_E## INDEX ##_DIR); \
+          e_steps[INDEX]--; \
+        } \
+        E## INDEX ##_STEP_WRITE(!INVERT_E_STEP_PIN); \
+      }
 
     // Step all E steppers that have steps
     for (uint8_t i = 0; i < step_loops; i++) {
@@ -934,6 +912,7 @@ void Stepper::init() {
 
   #ifdef __SAM3X8E__
     HAL_step_timer_start();
+    HAL_timer_stepper_count((HAL_TIMER_RATE / 2000000) * 0x4000);
   #else
     // waveform generation = 0100 = CTC
     CBI(TCCR1B, WGM13);
@@ -1081,11 +1060,6 @@ void Stepper::quick_stop() {
   while (planner.blocks_queued()) planner.discard_current_block();
   current_block = NULL;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
-  #ifdef __SAM3X8E__
-    #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-      ENABLE_ADVANCE_EXTRUDER_INTERRUPT();
-    #endif
-  #endif
 }
 
 void Stepper::endstop_triggered(AxisEnum axis) {
@@ -1156,7 +1130,7 @@ void Stepper::report_positions() {
           uint8_t old_pin = _READ_DIR(AXIS); \
           _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
           _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
-          HAL_delayMicroseconds(2); \
+          HAL_delayMicroseconds(2U); \
           _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
           _APPLY_DIR(AXIS, old_pin); \
         }
@@ -1207,7 +1181,7 @@ void Stepper::report_positions() {
           Y_STEP_WRITE(!INVERT_Y_STEP_PIN);
           Z_STEP_WRITE(!INVERT_Z_STEP_PIN);
           #ifdef __SAM3X8E__
-            HAL_delayMicroseconds(1U);
+            HAL_delayMicroseconds(2U);
           #else
             delayMicroseconds(2);
           #endif

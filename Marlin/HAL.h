@@ -57,6 +57,8 @@
   // Types
   // --------------------------------------------------------------------------
 
+  #define HAL_TIMER_TYPE unsigned long
+
   // --------------------------------------------------------------------------
   // Public Variables
   // --------------------------------------------------------------------------
@@ -195,8 +197,16 @@
   int HAL_timer_get_count (uint8_t timer_num);
   //
 
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    static FORCE_INLINE void HAL_advance_extruder_count(uint32_t count) {
+      uint32_t counter_value = extruderChannel->TC_CV + (TICKS_PER_NANOSECOND / 1000);  // we need time for other stuff!
+      //if(count < 105) count = 105;
+      extruderChannel->TC_RC = (counter_value <= count) ? count : counter_value;
+    }
+  //#endif
+
   static FORCE_INLINE void HAL_timer_stepper_count(uint32_t count) {
-    uint32_t counter_value = stepperChannel->TC_CV + 42;  // we need time for other stuff!
+    uint32_t counter_value = stepperChannel->TC_CV + (TICKS_PER_NANOSECOND / 1000);  // we need time for other stuff!
     //if(count < 105) count = 105;
     stepperChannel->TC_RC = (counter_value <= count) ? count : counter_value;
   }
