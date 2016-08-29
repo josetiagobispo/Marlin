@@ -503,7 +503,11 @@ void Stepper::isr() {
 
       #if MINIMUM_STEPPER_PULSE > 0
         static uint32_t pulse_start;
-        pulse_start = TCNT0;
+        #ifdef __SAM3X8E__
+          pulse_start = extruderChannel->TC_CV;
+        #else
+          pulse_start = TCNT0;
+        #endif
       #endif
 
       #if HAS_X_STEP
@@ -534,7 +538,11 @@ void Stepper::isr() {
 
       #if MINIMUM_STEPPER_PULSE > 0
         #define CYCLES_EATEN_BY_CODE 10
-        while ((uint32_t)(TCNT0 - pulse_start) < (MINIMUM_STEPPER_PULSE * (F_CPU / 1000000UL)) - CYCLES_EATEN_BY_CODE) { /* nada */ }
+        #ifdef __SAM3X8E__
+          while ((extruderChannel->TC_CV - pulse_start) < (MINIMUM_STEPPER_PULSE * (F_CPU / 1000000UL) * 4) - CYCLES_EATEN_BY_CODE * (21 / 3)) { /* nada */ }
+        #else
+          while ((uint32_t)(TCNT0 - pulse_start) < (MINIMUM_STEPPER_PULSE * (F_CPU / 1000000UL)) - CYCLES_EATEN_BY_CODE) { /* nada */ }
+        #endif
       #endif
 
       #if HAS_X_STEP
