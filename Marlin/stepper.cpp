@@ -543,7 +543,7 @@ void Stepper::isr() {
       #if MINIMUM_STEPPER_PULSE > 0
         #ifdef __SAM3X8E__
           #define CYCLES_EATEN_BY_CODE 3 // what is this means?
-          while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < ((MINIMUM_STEPPER_PULSE * (REFERENCE_F_CPU / 1000000UL)) - CYCLES_EATEN_BY_CODE) * STEPPER_TIMER_FACTOR) { /* nada */ }
+          while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < ((MINIMUM_STEPPER_PULSE * (REFERENCE_F_CPU / 1000000UL)) - CYCLES_EATEN_BY_CODE) * TEMP_TIMER_FACTOR) { /* nada */ }
         #else
           #define CYCLES_EATEN_BY_CODE 10
           while ((uint32_t)(TCNT0 - pulse_start) < (MINIMUM_STEPPER_PULSE * (F_CPU / 1000000UL)) - CYCLES_EATEN_BY_CODE) { /* nada */ }
