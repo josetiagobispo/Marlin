@@ -320,9 +320,9 @@ class Stepper {
 
       #ifdef __SAM3X8E__
         // In case of high-performance processor, it is able to calculate in real-time 
-        timer = HAL_TIMER_RATE / step_rate;
-        if (timer < (HAL_TIMER_RATE / 180000)) { // (180kHz - this should never happen)
-          timer = (HAL_TIMER_RATE / 180000);
+        timer = HAL_STEPPER_TIMER_RATE / step_rate;
+        if (timer < (HAL_STEPPER_TIMER_RATE / 180000)) { // (180kHz - this should never happen)
+          timer = (HAL_STEPPER_TIMER_RATE / 180000);
       #else
         NOLESS(step_rate, F_CPU / 500000);
         step_rate -= F_CPU / 500000; // Correct for minimal speed
@@ -388,7 +388,7 @@ class Stepper {
       acc_step_rate = current_block->initial_rate;
       acceleration_time = calc_timer(acc_step_rate);
       #ifdef __SAM3X8E__
-        HAL_timer_stepper_count(acceleration_time);
+        HAL_TIMER_SET_STEPPER_COUNT(acceleration_time);
       #else
         OCR1A = acceleration_time;
       #endif

@@ -973,7 +973,7 @@ void Planner::check_axes_activity() {
   }
   block->acceleration = block->acceleration_steps_per_s2 / steps_per_mm;
   #ifdef __SAM3X8E__
-    block->acceleration_rate = (long)(block->acceleration_steps_per_s2 * (4294967296.0 / HAL_TIMER_RATE));
+    block->acceleration_rate = (long)(block->acceleration_steps_per_s2 * (4294967296.0 / HAL_STEPPER_TIMER_RATE));
   #else
     block->acceleration_rate = (long)(block->acceleration_steps_per_s2 * 16777216.0 / ((F_CPU) * 0.125));
   #endif

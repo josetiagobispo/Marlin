@@ -42,16 +42,85 @@
   #define marlinAnalogInputToDigitalPin(p) ((p) == -1 ? -1 : (p))
   #define FORCE_INLINE __attribute__((always_inline)) inline
 
-  #define CRITICAL_SECTION_START uint32_t primask=__get_PRIMASK(); __disable_irq();
-  #define CRITICAL_SECTION_END if (primask==0) __enable_irq();
+  #define CRITICAL_SECTION_START uint32_t primask = __get_PRIMASK(); __disable_irq();
+  #define CRITICAL_SECTION_END if (primask == 0) __enable_irq();
 
   // On AVR this is in math.h?
   #define square(x) ((x)*(x))
 
   // On AVR this is in sfr_defs.h
   #ifndef _BV
-    #define _BV(b) (1<<(b))
+    #define _BV(b) (1 << (b))
   #endif
+
+  // timers
+  #define NUM_HARDWARE_TIMERS 9
+
+  #define REFERENCE_F_CPU 16000000 // 16MHz MEGA2560
+
+  #define REFERENCE_EXTRUDER_TIMER_FREQUENCY 312.5 // Hz at start
+  #define REFERENCE_EXTRUDER_TIMER_PRESCALE 256 // timer0 of MEGA2560: 16000000 / 256 = 62.5KHz
+
+  #define REFERENCE_STEPPER_TIMER_FREQUENCY 1000 // Hz at start
+  #define REFERENCE_STEPPER_TIMER_PRESCALE 8 // timer1 of MEGA2560: 16000000 / 8 = 2MHz
+
+  #define REFERENCE_TEMP_TIMER_FREQUENCY 488.28125 // Hz
+  #define REFERENCE_TEMP_TIMER_PRESCALE 256 // timer0 of MEGA2560: 16000000 / 256 = 62.5KHz (sharing with advanced extruder)
+
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    #define EXTRUDER_TIMER 1
+    #define EXTRUDER_TIMER_PRIORITY 6
+    #define EXTRUDER_TIMER_FREQUENCY REFERENCE_EXTRUDER_TIMER_FREQUENCY
+    #define EXTRUDER_TIMER_CLOCK TC_CMR_TCCLKS_TIMER_CLOCK3 // TIMER_CLOCK3 -> 32 divisor = 2.625MHz
+    #define EXTRUDER_TIMER_PRESCALE 32
+    #define HAL_EXTRUDER_TIMER_RATE (F_CPU / EXTRUDER_TIMER_PRESCALE)
+    #define EXTRUDER_TIMER_FACTOR (HAL_EXTRUDER_TIMER_RATE / (REFERENCE_F_CPU / REFERENCE_EXTRUDER_TIMER_PRESCALE))
+    #define EXTRUDER_TIMER_TICKS_PER_NANOSECOND (HAL_EXTRUDER_TIMER_RATE) / 1000
+  //#endif
+
+  #define STEPPER_TIMER 2
+  #define STEPPER_TIMER_PRIORITY 1
+  #define STEPPER_TIMER_FREQUENCY REFERENCE_STEPPER_TIMER_FREQUENCY
+  #define STEPPER_TIMER_CLOCK TC_CMR_TCCLKS_TIMER_CLOCK1 // TIMER_CLOCK1 -> 2 divisor = 42MHz
+  #define STEPPER_TIMER_PRESCALE 2
+  #define HAL_STEPPER_TIMER_RATE (F_CPU / STEPPER_TIMER_PRESCALE)
+  #define STEPPER_TIMER_FACTOR (HAL_STEPPER_TIMER_RATE / (REFERENCE_F_CPU / REFERENCE_STEPPER_TIMER_PRESCALE))
+  #define STEPPER_TIMER_TICKS_PER_NANOSECOND (HAL_STEPPER_TIMER_RATE) / 1000
+
+  #define TEMP_TIMER 3
+  #define TEMP_TIMER_PRIORITY 15
+  #define TEMP_TIMER_FREQUENCY REFERENCE_TEMP_TIMER_FREQUENCY
+  #define TEMP_TIMER_CLOCK TC_CMR_TCCLKS_TIMER_CLOCK3 // TIMER_CLOCK3 -> 32 divisor = 2.625MHz
+  #define TEMP_TIMER_PRESCALE 32
+  #define HAL_TEMP_TIMER_RATE (F_CPU / TEMP_TIMER_PRESCALE)
+  #define TEMP_TIMER_FACTOR (HAL_TEMP_TIMER_RATE / (REFERENCE_F_CPU / REFERENCE_TEMP_TIMER_PRESCALE))
+  #define TEMP_TIMER_TICKS_PER_NANOSECOND (HAL_TEMP_TIMER_RATE) / 1000
+
+#if 0
+  #define BEEPER_TIMER 4
+  #define BEEPER_TIMER_PRIORITY NVIC_EncodePriority(4, 6, 3)
+  #define BEEPER_TIMER_CLOCK TC_CMR_TCCLKS_TIMER_CLOCK4 // TIMER_CLOCK4 -> 128 divisor
+  #define BEEPER_TIMER_PRESCALE 128
+  #define HAL_BEEPER_TIMER_RATE (F_CPU / BEEPER_TIMER_PRESCALE)
+  #define BEEPER_TIMER_TICKS_PER_NANOSECOND (HAL_BEEPER_TIMER_RATE) / 1000
+#endif
+
+  #define _HAL_ISR(p) void TC ## p ## _Handler()
+  #define HAL_ISR(p) _HAL_ISR(p)
+  #define HAL_TIMER_START(n) HAL_timer_start(n, n ## _PRIORITY, n ## _FREQUENCY, n ## _CLOCK, n ## _PRESCALE)
+
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    #define ENABLE_EXTRUDER_INTERRUPT() HAL_timer_enable_interrupt(EXTRUDER_TIMER)
+    #define DISABLE_EXTRUDER_INTERRUPT() HAL_timer_disable_interrupt(EXTRUDER_TIMER)
+    #define HAL_TIMER_SET_EXTRUDER_COUNT(n) HAL_timer_set_count(EXTRUDER_TIMER, n)
+  //#endif
+
+  #define ENABLE_STEPPER_DRIVER_INTERRUPT() HAL_timer_enable_interrupt(STEPPER_TIMER)
+  #define DISABLE_STEPPER_DRIVER_INTERRUPT() HAL_timer_disable_interrupt(STEPPER_TIMER)
+  #define HAL_TIMER_SET_STEPPER_COUNT(n) HAL_timer_set_count(STEPPER_TIMER, n)
+
+  #define ENABLE_TEMP_INTERRUPT() HAL_timer_enable_interrupt(TEMP_TIMER)
+  #define HAL_TIMER_SET_TEMP_COUNT(n) HAL_timer_set_count(TEMP_TIMER, n)
 
   // --------------------------------------------------------------------------
   // Types
@@ -66,11 +135,64 @@
   // reset reason set by bootloader
   extern uint8_t MCUSR;
   volatile static uint32_t debug_counter;
+  
+  // timers
+  typedef struct {
+    Tc          *pTimerRegs;
+    uint16_t    channel;
+    IRQn_Type   IRQ_Id;
+  } tTimerConfig;
+
+  // this should not be written in .h, but I can not solve compilation error 
+  static const tTimerConfig TimerConfig[NUM_HARDWARE_TIMERS] =
+  {
+    { TC0, 0, TC0_IRQn},
+    { TC0, 1, TC1_IRQn},
+    { TC0, 2, TC2_IRQn},
+    { TC1, 0, TC3_IRQn},
+    { TC1, 1, TC4_IRQn},
+    { TC1, 2, TC5_IRQn},
+    { TC2, 0, TC6_IRQn},
+    { TC2, 1, TC7_IRQn},
+    { TC2, 2, TC8_IRQn},
+  };
 
   // --------------------------------------------------------------------------
   // Public functions
   // --------------------------------------------------------------------------
 
+  // Disable interrupts
+  void cli(void);
+
+  // Enable interrupts
+  void sei(void);
+
+  // Delays
+#if 0
+  static inline void HAL_delay(millis_t ms) {
+    unsigned int del;
+    while (ms > 0) {
+      del = ms > 100 ? 100 : ms;
+      delay(del);
+      ms -= del;
+    }
+  }
+#endif
+
+  static FORCE_INLINE void HAL_delayMicroseconds(uint32_t usec) { //usec += 3;
+    uint32_t n = usec * (F_CPU / 3000000);
+    asm volatile(
+      "L2_%=_delayMicroseconds:"       "\n\t"
+      "subs   %0, #1"                 "\n\t"
+      "bge    L2_%=_delayMicroseconds" "\n"
+      : "+r" (n) :  
+    );
+  }
+
+  // return free memory between end of heap (or end bss) and whatever is current
+  int freeMemory(void);
+
+  // SPI
   #ifdef SOFTWARE_SPI
     inline uint8_t spiTransfer(uint8_t b); // using Mode 0
     inline void spiBegin();
@@ -98,131 +220,87 @@
     void spiSendBlock(uint8_t token, const uint8_t* buf);
   #endif
 
-  // Disable interrupts
-  void cli(void);
-
-  // Enable interrupts
-  void sei(void);
-
-#if 0
-  static inline void HAL_delay(millis_t ms) {
-    unsigned int del;
-    while (ms > 0) {
-      del = ms > 100 ? 100 : ms;
-      delay(del);
-      ms -= del;
-    }
-  }
-#endif
-
-  static FORCE_INLINE void HAL_delayMicroseconds(uint32_t usec) { //usec += 3;
-    uint32_t n = usec * (F_CPU / 3000000);
-    asm volatile(
-      "L2_%=_delayMicroseconds:"       "\n\t"
-      "subs   %0, #1"                 "\n\t"
-      "bge    L2_%=_delayMicroseconds" "\n"
-      : "+r" (n) :  
-    );
-  }
-
-  int freeMemory(void);
+  // eeprom
   uint8_t eeprom_read_byte(uint8_t* pos);
   void eeprom_read_block(void* pos, const void* eeprom_address, size_t n);
   void eeprom_write_byte(uint8_t* pos, uint8_t value);
   void eeprom_update_block(const void* pos, void* eeprom_address, size_t n);
 
-  // timers
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-    #define ADVANCE_EXTRUDER_TIMER_NUM 1
-    #define ADVANCE_EXTRUDER_TIMER_COUNTER TC0
-    #define ADVANCE_EXTRUDER_TIMER_CHANNEL 1
-    #define ADVANCE_EXTRUDER_FREQUENCY 10000
-    #define ADVANCE_EXTRUDER_TIMER_IRQN TC1_IRQn
-    #define HAL_ADVANCE_EXTRUDER_TIMER_ISR 	void TC1_Handler()
-  //#endif
+  // Timers
+  void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale);
+  void HAL_timer_enable_interrupt(uint8_t timer_num);
+  void HAL_timer_disable_interrupt(uint8_t timer_num);
 
-  #define STEP_TIMER_NUM 2
-  #define STEP_TIMER_COUNTER TC0
-  #define STEP_TIMER_CHANNEL 2
-  #define STEP_FREQUENCY 1000
-  #define STEP_TIMER_IRQN TC2_IRQn
-  #define HAL_STEP_TIMER_ISR 	void TC2_Handler()
+  static FORCE_INLINE void HAL_timer_isr_prologue(uint8_t timer_num) {
+    const tTimerConfig *pConfig = &TimerConfig[timer_num];
 
-  #define TEMP_TIMER_NUM 3
-  #define TEMP_TIMER_COUNTER TC1
-  #define TEMP_TIMER_CHANNEL 0
-  #define TEMP_FREQUENCY 4000
-  #define TEMP_TIMER_IRQN TC3_IRQn
-  #define HAL_TEMP_TIMER_ISR 	void TC3_Handler()
-
-#if 0
-  #define BEEPER_TIMER_NUM 4
-  #define BEEPER_TIMER_COUNTER TC1
-  #define BEEPER_TIMER_CHANNEL 1
-  #define BEEPER_TIMER_IRQN TC4_IRQn
-  #define HAL_BEEPER_TIMER_ISR  void TC4_Handler()
-#endif
-
-  #define HAL_TIMER_RATE 		     (F_CPU/2)
-  #define TICKS_PER_NANOSECOND   (HAL_TIMER_RATE)/1000
-
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-    #define ENABLE_ADVANCE_EXTRUDER_INTERRUPT()	HAL_timer_enable_interrupt (ADVANCE_EXTRUDER_TIMER_NUM)
-    #define DISABLE_ADVANCE_EXTRUDER_INTERRUPT()	HAL_timer_disable_interrupt (ADVANCE_EXTRUDER_TIMER_NUM)
-  //#endif
-
-  #define ENABLE_STEPPER_DRIVER_INTERRUPT()	HAL_timer_enable_interrupt (STEP_TIMER_NUM)
-  #define DISABLE_STEPPER_DRIVER_INTERRUPT()	HAL_timer_disable_interrupt (STEP_TIMER_NUM)
-
-  //
-
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-    extern  TcChannel *extruderChannel;
-  //#endif
-  extern TcChannel* stepperChannel;
-
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-    void HAL_advance_extruder_timer_start(void);
-  //#endif
-  void HAL_step_timer_start(void);
-  void HAL_temp_timer_start (uint8_t timer_num);
-
-  void HAL_timer_enable_interrupt (uint8_t timer_num);
-  void HAL_timer_disable_interrupt (uint8_t timer_num);
-
-  inline void HAL_timer_isr_status (Tc* tc, uint32_t channel) {
-    tc->TC_CHANNEL[channel].TC_SR; // clear status register
+    TC_GetStatus(pConfig->pTimerRegs, pConfig->channel); // clear status register
   }
 
-  int HAL_timer_get_count (uint8_t timer_num);
-  //
+  static FORCE_INLINE uint32_t HAL_timer_get_count(uint8_t timer_num) {
+    const tTimerConfig *pConfig = &TimerConfig[timer_num];
+
+    return pConfig->pTimerRegs->TC_CHANNEL[pConfig->channel].TC_RC;
+  }
+
+  static FORCE_INLINE uint32_t HAL_timer_get_current_count(uint8_t timer_num) {
+    const tTimerConfig *pConfig = &TimerConfig[timer_num];
+
+    return TC_ReadCV(pConfig->pTimerRegs, pConfig->channel);
+  }
+ 
+  static FORCE_INLINE void HAL_timer_set_count(uint8_t timer_num, uint32_t count) {
+    const tTimerConfig *pConfig = &TimerConfig[timer_num];
+
+    TC_SetRC(pConfig->pTimerRegs, pConfig->channel, count);
+  }
+
+#if 0
+  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+    void HAL_extruder_timer_start(void);
+  //#endif
+  void HAL_step_timer_start(void);
+  void HAL_temp_timer_start(void);
+
+  static FORCE_INLINE void HAL_timer_isr_status(Tc* tc, uint32_t channel) {
+    TC_GetStatus(tc, channel); // clear status register
+  }
 
   //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-    static FORCE_INLINE void HAL_advance_extruder_count(uint32_t count) {
-      uint32_t counter_value = extruderChannel->TC_CV + (TICKS_PER_NANOSECOND / 1000);  // we need time for other stuff!
-      //if(count < 105) count = 105;
-      extruderChannel->TC_RC = (counter_value <= count) ? count : counter_value;
+    static FORCE_INLINE void HAL_extruder_count(uint32_t count) {
+      // Get the ISR from table
+      Tc *tc = TimerConfig[EXTRUDER_TIMER].pTimerRegs;
+      uint32_t channel = TimerConfig[EXTRUDER_TIMER].channel;
+      uint32_t counter_value = TC_ReadCV(tc, channel) + 2 * EXTRUDER_TIMER_FACTOR; // we need time for other stuff!
+
+      //if (count < 105) count = 105;
+      TC_SetRC(tc, channel, (counter_value <= count) ? count : counter_value);
     }
   //#endif
 
   static FORCE_INLINE void HAL_timer_stepper_count(uint32_t count) {
-    uint32_t counter_value = stepperChannel->TC_CV + (TICKS_PER_NANOSECOND / 1000);  // we need time for other stuff!
-    //if(count < 105) count = 105;
-    stepperChannel->TC_RC = (counter_value <= count) ? count : counter_value;
+    // Get the ISR from table
+    Tc *tc = TimerConfig[STEPPER_TIMER].pTimerRegs;
+    uint32_t channel = TimerConfig[STEPPER_TIMER].channel;
+    uint32_t counter_value = TC_ReadCV(tc, channel) + 2 * STEPPER_TIMER_FACTOR; // we need time for other stuff!
+
+    //if (count < 105) count = 105;
+    TC_SetRC(tc, channel, (counter_value <= count) ? count : counter_value);
   }
 
-#if 0
   void tone(uint8_t pin, int frequency);
   void noTone(uint8_t pin);
   //void tone(uint8_t pin, int frequency, long duration);
 #endif
 
+  // A/D converter
   uint16_t getAdcReading(adc_channel_num_t chan);
   void startAdcConversion(adc_channel_num_t chan);
   adc_channel_num_t pinToAdcChannel(int pin);
 
   uint16_t getAdcFreerun(adc_channel_num_t chan, bool wait_for_conversion = false);
   uint16_t getAdcSuperSample(adc_channel_num_t chan);
+  void setAdcFreerun(void);
   void stopAdcFreerun(adc_channel_num_t chan);
 
 #endif // _HAL_H

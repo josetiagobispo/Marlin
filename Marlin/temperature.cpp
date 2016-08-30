@@ -1081,7 +1081,7 @@ void Temperature::init() {
     // Setup channels
 
     // ADC_MR_FREERUN_ON: Free Run Mode. It never waits for any trigger.
-    ADC->ADC_MR |= ADC_MR_FREERUN_ON | ADC_MR_LOWRES_BITS_12;
+    setAdcFreerun();
   #else
     ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADIF) | 0x07;
     DIDR0 = 0;
@@ -1153,12 +1153,13 @@ void Temperature::init() {
     #endif
   #endif
 
-  // Use timer0 for temperature measurement
-  // Interleave temperature interrupt with millies interrupt
   #ifdef __SAM3X8E__
-    HAL_temp_timer_start(TEMP_TIMER_NUM);
-    HAL_timer_enable_interrupt (TEMP_TIMER_NUM);
+    HAL_TIMER_START(TEMP_TIMER);
+    HAL_TIMER_SET_TEMP_COUNT(128 * TEMP_TIMER_FACTOR);
+    ENABLE_TEMP_INTERRUPT();
   #else
+    // Use timer0 for temperature measurement
+    // Interleave temperature interrupt with millies interrupt
     OCR0B = 128;
     SBI(TIMSK0, OCIE0B);
   #endif
@@ -1410,7 +1411,7 @@ void Temperature::disable_all_heaters() {
 
     // ensure 100ns delay - a bit extra is fine
     #ifdef __SAM3X8E__
-      HAL_delayMicroseconds(1);
+      HAL_delayMicroseconds(1U);
     #else
       asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
       asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
@@ -1512,7 +1513,7 @@ void Temperature::set_current_temp_raw() {
  *  - Step the babysteps value for each axis towards 0
  */
 #ifdef __SAM3X8E__
-  HAL_TEMP_TIMER_ISR { Temperature::isr(); }
+  HAL_ISR(TEMP_TIMER) { Temperature::isr(); }
 #else
   ISR(TIMER0_COMPB_vect) { Temperature::isr(); }
 #endif
@@ -1557,7 +1558,7 @@ void Temperature::isr() {
   #endif
 
   #ifdef __SAM3X8E__
-    HAL_timer_isr_status (TEMP_TIMER_COUNTER, TEMP_TIMER_CHANNEL);
+    HAL_timer_isr_prologue(TEMP_TIMER);
   #endif
 
   #if DISABLED(SLOW_PWM_HEATERS)

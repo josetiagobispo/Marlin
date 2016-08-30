@@ -73,7 +73,7 @@ class Temperature {
 
     #if ENABLED(PIDTEMP) || ENABLED(PIDTEMPBED)
       #ifdef __SAM3X8E__
-        #define PID_dT (((OVERSAMPLENR + 2) * 14.0)/ TEMP_FREQUENCY)
+        #define PID_dT (((OVERSAMPLENR + 2) * 14.0) / TEMP_TIMER_FREQUENCY)
       #else
         #define PID_dT ((OVERSAMPLENR * 12.0)/(F_CPU / 64.0 / 256.0))
       #endif
