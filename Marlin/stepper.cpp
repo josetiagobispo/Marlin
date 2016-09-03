@@ -92,7 +92,7 @@ long  Stepper::counter_X = 0,
       Stepper::counter_Z = 0,
       Stepper::counter_E = 0;
 
-volatile unsigned long Stepper::step_events_completed = 0; // The number of step events executed in the current block
+volatile uint32_t Stepper::step_events_completed = 0; // The number of step events executed in the current block
 
 #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
 
@@ -125,7 +125,7 @@ volatile long Stepper::count_position[NUM_AXIS] = { 0 };
 volatile signed char Stepper::count_direction[NUM_AXIS] = { 1, 1, 1, 1 };
 
 #if ENABLED(MIXING_EXTRUDER)
-  long Stepper::counter_M[MIXING_STEPPERS];
+  long Stepper::counter_m[MIXING_STEPPERS];
 #endif
 
 #ifdef __SAM3X8E__
@@ -375,7 +375,7 @@ void Stepper::isr() {
 
       #if ENABLED(MIXING_EXTRUDER)
         MIXING_STEPPERS_LOOP(i)
-          counter_M[i] = -(current_block->mix_event_count[i] >> 1);
+          counter_m[i] = -(current_block->mix_event_count[i] >> 1);
       #endif
 
       step_events_completed = 0;
@@ -415,6 +415,7 @@ void Stepper::isr() {
     ) endstops.update();
 
     // Take multiple steps per interrupt (For high speed moves)
+    bool all_steps_done = false;
     for (int8_t i = 0; i < step_loops; i++) {
       #ifndef __SAM3X8E__
         #ifndef USBCON
@@ -430,18 +431,18 @@ void Stepper::isr() {
           #if DISABLED(MIXING_EXTRUDER)
             // Don't step E here for mixing extruder
             count_position[E_AXIS] += count_direction[E_AXIS];
-            e_steps[TOOL_E_INDEX] += motor_direction(E_AXIS) ? -1 : 1;
+            motor_direction(E_AXIS) ? --e_steps[TOOL_E_INDEX] : ++e_steps[TOOL_E_INDEX];
           #endif
         }
 
         #if ENABLED(MIXING_EXTRUDER)
           // Step mixing steppers proportionally
-          long dir = motor_direction(E_AXIS) ? -1 : 1;
+          bool dir = motor_direction(E_AXIS);
           MIXING_STEPPERS_LOOP(j) {
             counter_m[j] += current_block->steps[E_AXIS];
             if (counter_m[j] > 0) {
               counter_m[j] -= current_block->mix_event_count[j];
-              e_steps[j] += dir;
+              dir ? --e_steps[j] : ++e_steps[j];
             }
           }
         #endif
@@ -470,19 +471,19 @@ void Stepper::isr() {
           counter_E -= current_block->step_event_count;
           #if DISABLED(MIXING_EXTRUDER)
             // Don't step E here for mixing extruder
-            e_steps[TOOL_E_INDEX] += motor_direction(E_AXIS) ? -1 : 1;
+            motor_direction(E_AXIS) ? --e_steps[TOOL_E_INDEX] : ++e_steps[TOOL_E_INDEX];
           #endif
         }
 
         #if ENABLED(MIXING_EXTRUDER)
 
           // Step mixing steppers proportionally
-          long dir = motor_direction(E_AXIS) ? -1 : 1;
+          bool dir = motor_direction(E_AXIS);
           MIXING_STEPPERS_LOOP(j) {
             counter_m[j] += current_block->steps[E_AXIS];
             if (counter_m[j] > 0) {
               counter_m[j] -= current_block->mix_event_count[j];
-              e_steps[j] += dir;
+              dir ? --e_steps[j] : ++e_steps[j];
             }
           }
 
@@ -494,10 +495,12 @@ void Stepper::isr() {
       #define _APPLY_STEP(AXIS) AXIS ##_APPLY_STEP
       #define _INVERT_STEP_PIN(AXIS) INVERT_## AXIS ##_STEP_PIN
 
+      // Advance the Bresenham counter; start a pulse if the axis needs a step
       #define PULSE_START(AXIS) \
         _COUNTER(AXIS) += current_block->steps[_AXIS(AXIS)]; \
         if (_COUNTER(AXIS) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); }
 
+      // Stop an active pulse, reset the Bresenham counter, update the position
       #define PULSE_STOP(AXIS) \
         if (_COUNTER(AXIS) > 0) { \
           _COUNTER(AXIS) -= current_block->step_event_count; \
@@ -505,6 +508,7 @@ void Stepper::isr() {
           _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
         }
 
+      // If a minimum pulse time was specified get the CPU clock
       #if MINIMUM_STEPPER_PULSE > 0
         static uint32_t pulse_start;
         #ifdef __SAM3X8E__
@@ -524,6 +528,7 @@ void Stepper::isr() {
         PULSE_START(Z);
       #endif
 
+      // For non-advance use linear interpolation for E also
       #if DISABLED(ADVANCE) && DISABLED(LIN_ADVANCE)
         #if ENABLED(MIXING_EXTRUDER)
           // Keep updating the single E axis
@@ -531,15 +536,16 @@ void Stepper::isr() {
           // Tick the counters used for this mix
           MIXING_STEPPERS_LOOP(j) {
             // Step mixing steppers (proportionally)
-            counter_M[j] += current_block->steps[E_AXIS];
+            counter_m[j] += current_block->steps[E_AXIS];
             // Step when the counter goes over zero
-            if (counter_M[j] > 0) En_STEP_WRITE(j, !INVERT_E_STEP_PIN);
+            if (counter_m[j] > 0) En_STEP_WRITE(j, !INVERT_E_STEP_PIN);
           }
         #else // !MIXING_EXTRUDER
           PULSE_START(E);
         #endif
       #endif // !ADVANCE && !LIN_ADVANCE
 
+      // For a minimum pulse time wait before stopping pulses
       #if MINIMUM_STEPPER_PULSE > 0
         #ifdef __SAM3X8E__
           #define CYCLES_EATEN_BY_CODE 3 // what is this means?
@@ -568,8 +574,8 @@ void Stepper::isr() {
             count_position[E_AXIS] += count_direction[E_AXIS];
           }
           MIXING_STEPPERS_LOOP(j) {
-            if (counter_M[j] > 0) {
-              counter_M[j] -= current_block->mix_event_count[j];
+            if (counter_m[j] > 0) {
+              counter_m[j] -= current_block->mix_event_count[j];
               En_STEP_WRITE(j, INVERT_E_STEP_PIN);
             }
           }
@@ -578,12 +584,14 @@ void Stepper::isr() {
         #endif
       #endif // !ADVANCE && !LIN_ADVANCE
 
-      step_events_completed++;
-      if (step_events_completed >= current_block->step_event_count) break;
+      if (++step_events_completed >= current_block->step_event_count) {
+        all_steps_done = true;
+        break;
+      }
     }
 
     #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-      // If we have esteps to execute, fire the next ISR "now"
+      // If we have esteps to execute, fire the next advance_isr "now"
       #ifdef __SAM3X8E__
         if (e_steps[TOOL_E_INDEX]) HAL_TIMER_SET_EXTRUDER_COUNT(HAL_timer_get_current_count(EXTRUDER_TIMER) + 2 * EXTRUDER_TIMER_FACTOR);
       #else
@@ -595,9 +603,9 @@ void Stepper::isr() {
     #ifdef __SAM3X8E__
       HAL_TIMER_TYPE timer, step_rate;
     #else
-      unsigned short timer, step_rate;
+      uint16_t timer, step_rate;
     #endif
-    if (step_events_completed <= (unsigned long)current_block->accelerate_until) {
+    if (step_events_completed <= (uint32_t)current_block->accelerate_until) {
 
       #ifdef __SAM3X8E__
         MultiU32X32toH32(acc_step_rate, acceleration_time, current_block->acceleration_rate);
@@ -621,14 +629,14 @@ void Stepper::isr() {
       #if ENABLED(LIN_ADVANCE)
 
         if (current_block->use_advance_lead)
-          current_estep_rate[TOOL_E_INDEX] = ((unsigned long)acc_step_rate * current_block->e_speed_multiplier8) >> 8;
+          current_estep_rate[TOOL_E_INDEX] = ((uint32_t)acc_step_rate * current_block->e_speed_multiplier8) >> 8;
 
         if (current_block->use_advance_lead) {
           #if ENABLED(MIXING_EXTRUDER)
             MIXING_STEPPERS_LOOP(j)
-              current_estep_rate[j] = ((unsigned long)acc_step_rate * current_block->e_speed_multiplier8 * current_block->step_event_count / current_block->mix_event_count[j]) >> 8;
+              current_estep_rate[j] = ((uint32_t)acc_step_rate * current_block->e_speed_multiplier8 * current_block->step_event_count / current_block->mix_event_count[j]) >> 8;
           #else
-            current_estep_rate[TOOL_E_INDEX] = ((unsigned long)acc_step_rate * current_block->e_speed_multiplier8) >> 8;
+            current_estep_rate[TOOL_E_INDEX] = ((uint32_t)acc_step_rate * current_block->e_speed_multiplier8) >> 8;
           #endif
         }
 
@@ -658,14 +666,14 @@ void Stepper::isr() {
         eISR_Rate = (timer >> 2) * step_loops / abs(e_steps[TOOL_E_INDEX]);
       #endif
     }
-    else if (step_events_completed > (unsigned long)current_block->decelerate_after) {
+    else if (step_events_completed > (uint32_t)current_block->decelerate_after) {
       #ifdef __SAM3X8E__
         MultiU32X32toH32(step_rate, deceleration_time, current_block->acceleration_rate);
       #else
         MultiU24X32toH16(step_rate, deceleration_time, current_block->acceleration_rate);
       #endif
 
-      if (step_rate <= acc_step_rate) { // Still decelerating?
+      if (step_rate < acc_step_rate) { // Still decelerating?
         step_rate = acc_step_rate - step_rate;
         NOLESS(step_rate, current_block->final_rate);
       }
@@ -686,9 +694,9 @@ void Stepper::isr() {
         if (current_block->use_advance_lead) {
           #if ENABLED(MIXING_EXTRUDER)
             MIXING_STEPPERS_LOOP(j)
-              current_estep_rate[j] = ((unsigned long)step_rate * current_block->e_speed_multiplier8 * current_block->step_event_count / current_block->mix_event_count[j]) >> 8;
+              current_estep_rate[j] = ((uint32_t)step_rate * current_block->e_speed_multiplier8 * current_block->step_event_count / current_block->mix_event_count[j]) >> 8;
           #else
-            current_estep_rate[TOOL_E_INDEX] = ((unsigned long)step_rate * current_block->e_speed_multiplier8) >> 8;
+            current_estep_rate[TOOL_E_INDEX] = ((uint32_t)step_rate * current_block->e_speed_multiplier8) >> 8;
           #endif
         }
 
@@ -739,11 +747,11 @@ void Stepper::isr() {
     #ifdef __SAM3X8E__
       HAL_TIMER_SET_STEPPER_COUNT(HAL_timer_get_count(STEPPER_TIMER) < (HAL_timer_get_current_count(STEPPER_TIMER) + 16 * STEPPER_TIMER_FACTOR) ? (HAL_timer_get_current_count(STEPPER_TIMER) + 16 * STEPPER_TIMER_FACTOR) : HAL_timer_get_count(STEPPER_TIMER));
     #else
-      OCR1A = (OCR1A < (TCNT1 + 16)) ? (TCNT1 + 16) : OCR1A;
+      NOLESS(OCR1A, TCNT1 + 16);
     #endif
 
     // If current block is finished, reset pointer
-    if (step_events_completed >= current_block->step_event_count) {
+    if (all_steps_done) {
       current_block = NULL;
       planner.discard_current_block();
     }
@@ -773,29 +781,70 @@ void Stepper::isr() {
       OCR0A = old_OCR0A;
     #endif
 
-    #define STEP_E_ONCE(INDEX) \
-      if (e_steps[INDEX] != 0) { \
-        E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
-        if (e_steps[INDEX] < 0) { \
-          E## INDEX ##_DIR_WRITE(INVERT_E## INDEX ##_DIR); \
-          e_steps[INDEX]++; \
-        } \
-        else { \
-          E## INDEX ##_DIR_WRITE(!INVERT_E## INDEX ##_DIR); \
-          e_steps[INDEX]--; \
-        } \
+    #define SET_E_STEP_DIR(INDEX) \
+      E## INDEX ##_DIR_WRITE(e_steps[INDEX] <= 0 ? INVERT_E## INDEX ##_DIR : !INVERT_E## INDEX ##_DIR)
+
+    #define START_E_PULSE(INDEX) \
+      if (e_steps[INDEX]) E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN)
+
+    #define STOP_E_PULSE(INDEX) \
+      if (e_steps[INDEX]) { \
+        e_steps[INDEX] <= 0 ? ++e_steps[INDEX] : --e_steps[INDEX]; \
         E## INDEX ##_STEP_WRITE(!INVERT_E_STEP_PIN); \
       }
 
+    SET_E_STEP_DIR(0);
+    #if E_STEPPERS > 1
+      SET_E_STEP_DIR(1);
+      #if E_STEPPERS > 2
+        SET_E_STEP_DIR(2);
+        #if E_STEPPERS > 3
+          SET_E_STEP_DIR(3);
+        #endif
+      #endif
+    #endif
+
     // Step all E steppers that have steps
     for (uint8_t i = 0; i < step_loops; i++) {
-      STEP_E_ONCE(0);
+
+      #if MINIMUM_STEPPER_PULSE > 0
+        static uint32_t pulse_start;
+        #ifdef __SAM3X8E__
+          pulse_start = HAL_timer_get_current_count(TEMP_TIMER); // Because advanced extruder and temperature of Due aren't sharing a timer
+        #else
+          pulse_start = TCNT0;
+        #endif
+      #endif
+
+      START_E_PULSE(0);
       #if E_STEPPERS > 1
-        STEP_E_ONCE(1);
+        START_E_PULSE(1);
         #if E_STEPPERS > 2
-          STEP_E_ONCE(2);
+          START_E_PULSE(2);
           #if E_STEPPERS > 3
-            STEP_E_ONCE(3);
+            START_E_PULSE(3);
+          #endif
+        #endif
+      #endif
+
+      // For a minimum pulse time wait before stopping pulses
+      #if MINIMUM_STEPPER_PULSE > 0
+        #ifdef __SAM3X8E__
+          #define CYCLES_EATEN_BY_E 3 // what is this means?
+          while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < ((MINIMUM_STEPPER_PULSE * (REFERENCE_F_CPU / 1000000UL)) - CYCLES_EATEN_BY_E) * TEMP_TIMER_FACTOR) { /* nada */ }
+        #else
+          #define CYCLES_EATEN_BY_E 10
+          while ((uint32_t)(TCNT0 - pulse_start) < (MINIMUM_STEPPER_PULSE * (F_CPU / 1000000UL)) - CYCLES_EATEN_BY_E) { /* nada */ }
+        #endif
+      #endif
+
+      STOP_E_PULSE(0);
+      #if E_STEPPERS > 1
+        STOP_E_PULSE(1);
+        #if E_STEPPERS > 2
+          STOP_E_PULSE(2);
+          #if E_STEPPERS > 3
+            STOP_E_PULSE(3);
           #endif
         #endif
       #endif

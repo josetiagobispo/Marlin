@@ -382,20 +382,15 @@ static void lcd_implementation_init(
 static void lcd_implementation_clear() { lcd.clear(); }
 
 /* Arduino < 1.0.0 is missing a function to print PROGMEM strings, so we need to implement our own */
-char lcd_printPGM(const char* str) {
-  char c, n = 0;
-  while ((c = pgm_read_byte(str++))) n += charset_mapper(c);
-  return n;
+void lcd_printPGM(const char *str) {
+  for (; char c = pgm_read_byte(str); ++str) charset_mapper(c);
 }
 
-char lcd_print(const char* str) {
-  char c, n = 0;
-  unsigned char i = 0;
-  while ((c = str[i++])) n += charset_mapper(c);
-  return n;
+void lcd_print(const char* str) {
+  for (uint8_t i = 0; char c = str[i]; ++i) charset_mapper(c);
 }
 
-unsigned lcd_print(char c) { return charset_mapper(c); }
+void lcd_print(char c) { charset_mapper(c); }
 
 #if ENABLED(SHOW_BOOTSCREEN)
 
@@ -563,11 +558,11 @@ FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) 
     lcd_printPGM(pstr);
   else {
     if (!axis_homed[axis])
-      lcd_printPGM(PSTR("?"));
+      lcd.print('?');
     else {
       #if DISABLED(DISABLE_REDUCED_ACCURACY_WARNING)
         if (!axis_known_position[axis])
-          lcd_printPGM(PSTR(" "));
+          lcd.print(' ');
         else
       #endif
       lcd_printPGM(pstr);
@@ -701,7 +696,7 @@ static void lcd_implementation_status_screen() {
         _draw_axis_label(X_AXIS, PSTR(MSG_X), blink);
         lcd.print(ftostr4sign(current_position[X_AXIS]));
 
-        lcd_printPGM(PSTR(" "));
+        lcd.print(' ');
 
         _draw_axis_label(Y_AXIS, PSTR(MSG_Y), blink);
         lcd.print(ftostr4sign(current_position[Y_AXIS]));
@@ -810,11 +805,11 @@ static void lcd_implementation_status_screen() {
         while (--pad >= 0) { lcd.print(' '); n--; }
       }
       while (n > 0 && (c = pgm_read_byte(pstr))) {
-        n -= lcd_print(c);
+        n -= charset_mapper(c);
         pstr++;
       }
       if (valstr) while (n > 0 && (c = *valstr)) {
-        n -= lcd_print(c);
+        n -= charset_mapper(c);
         valstr++;
       }
       while (n-- > 0) lcd.print(' ');
@@ -828,7 +823,7 @@ static void lcd_implementation_status_screen() {
     lcd.setCursor(0, row);
     lcd.print(sel ? pre_char : ' ');
     while ((c = pgm_read_byte(pstr)) && n > 0) {
-      n -= lcd_print(c);
+      n -= charset_mapper(c);
       pstr++;
     }
     while (n--) lcd.print(' ');
@@ -841,7 +836,7 @@ static void lcd_implementation_status_screen() {
     lcd.setCursor(0, row);
     lcd.print(sel ? pre_char : ' ');
     while ((c = pgm_read_byte(pstr)) && n > 0) {
-      n -= lcd_print(c);
+      n -= charset_mapper(c);
       pstr++;
     }
     lcd.print(':');
@@ -854,7 +849,7 @@ static void lcd_implementation_status_screen() {
     lcd.setCursor(0, row);
     lcd.print(sel ? pre_char : ' ');
     while ((c = pgm_read_byte(pstr)) && n > 0) {
-      n -= lcd_print(c);
+      n -= charset_mapper(c);
       pstr++;
     }
     lcd.print(':');
@@ -912,7 +907,7 @@ static void lcd_implementation_status_screen() {
         longFilename[n] = '\0';
       }
       while ((c = *filename) && n > 0) {
-        n -= lcd_print(c);
+        n -= charset_mapper(c);
         filename++;
       }
       while (n--) lcd.print(' ');
