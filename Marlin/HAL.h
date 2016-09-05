@@ -105,6 +105,9 @@
   #define BEEPER_TIMER_TICKS_PER_NANOSECOND (HAL_BEEPER_TIMER_RATE) / 1000
 #endif
 
+  #define HAL_ISR_WATCHDOG_TIMER void WDT_Handler()
+  #define WATCHDOG_TIMER_PRIORITY 0
+
   #define _HAL_ISR(p) void TC ## p ## _Handler()
   #define HAL_ISR(p) _HAL_ISR(p)
   #define HAL_TIMER_START(n) HAL_timer_start(n, n ## _PRIORITY, n ## _FREQUENCY, n ## _CLOCK, n ## _PRESCALE)
@@ -231,6 +234,9 @@
   void HAL_timer_enable_interrupt(uint8_t timer_num);
   //#if ENABLED(USE_WATCHDOG)
     void watchdogSetup(void);
+    //#if ENABLED(WATCHDOG_RESET_MANUAL)
+      void HAL_watchdog_timer_enable_interrupt(uint32_t timeout);
+    //#endif
   //#endif
   void HAL_timer_disable_interrupt(uint8_t timer_num);
 

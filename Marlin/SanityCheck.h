@@ -750,9 +750,6 @@
   #ifdef FAST_PWM_FAN
     #error "FAST_PWM_FAN is not supported by ARM platform yet."
   #endif
-  #ifdef WATCHDOG_RESET_MANUAL
-    #error "WATCHDOG_RESET_MANUAL is not supported by ARM platform yet."
-  #endif
   #ifdef TX_BUFFER_SIZE
     #error "TX_BUFFER_SIZE is not supported by ARM platform yet."
   #endif

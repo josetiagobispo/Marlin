@@ -539,6 +539,26 @@ void HAL_timer_enable_interrupt(uint8_t timer_num) {
   void watchdogSetup(void) {
     // do what you want here
   }
+
+  #if ENABLED(WATCHDOG_RESET_MANUAL)
+    void HAL_watchdog_timer_enable_interrupt(uint32_t timeout) {
+      /* this assumes the slow clock is running at 32.768 kHz
+         watchdog frequency is therefore 32768 / 128 = 256 Hz */
+      timeout = timeout * 256 / 1000;
+      if (timeout == 0)
+        timeout = 1;
+      else if (timeout > 0xFFF)
+        timeout = 0xFFF;
+
+      /* Enable WDT interrupt line from the core */
+      NVIC_DisableIRQ(WDT_IRQn);
+      NVIC_ClearPendingIRQ(WDT_IRQn);
+      NVIC_SetPriority(WDT_IRQn, WATCHDOG_TIMER_PRIORITY);
+      NVIC_EnableIRQ(WDT_IRQn);
+
+      WDT_Enable(WDT, WDT_MR_WDFIEN | WDT_MR_WDV(timeout) | WDT_MR_WDD(timeout));
+    }
+  #endif
 #endif
 
 void HAL_timer_disable_interrupt(uint8_t timer_num) {
