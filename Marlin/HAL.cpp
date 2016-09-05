@@ -644,7 +644,7 @@ void HAL_step_timer_start() {
 
   pmc_set_writeprotect(false); //remove write protection on registers
   pmc_enable_periph_clk((uint32_t)irq); //we need a clock?
-  NVIC_SetPriority(irq, STEP_TIMER_PRIORITY); // highest priority - no surprises here wanted
+  NVIC_SetPriority(irq, STEP_TIMER_PRIORITY);
 
   TC_Configure(tc, channel, TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC | TEMP_TIMER_CLOCK);
 

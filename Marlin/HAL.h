@@ -79,7 +79,7 @@
   //#endif
 
   #define STEPPER_TIMER 2
-  #define STEPPER_TIMER_PRIORITY 1
+  #define STEPPER_TIMER_PRIORITY 2
   #define STEPPER_TIMER_FREQUENCY REFERENCE_STEPPER_TIMER_FREQUENCY
   #define STEPPER_TIMER_CLOCK TC_CMR_TCCLKS_TIMER_CLOCK1 // TIMER_CLOCK1 -> 2 divisor = 42MHz
   #define STEPPER_TIMER_PRESCALE 2
@@ -106,7 +106,7 @@
 #endif
 
   #define HAL_ISR_WATCHDOG_TIMER void WDT_Handler()
-  #define WATCHDOG_TIMER_PRIORITY 0
+  #define WATCHDOG_TIMER_PRIORITY 1
 
   #define _HAL_ISR(p) void TC ## p ## _Handler()
   #define HAL_ISR(p) _HAL_ISR(p)
