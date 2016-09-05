@@ -229,6 +229,9 @@
   // Timers
   void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale);
   void HAL_timer_enable_interrupt(uint8_t timer_num);
+  //#if ENABLED(USE_WATCHDOG)
+    void watchdogSetup(void);
+  //#endif
   void HAL_timer_disable_interrupt(uint8_t timer_num);
 
   static FORCE_INLINE void HAL_timer_isr_prologue(uint8_t timer_num) {

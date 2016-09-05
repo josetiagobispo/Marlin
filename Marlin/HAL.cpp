@@ -534,6 +534,13 @@ void HAL_timer_enable_interrupt(uint8_t timer_num) {
   pConfig->pTimerRegs->TC_CHANNEL[pConfig->channel].TC_IDR = ~TC_IER_CPCS; // remove disable interrupt
 }
 
+#if ENABLED(USE_WATCHDOG)
+  // this function has to be present, otherwise watchdog won't work
+  void watchdogSetup(void) {
+    // do what you want here
+  }
+#endif
+
 void HAL_timer_disable_interrupt(uint8_t timer_num) {
   const tTimerConfig *pConfig = &TimerConfig[timer_num];
 
