@@ -1513,7 +1513,10 @@ void Temperature::set_current_temp_raw() {
  *  - Step the babysteps value for each axis towards 0
  */
 #ifdef __SAM3X8E__
-  HAL_ISR(TEMP_TIMER) { Temperature::isr(); }
+  HAL_ISR(TEMP_TIMER) {
+    HAL_timer_isr_prologue(TEMP_TIMER);
+    Temperature::isr();
+  }
 #else
   ISR(TIMER0_COMPB_vect) { Temperature::isr(); }
 #endif
@@ -1555,10 +1558,6 @@ void Temperature::isr() {
 
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     static unsigned long raw_filwidth_value = 0;
-  #endif
-
-  #ifdef __SAM3X8E__
-    HAL_timer_isr_prologue(TEMP_TIMER);
   #endif
 
   #if DISABLED(SLOW_PWM_HEATERS)

@@ -338,15 +338,15 @@ void Stepper::set_directions() {
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
 #ifdef __SAM3X8E__
-  HAL_ISR(STEPPER_TIMER) { Stepper::isr(); }
+  HAL_ISR(STEPPER_TIMER) {
+    HAL_timer_isr_prologue(STEPPER_TIMER);
+    Stepper::isr();
+  }
 #else
   ISR(TIMER1_COMPA_vect) { Stepper::isr(); }
 #endif
 
 void Stepper::isr() {
-  #ifdef __SAM3X8E__
-    HAL_timer_isr_prologue(STEPPER_TIMER);
-  #endif
   if (cleaning_buffer_counter) {
     current_block = NULL;
     planner.discard_current_block();
@@ -762,17 +762,16 @@ void Stepper::isr() {
 
   // Timer interrupt for E. e_steps is set in the main routine;
   #ifdef __SAM3X8E__
-    HAL_ISR(EXTRUDER_TIMER) { Stepper::advance_isr(); }
+    HAL_ISR(EXTRUDER_TIMER) {
+      HAL_timer_isr_prologue(EXTRUDER_TIMER);
+      Stepper::advance_isr();
+    }
   #else
     // Timer 0 is shared with millies
     ISR(TIMER0_COMPA_vect) { Stepper::advance_isr(); }
   #endif
 
   void Stepper::advance_isr() {
-
-    #ifdef __SAM3X8E__
-      HAL_timer_isr_prologue(EXTRUDER_TIMER);
-    #endif
 
     old_OCR0A += eISR_Rate;
     #ifdef __SAM3X8E__
