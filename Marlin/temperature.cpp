@@ -1154,7 +1154,7 @@ void Temperature::init() {
   #endif
 
   #ifdef __SAM3X8E__
-    HAL_TIMER_START(TEMP_TIMER);
+    HAL_TIMER_SET(TEMP_TIMER);
     HAL_TIMER_SET_TEMP_COUNT(128 * TEMP_TIMER_FACTOR);
     ENABLE_TEMP_INTERRUPT();
   #else

@@ -506,7 +506,7 @@ void eeprom_update_block(const void* pos, void* eeprom_address, size_t n) {
 // thanks for that work
 // http://forum.arduino.cc/index.php?topic=297397.0
 
-void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale) {
+void HAL_timer_set(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale) {
   // Get the ISR from table
   Tc *tc = TimerConfig[timer_num].pTimerRegs;
   uint32_t channel = TimerConfig[timer_num].channel;
@@ -521,8 +521,7 @@ void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, ui
   TC_SetRC(tc, channel, VARIANT_MCK / prescale / frequency);
   TC_Start(tc, channel);
 
-  tc->TC_CHANNEL[channel].TC_IER = TC_IER_CPCS; // enable interrupt on timer match with register C
-  tc->TC_CHANNEL[channel].TC_IDR = ~TC_IER_CPCS; // remove disable interrupt
+  tc->TC_CHANNEL[channel].TC_IDR = TC_IER_CPCS; // disable interrupt
 
   NVIC_EnableIRQ(irq);
 }
@@ -530,7 +529,7 @@ void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, ui
 void HAL_timer_enable_interrupt(uint8_t timer_num) {
   const tTimerConfig *pConfig = &TimerConfig[timer_num];
 
-  pConfig->pTimerRegs->TC_CHANNEL[pConfig->channel].TC_IER = TC_IER_CPCS; // enable interrupt
+  pConfig->pTimerRegs->TC_CHANNEL[pConfig->channel].TC_IER = TC_IER_CPCS; // enable interrupt on timer match with register C
   pConfig->pTimerRegs->TC_CHANNEL[pConfig->channel].TC_IDR = ~TC_IER_CPCS; // remove disable interrupt
 }
 
