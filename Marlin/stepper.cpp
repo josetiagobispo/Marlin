@@ -1000,7 +1000,7 @@ void Stepper::init() {
   #endif
 
   #ifdef __SAM3X8E__
-    HAL_TIMER_SET(STEPPER_TIMER);
+    HAL_TIMER_START(STEPPER_TIMER);
     HAL_TIMER_SET_STEPPER_COUNT(0x4000 * STEPPER_TIMER_FACTOR);
   #else
     // waveform generation = 0100 = CTC
@@ -1034,7 +1034,7 @@ void Stepper::init() {
     }
 
     #ifdef __SAM3X8E__
-      HAL_TIMER_SET(EXTRUDER_TIMER);
+      HAL_TIMER_START(EXTRUDER_TIMER);
       ENABLE_EXTRUDER_INTERRUPT();
     #else
       #if defined(TCCR0A) && defined(WGM01)

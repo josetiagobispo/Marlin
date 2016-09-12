@@ -506,7 +506,7 @@ void eeprom_update_block(const void* pos, void* eeprom_address, size_t n) {
 // thanks for that work
 // http://forum.arduino.cc/index.php?topic=297397.0
 
-void HAL_timer_set(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale) {
+void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale) {
   // Get the ISR from table
   Tc *tc = TimerConfig[timer_num].pTimerRegs;
   uint32_t channel = TimerConfig[timer_num].channel;

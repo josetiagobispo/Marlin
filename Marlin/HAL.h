@@ -110,7 +110,7 @@
 
   #define _HAL_ISR(p) void TC ## p ## _Handler()
   #define HAL_ISR(p) _HAL_ISR(p)
-  #define HAL_TIMER_SET(n) HAL_timer_set(n, n ## _PRIORITY, n ## _FREQUENCY, n ## _CLOCK, n ## _PRESCALE)
+  #define HAL_TIMER_START(n) HAL_timer_set(n, n ## _PRIORITY, n ## _FREQUENCY, n ## _CLOCK, n ## _PRESCALE)
 
   //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
     #define ENABLE_EXTRUDER_INTERRUPT() HAL_timer_enable_interrupt(EXTRUDER_TIMER)
@@ -230,7 +230,7 @@
   void eeprom_update_block(const void* pos, void* eeprom_address, size_t n);
 
   // Timers
-  void HAL_timer_set(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale);
+  void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale);
   void HAL_timer_enable_interrupt(uint8_t timer_num);
   //#if ENABLED(USE_WATCHDOG)
     void watchdogSetup(void);
