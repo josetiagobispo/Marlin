@@ -643,11 +643,11 @@ void HAL_step_timer_start() {
 
   pmc_set_writeprotect(false); //remove write protection on registers
   pmc_enable_periph_clk((uint32_t)irq); //we need a clock?
-  NVIC_SetPriority(irq, STEP_TIMER_PRIORITY);
+  NVIC_SetPriority(irq, STEPPER_TIMER_PRIORITY);
 
-  TC_Configure(tc, channel, TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC | TEMP_TIMER_CLOCK);
+  TC_Configure(tc, channel, TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC | STEPPER_TIMER_CLOCK);
 
-  TC_SetRC(tc, channel, VARIANT_MCK / STEP_TIMER_PRESCALE / STEPPER_TIMER_FREQUENCY); // start with STEPPER_TIMER_FREQUENCY(Hz) as frequency; //interrupt occurs every x interations of the timer counter
+  TC_SetRC(tc, channel, VARIANT_MCK / STEPPER_TIMER_PRESCALE / STEPPER_TIMER_FREQUENCY); // start with STEPPER_TIMER_FREQUENCY(Hz) as frequency; //interrupt occurs every x interations of the timer counter
   TC_Start(tc, channel);
 
   tc->TC_CHANNEL[channel].TC_IER = TC_IER_CPCS; // enable interrupt on timer match with register C
