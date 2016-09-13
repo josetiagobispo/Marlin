@@ -110,7 +110,7 @@
 
   #define _HAL_ISR(p) void TC ## p ## _Handler()
   #define HAL_ISR(p) _HAL_ISR(p)
-  #define HAL_TIMER_START(n) HAL_timer_set(n, n ## _PRIORITY, n ## _FREQUENCY, n ## _CLOCK, n ## _PRESCALE)
+  #define HAL_TIMER_START(n) HAL_timer_start(n, n ## _PRIORITY, n ## _FREQUENCY, n ## _CLOCK, n ## _PRESCALE)
 
   //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
     #define ENABLE_EXTRUDER_INTERRUPT() HAL_timer_enable_interrupt(EXTRUDER_TIMER)
