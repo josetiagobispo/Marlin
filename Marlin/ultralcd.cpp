@@ -237,7 +237,7 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
     SCREEN_OR_MENU_LOOP()
 
   #ifdef __SAM3X8E__
-    #if HAS_BTN_BACK
+    #if BUTTON_EXISTS(BACK)
       #define START_MENU() \
         START_SCREEN_OR_MENU(1); \
         NOMORE(encoderTopLine, encoderLine); \
@@ -1453,7 +1453,7 @@ void kill_screen(const char* lcd_msg) {
    *
    */
 
-  #if ENABLED(DELTA) || ENABLED(SCARA)
+  #if IS_KINEMATIC
     #define _MOVE_XYZ_ALLOWED (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
   #else
     #define _MOVE_XYZ_ALLOWED true
@@ -1867,7 +1867,7 @@ void kill_screen(const char* lcd_msg) {
     #if ENABLED(ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
       MENU_ITEM_EDIT(bool, MSG_ENDSTOP_ABORT, &stepper.abort_on_endstop_hit);
     #endif
-    #if ENABLED(SCARA)
+    #if IS_SCARA
       MENU_ITEM_EDIT(float74, MSG_XSCALE, &axis_scaling[X_AXIS], 0.5, 2);
       MENU_ITEM_EDIT(float74, MSG_YSCALE, &axis_scaling[Y_AXIS], 0.5, 2);
     #endif
@@ -2408,6 +2408,7 @@ void kill_screen(const char* lcd_msg) {
 
   void lcd_quick_feedback() {
     lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
+    buttons = 0;
     next_button_update_ms = millis() + 500;
 
     // Buzz and wait. The delay is needed for buttons to settle!
@@ -2928,20 +2929,32 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
    * Warning: This function is called from interrupt context!
    */
   void lcd_buttons_update() {
-    #if ENABLED(NEWPANEL)
-      uint8_t newbutton = 0;
-      #if BUTTON_EXISTS(EN1)
-        if (BUTTON_PRESSED(EN1)) newbutton |= EN_A;
-      #endif
-      #if BUTTON_EXISTS(EN2)
-        if (BUTTON_PRESSED(EN2)) newbutton |= EN_B;
-      #endif
-      #if LCD_HAS_DIRECTIONAL_BUTTONS || BUTTON_EXISTS(ENC)
-        millis_t now = millis();
-      #endif
+    millis_t now = millis();
+    if (ELAPSED(now, next_button_update_ms)) {
 
-      #if LCD_HAS_DIRECTIONAL_BUTTONS
-        if (ELAPSED(now, next_button_update_ms)) {
+      #if ENABLED(NEWPANEL)
+        uint8_t newbutton = 0;
+
+        #if BUTTON_EXISTS(EN1)
+          if (BUTTON_PRESSED(EN1)) newbutton |= EN_A;
+        #endif
+
+        #if BUTTON_EXISTS(EN2)
+          if (BUTTON_PRESSED(EN2)) newbutton |= EN_B;
+        #endif
+
+        #if BUTTON_EXISTS(ENC)
+          if (BUTTON_PRESSED(ENC)) newbutton |= EN_C;
+        #endif
+
+        #ifdef __SAM3X8E__
+          #if BUTTON_EXISTS(BACK)
+            if (BUTTON_PRESSED(BACK)) newbutton |= EN_D;
+          #endif
+        #endif
+
+        #if LCD_HAS_DIRECTIONAL_BUTTONS
+
           if (false) {
             // for the else-ifs below
           }
@@ -2969,28 +2982,21 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
               next_button_update_ms = now + 300;
             }
           #endif
-        }
-      #endif
 
-      #if BUTTON_EXISTS(ENC)
-        if (ELAPSED(now, next_button_update_ms) && BUTTON_PRESSED(ENC)) newbutton |= EN_C;
-        #ifdef __SAM3X8E__
-          #if HAS_BTN_BACK
-            if (ELAPSED(now, next_button_update_ms) && BUTTON_PRESSED(BTN_BACK) == 0) newbutton |= EN_D;
-          #endif
+        #endif // LCD_HAS_DIRECTIONAL_BUTTONS
+
+        buttons = newbutton;
+        #if ENABLED(LCD_HAS_SLOW_BUTTONS)
+          buttons |= slow_buttons;
         #endif
-      #endif
+        #if ENABLED(REPRAPWORLD_KEYPAD)
+          GET_BUTTON_STATES(buttons_reprapworld_keypad);
+        #endif
+      #else
+        GET_BUTTON_STATES(buttons);
+      #endif //!NEWPANEL
 
-      buttons = newbutton;
-      #if ENABLED(LCD_HAS_SLOW_BUTTONS)
-        buttons |= slow_buttons;
-      #endif
-      #if ENABLED(REPRAPWORLD_KEYPAD)
-        GET_BUTTON_STATES(buttons_reprapworld_keypad);
-      #endif
-    #else
-      GET_BUTTON_STATES(buttons);
-    #endif //!NEWPANEL
+    } // next_button_update_ms
 
     // Manage encoder rotation
     #if ENABLED(REVERSE_MENU_DIRECTION) && ENABLED(REVERSE_ENCODER_DIRECTION)

@@ -99,18 +99,18 @@
     #if BUTTON_EXISTS(ENC)
       #define BLEN_C 2
       #define EN_C (_BV(BLEN_C))
-      #ifdef __SAM3X8E__
-        #if HAS_BTN_BACK
-          #define BLEN_D 3
-          #define EN_D (_BV(BLEN_D))
-        #endif
+    #endif
+    #ifdef __SAM3X8E__
+      #if BUTTON_EXISTS(BACK)
+        #define BLEN_D 3
+        #define EN_D (_BV(BLEN_D))
       #endif
     #endif
     #define EN_A (_BV(BLEN_A))
     #define EN_B (_BV(BLEN_B))
     #define EN_C (_BV(BLEN_C))
     #ifdef __SAM3X8E__
-      #if HAS_BTN_BACK
+      #if BUTTON_EXISTS(BACK)
         #define EN_D (_BV(BLEN_D))
       #endif
     #endif
@@ -162,7 +162,7 @@
   #elif ENABLED(NEWPANEL)
     #define LCD_CLICKED (buttons & EN_C)
     #ifdef __SAM3X8E__
-      #if HAS_BTN_BACK
+      #if BUTTON_EXISTS(BACK)
         #define LCD_BACK_CLICKED (buttons & EN_D)
       #endif
     #endif
