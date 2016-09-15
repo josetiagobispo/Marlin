@@ -7668,25 +7668,30 @@ void ok_to_send() {
   }
 
   #if ENABLED(DELTA_FAST_SQRT)
-    /**
-     * Fast inverse sqrt from Quake III Arena
-     * See: https://en.wikipedia.org/wiki/Fast_inverse_square_root
-     */
-    float Q_rsqrt(float number) {
-      long i;
-      float x2, y;
-      const float threehalfs = 1.5f;
-      x2 = number * 0.5f;
-      y  = number;
-      i  = * ( long * ) &y;                       // evil floating point bit level hacking
-      i  = 0x5f3759df - ( i >> 1 );               // what the f***?
-      y  = * ( float * ) &i;
-      y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-      // y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-      return y;
-    }
+    #ifdef __SAM3X8E__
+      // In case of Due, accuracy of sqrtf() as almost same as sqrt() on 32bit result, but 2.5x ~ 3x faster
+      #define _SQRT(n) sqrtf(n)
+    #else
+      /**
+       * Fast inverse sqrt from Quake III Arena
+       * See: https://en.wikipedia.org/wiki/Fast_inverse_square_root
+       */
+      float Q_rsqrt(float number) {
+        long i;
+        float x2, y;
+        const float threehalfs = 1.5f;
+        x2 = number * 0.5f;
+        y  = number;
+        i  = * ( long * ) &y;                       // evil floating point bit level hacking
+        i  = 0x5f3759df - ( i >> 1 );               // what the f***?
+        y  = * ( float * ) &i;
+        y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+        // y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+        return y;
+      }
 
-    #define _SQRT(n) (1.0f / Q_rsqrt(n))
+      #define _SQRT(n) (1.0f / Q_rsqrt(n))
+    #endif
 
   #else
 
