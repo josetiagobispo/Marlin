@@ -38,7 +38,7 @@
   #include "vector_3.h"
 #endif
 
-#if ENABLED(AUTO_BED_LEVELING_LINEAR)
+#if ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
   #include "qr_solve.h"
 #elif ENABLED(MESH_BED_LEVELING)
   #include "mesh_bed_leveling.h"
@@ -1896,6 +1896,12 @@ static void clean_up_after_endstop_or_probe_move() {
   #define DEPLOY_PROBE() set_probe_deployed(true)
   #define STOW_PROBE() set_probe_deployed(false)
 
+  #if ENABLED(BLTOUCH)
+    FORCE_INLINE void set_bltouch_deployed(const bool &deploy) {
+      servo[Z_ENDSTOP_SERVO_NR].move(deploy ? BLTOUCH_DEPLOY : BLTOUCH_STOW);
+    }
+  #endif
+
   // returns false for ok and true for failure
   static bool set_probe_deployed(bool deploy) {
 
@@ -1911,9 +1917,9 @@ static void clean_up_after_endstop_or_probe_move() {
     // Make room for probe
     do_probe_raise(_Z_PROBE_DEPLOY_HEIGHT);
 
-    // Check BLTOUCH probe status for an error
+    // When deploying make sure BLTOUCH is not already triggered
     #if ENABLED(BLTOUCH)
-      if (servo[Z_ENDSTOP_SERVO_NR].read() == BLTouchState_Error) { stop(); return true; }
+      if (deploy && TEST_BLTOUCH()) { stop(); return true; }
     #endif
 
     #if ENABLED(Z_PROBE_SLED)
@@ -1941,7 +1947,7 @@ static void clean_up_after_endstop_or_probe_move() {
 
           dock_sled(!deploy);
 
-        #elif HAS_Z_SERVO_ENDSTOP
+        #elif HAS_Z_SERVO_ENDSTOP && DISABLED(BLTOUCH)
 
           servo[Z_ENDSTOP_SERVO_NR].move(z_servo_angle[deploy ? 0 : 1]);
 
@@ -1978,8 +1984,18 @@ static void clean_up_after_endstop_or_probe_move() {
       if (DEBUGGING(LEVELING)) DEBUG_POS(">>> do_probe_move", current_position);
     #endif
 
+    // Deploy BLTouch at the start of any probe
+    #if ENABLED(BLTOUCH)
+      set_bltouch_deployed(true);
+    #endif
+
     // Move down until probe triggered
     do_blocking_move_to_z(LOGICAL_Z_POSITION(z), MMM_TO_MMS(fr_mm_m));
+
+    // Retract BLTouch immediately after a probe
+    #if ENABLED(BLTOUCH)
+      set_bltouch_deployed(false);
+    #endif
 
     // Clear endstop flags
     endstops.hit_on_purpose();
@@ -2212,11 +2228,21 @@ static void clean_up_after_endstop_or_probe_move() {
  */
 
 static void do_homing_move(AxisEnum axis, float where, float fr_mm_s = 0.0) {
+
+  #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
+    set_bltouch_deployed(true);
+  #endif
+
   current_position[axis] = 0;
   sync_plan_position();
   current_position[axis] = where;
   planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], (fr_mm_s != 0.0) ? fr_mm_s : homing_feedrate_mm_s[axis], active_extruder);
   stepper.synchronize();
+
+  #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
+    set_bltouch_deployed(false);
+  #endif
+
   endstops.hit_on_purpose();
 }
 
@@ -3490,7 +3516,7 @@ inline void gcode_G28() {
         float zoffset = zprobe_zoffset;
         if (code_seen('Z')) zoffset += code_value_axis_units(Z_AXIS);
 
-      #elif ENABLED(AUTO_BED_LEVELING_LINEAR)
+      #elif ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
 
         /**
          * solve the plane equation ax + by + d = z
@@ -3508,7 +3534,7 @@ inline void gcode_G28() {
                mean = 0.0;
         int indexIntoAB[abl_grid_points_x][abl_grid_points_y];
 
-      #endif // AUTO_BED_LEVELING_LINEAR
+      #endif // AUTO_BED_LEVELING_LINEAR_GRID
 
       int probePointCounter = 0;
       bool zig = abl_grid_points_y & 1; //always end at [RIGHT_PROBE_BED_POSITION, BACK_PROBE_BED_POSITION]
@@ -3543,7 +3569,7 @@ inline void gcode_G28() {
 
           measured_z = probe_pt(xProbe, yProbe, stow_probe_after_each, verbose_level);
 
-          #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+          #if ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
 
             mean += measured_z;
             eqnBVector[probePointCounter] = measured_z;
@@ -3613,7 +3639,7 @@ inline void gcode_G28() {
       if (!dryrun) extrapolate_unprobed_bed_level();
       print_bed_level();
 
-    #elif ENABLED(AUTO_BED_LEVELING_LINEAR)
+    #elif ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
 
       // For LINEAR leveling calculate matrix, print reports, correct the position
 
@@ -3709,6 +3735,10 @@ inline void gcode_G28() {
           SERIAL_EOL;
         }
       } //do_topography_map
+
+    #endif // AUTO_BED_LEVELING_LINEAR_GRID
+
+    #if ENABLED(AUTO_BED_LEVELING_LINEAR)
 
       // For LINEAR and 3POINT leveling correct the current position
 
@@ -6804,7 +6834,7 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
             float xydiff[2] = { offset_vec.x, offset_vec.y };
             current_position[Z_AXIS] += offset_vec.z;
 
-          #else // !AUTO_BED_LEVELING_FEATURE
+          #else // !AUTO_BED_LEVELING_LINEAR
 
             float xydiff[2] = {
               hotend_offset[X_AXIS][tmp_extruder] - hotend_offset[X_AXIS][active_extruder],

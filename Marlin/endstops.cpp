@@ -154,7 +154,7 @@ void Endstops::init() {
     #endif
   #endif
 
-  #if HAS_Z_MIN_PROBE_PIN && ENABLED(Z_MIN_PROBE_ENDSTOP) // Check for Z_MIN_PROBE_ENDSTOP so we don't pull a pin high unless it's to be used.
+  #if ENABLED(Z_MIN_PROBE_ENDSTOP)
     SET_INPUT(Z_MIN_PROBE_PIN);
     #if ENABLED(ENDSTOPPULLUP_ZMIN_PROBE)
       #ifdef __SAM3X8E__
@@ -245,7 +245,7 @@ void Endstops::M119() {
     SERIAL_PROTOCOLPGM(MSG_Z2_MAX);
     SERIAL_PROTOCOLLN(((READ(Z2_MAX_PIN)^Z2_MAX_ENDSTOP_INVERTING) ? MSG_ENDSTOP_HIT : MSG_ENDSTOP_OPEN));
   #endif
-  #if HAS_Z_MIN_PROBE_PIN
+  #if ENABLED(Z_MIN_PROBE_ENDSTOP)
     SERIAL_PROTOCOLPGM(MSG_Z_PROBE);
     SERIAL_PROTOCOLLN(((READ(Z_MIN_PROBE_PIN)^Z_MIN_PROBE_ENDSTOP_INVERTING) ? MSG_ENDSTOP_HIT : MSG_ENDSTOP_OPEN));
   #endif
@@ -367,7 +367,7 @@ void Endstops::update() {
 
           #else // !Z_DUAL_ENDSTOPS
 
-            #if HAS_BED_PROBE && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
+            #if ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
               if (z_probe_enabled) UPDATE_ENDSTOP(Z, MIN);
             #else
               UPDATE_ENDSTOP(Z, MIN);
@@ -377,7 +377,7 @@ void Endstops::update() {
 
         #endif // HAS_Z_MIN
 
-        #if HAS_BED_PROBE && ENABLED(Z_MIN_PROBE_ENDSTOP) && DISABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
+        #if ENABLED(Z_MIN_PROBE_ENDSTOP)
           if (z_probe_enabled) {
             UPDATE_ENDSTOP(Z, MIN_PROBE);
             if (TEST_ENDSTOP(Z_MIN_PROBE)) SBI(endstop_hit_bits, Z_MIN_PROBE);
