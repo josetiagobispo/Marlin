@@ -38,7 +38,11 @@
 #endif
 
 static byte current_to_wiper(float current) {
-  return byte(ceil(float((DIGIPOT_I2C_FACTOR * current))));
+  #ifdef __SAM3X8E__
+    return byte(CEIL(float((DIGIPOT_I2C_FACTOR * current))));
+  #else
+    return byte(ceil(float((DIGIPOT_I2C_FACTOR * current))));
+  #endif
 }
 
 static void i2c_send(byte addr, byte a, byte b) {

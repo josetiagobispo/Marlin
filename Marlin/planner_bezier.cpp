@@ -64,7 +64,11 @@ inline static float eval_bezier(float a, float b, float c, float d, float t) {
  * We approximate Euclidean distance with the sum of the coordinates
  * offset (so-called "norm 1"), which is quicker to compute.
  */
-inline static float dist1(float x1, float y1, float x2, float y2) { return fabs(x1 - x2) + fabs(y1 - y2); }
+#ifdef __SAM3X8E__
+  inline static float dist1(float x1, float y1, float x2, float y2) { return FABS(x1 - x2) + FABS(y1 - y2); }
+#else
+  inline static float dist1(float x1, float y1, float x2, float y2) { return fabs(x1 - x2) + fabs(y1 - y2); }
+#endif
 
 /**
  * The algorithm for computing the step is loosely based on the one in Kig

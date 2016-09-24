@@ -1398,7 +1398,11 @@ void kill_screen(const char* lcd_msg) {
       // This assumes the center is 0,0
       #if ENABLED(DELTA)
         if (axis != Z_AXIS) {
-          max = sqrt(sq(DELTA_PRINTABLE_RADIUS) - sq(current_position[Y_AXIS - axis]));
+          #ifdef __SAM3X8E__
+            max = SQRT(sq(DELTA_PRINTABLE_RADIUS) - sq(current_position[Y_AXIS - axis]));
+          #else
+            max = sqrt(sq(DELTA_PRINTABLE_RADIUS) - sq(current_position[Y_AXIS - axis]));
+          #endif
           min = -max;
         }
       #endif

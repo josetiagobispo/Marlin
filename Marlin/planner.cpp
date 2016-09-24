@@ -152,16 +152,26 @@ void Planner::init() {
  * by the provided factors.
  */
 void Planner::calculate_trapezoid_for_block(block_t* block, float entry_factor, float exit_factor) {
-  unsigned long initial_rate = ceil(block->nominal_rate * entry_factor),
-                final_rate = ceil(block->nominal_rate * exit_factor); // (steps per second)
+  #ifdef __SAM3X8E__
+    unsigned long initial_rate = CEIL(block->nominal_rate * entry_factor),
+                  final_rate = CEIL(block->nominal_rate * exit_factor); // (steps per second)
+  #else
+    unsigned long initial_rate = ceil(block->nominal_rate * entry_factor),
+                  final_rate = ceil(block->nominal_rate * exit_factor); // (steps per second)
+  #endif
 
   // Limit minimal step rate (Otherwise the timer will overflow.)
   NOLESS(initial_rate, 120);
   NOLESS(final_rate, 120);
 
   long accel = block->acceleration_steps_per_s2;
-  int32_t accelerate_steps = ceil(estimate_acceleration_distance(initial_rate, block->nominal_rate, accel));
-  int32_t decelerate_steps = floor(estimate_acceleration_distance(block->nominal_rate, final_rate, -accel));
+  #ifdef __SAM3X8E__
+    int32_t accelerate_steps = CEIL(estimate_acceleration_distance(initial_rate, block->nominal_rate, accel));
+    int32_t decelerate_steps = FLOOR(estimate_acceleration_distance(block->nominal_rate, final_rate, -accel));
+  #else
+    int32_t accelerate_steps = ceil(estimate_acceleration_distance(initial_rate, block->nominal_rate, accel));
+    int32_t decelerate_steps = floor(estimate_acceleration_distance(block->nominal_rate, final_rate, -accel));
+  #endif
 
   // Calculate the size of Plateau of Nominal Rate.
   int32_t plateau_steps = block->step_event_count - accelerate_steps - decelerate_steps;
@@ -170,7 +180,11 @@ void Planner::calculate_trapezoid_for_block(block_t* block, float entry_factor, 
   // have to use intersection_distance() to calculate when to abort accel and start braking
   // in order to reach the final_rate exactly at the end of this block.
   if (plateau_steps < 0) {
-    accelerate_steps = ceil(intersection_distance(initial_rate, final_rate, accel, block->step_event_count));
+    #ifdef __SAM3X8E__
+      accelerate_steps = CEIL(intersection_distance(initial_rate, final_rate, accel, block->step_event_count));
+    #else
+      accelerate_steps = ceil(intersection_distance(initial_rate, final_rate, accel, block->step_event_count));
+    #endif
     accelerate_steps = max(accelerate_steps, 0); // Check limits due to numerical round-off
     accelerate_steps = min((uint32_t)accelerate_steps, block->step_event_count);//(We can cast here to unsigned, because the above line ensures that we are above zero)
     plateau_steps = 0;
@@ -201,8 +215,13 @@ void Planner::calculate_trapezoid_for_block(block_t* block, float entry_factor, 
 // This method will calculate the junction jerk as the euclidean distance between the nominal
 // velocities of the respective blocks.
 //inline float junction_jerk(block_t *before, block_t *after) {
-//  return sqrt(
-//    pow((before->speed_x-after->speed_x), 2)+pow((before->speed_y-after->speed_y), 2));
+#ifdef __SAM3X8E__
+  //  return SQRT(
+  //    POW((before->speed_x-after->speed_x), 2)+POW((before->speed_y-after->speed_y), 2));
+#else
+  //  return sqrt(
+  //    pow((before->speed_x-after->speed_x), 2)+pow((before->speed_y-after->speed_y), 2));
+#endif
 //}
 
 
@@ -629,10 +648,17 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
   // Calculate target position in absolute steps
   //this should be done after the wait, because otherwise a M92 code within the gcode disrupts this calculation somehow
   long target[NUM_AXIS] = {
-    lround(lx * axis_steps_per_mm[X_AXIS]),
-    lround(ly * axis_steps_per_mm[Y_AXIS]),
-    lround(lz * axis_steps_per_mm[Z_AXIS]),
-    lround(e * axis_steps_per_mm[E_AXIS])
+    #ifdef __SAM3X8E__
+      LROUND(lx * axis_steps_per_mm[X_AXIS]),
+      LROUND(ly * axis_steps_per_mm[Y_AXIS]),
+      LROUND(lz * axis_steps_per_mm[Z_AXIS]),
+      LROUND(e * axis_steps_per_mm[E_AXIS])
+    #else
+      lround(lx * axis_steps_per_mm[X_AXIS]),
+      lround(ly * axis_steps_per_mm[Y_AXIS]),
+      lround(lz * axis_steps_per_mm[Z_AXIS]),
+      lround(e * axis_steps_per_mm[E_AXIS])
+    #endif
   };
 
   long dx = target[X_AXIS] - position[X_AXIS],
@@ -902,10 +928,18 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
   delta_mm[E_AXIS] = 0.01 * (de * steps_to_mm[E_AXIS]) * volumetric_multiplier[extruder] * flow_percentage[extruder];
 
   if (block->steps[X_AXIS] < MIN_STEPS_PER_SEGMENT && block->steps[Y_AXIS] < MIN_STEPS_PER_SEGMENT && block->steps[Z_AXIS] < MIN_STEPS_PER_SEGMENT) {
-    block->millimeters = fabs(delta_mm[E_AXIS]);
+    #ifdef __SAM3X8E__
+      block->millimeters = FABS(delta_mm[E_AXIS]);
+    #else
+      block->millimeters = fabs(delta_mm[E_AXIS]);
+    #endif
   }
   else {
-    block->millimeters = sqrt(
+    #ifdef __SAM3X8E__
+      block->millimeters = SQRT(
+    #else
+      block->millimeters = sqrt(
+    #endif
       #if ENABLED(COREXY)
         sq(delta_mm[X_HEAD]) + sq(delta_mm[Y_HEAD]) + sq(delta_mm[Z_AXIS])
       #elif ENABLED(COREXZ)
@@ -932,13 +966,25 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
     #endif
     #if ENABLED(SLOWDOWN)
       //  segment time im micro seconds
-      unsigned long segment_time = lround(1000000.0/inverse_mm_s);
+      #ifdef __SAM3X8E__
+        unsigned long segment_time = LROUND(1000000.0/inverse_mm_s);
+      #else
+        unsigned long segment_time = lround(1000000.0/inverse_mm_s);
+      #endif
       if (mq) {
         if (segment_time < min_segment_time) {
           // buffer is draining, add extra time.  The amount of time added increases if the buffer is still emptied more.
-          inverse_mm_s = 1000000.0 / (segment_time + lround(2 * (min_segment_time - segment_time) / moves_queued));
+          #ifdef __SAM3X8E__
+            inverse_mm_s = 1000000.0 / (segment_time + LROUND(2 * (min_segment_time - segment_time) / moves_queued));
+          #else
+            inverse_mm_s = 1000000.0 / (segment_time + lround(2 * (min_segment_time - segment_time) / moves_queued));
+          #endif
           #ifdef XY_FREQUENCY_LIMIT
-            segment_time = lround(1000000.0 / inverse_mm_s);
+            #ifdef __SAM3X8E__
+              segment_time = LROUND(1000000.0 / inverse_mm_s);
+            #else
+              segment_time = lround(1000000.0 / inverse_mm_s);
+            #endif
           #endif
         }
       }
@@ -946,7 +992,11 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
   #endif
 
   block->nominal_speed = block->millimeters * inverse_mm_s; // (mm/sec) Always > 0
-  block->nominal_rate = ceil(block->step_event_count * inverse_mm_s); // (step/sec) Always > 0
+  #ifdef __SAM3X8E__
+    block->nominal_rate = CEIL(block->step_event_count * inverse_mm_s); // (step/sec) Always > 0
+  #else
+    block->nominal_rate = ceil(block->step_event_count * inverse_mm_s); // (step/sec) Always > 0
+  #endif
 
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     static float filwidth_e_count = 0, filwidth_delay_dist = 0;
@@ -987,7 +1037,11 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
   float speed_factor = 1.0; //factor <=1 do decrease speed
   LOOP_XYZE(i) {
     current_speed[i] = delta_mm[i] * inverse_mm_s;
-    float cs = fabs(current_speed[i]), mf = max_feedrate_mm_s[i];
+    #ifdef __SAM3X8E__
+      float cs = FABS(current_speed[i]), mf = max_feedrate_mm_s[i];
+    #else
+      float cs = fabs(current_speed[i]), mf = max_feedrate_mm_s[i];
+    #endif
     if (cs > mf) speed_factor = min(speed_factor, mf / cs);
   }
 
@@ -997,7 +1051,11 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
     // Check and limit the xy direction change frequency
     unsigned char direction_change = block->direction_bits ^ old_direction_bits;
     old_direction_bits = block->direction_bits;
-    segment_time = lround((float)segment_time / speed_factor);
+    #ifdef __SAM3X8E__
+      segment_time = LROUND((float)segment_time / speed_factor);
+    #else
+      segment_time = lround((float)segment_time / speed_factor);
+    #endif
 
     long xs0 = axis_segment_time[X_AXIS][0],
          xs1 = axis_segment_time[X_AXIS][1],
@@ -1039,11 +1097,19 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
   // Compute and limit the acceleration rate for the trapezoid generator.
   float steps_per_mm = block->step_event_count / block->millimeters;
   if (!block->steps[X_AXIS] && !block->steps[Y_AXIS] && !block->steps[Z_AXIS]) {
-    block->acceleration_steps_per_s2 = ceil(retract_acceleration * steps_per_mm); // convert to: acceleration steps/sec^2
+    #ifdef __SAM3X8E__
+      block->acceleration_steps_per_s2 = CEIL(retract_acceleration * steps_per_mm); // convert to: acceleration steps/sec^2
+    #else
+      block->acceleration_steps_per_s2 = ceil(retract_acceleration * steps_per_mm); // convert to: acceleration steps/sec^2
+    #endif
   }
   else {
     // Limit acceleration per axis
-    block->acceleration_steps_per_s2 = ceil((block->steps[E_AXIS] ? acceleration : travel_acceleration) * steps_per_mm);
+    #ifdef __SAM3X8E__
+      block->acceleration_steps_per_s2 = CEIL((block->steps[E_AXIS] ? acceleration : travel_acceleration) * steps_per_mm);
+    #else
+      block->acceleration_steps_per_s2 = ceil((block->steps[E_AXIS] ? acceleration : travel_acceleration) * steps_per_mm);
+    #endif
     if (max_acceleration_steps_per_s2[X_AXIS] < (block->acceleration_steps_per_s2 * block->steps[X_AXIS]) / block->step_event_count)
       block->acceleration_steps_per_s2 = (max_acceleration_steps_per_s2[X_AXIS] * block->step_event_count) / block->steps[X_AXIS];
     if (max_acceleration_steps_per_s2[Y_AXIS] < (block->acceleration_steps_per_s2 * block->steps[Y_AXIS]) / block->step_event_count)
@@ -1110,19 +1176,33 @@ void Planner::buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, co
         me2 = max_e_jerk * 0.5,
         csz = current_speed[Z_AXIS],
         cse = current_speed[E_AXIS];
-  if (fabs(csz) > mz2) vmax_junction = min(vmax_junction, mz2);
-  if (fabs(cse) > me2) vmax_junction = min(vmax_junction, me2);
+  #ifdef __SAM3X8E__
+    if (FABS(csz) > mz2) vmax_junction = min(vmax_junction, mz2);
+    if (FABS(cse) > me2) vmax_junction = min(vmax_junction, me2);
+  #else
+    if (fabs(csz) > mz2) vmax_junction = min(vmax_junction, mz2);
+    if (fabs(cse) > me2) vmax_junction = min(vmax_junction, me2);
+  #endif
   vmax_junction = min(vmax_junction, block->nominal_speed);
   float safe_speed = vmax_junction;
 
   if ((moves_queued > 1) && (previous_nominal_speed > 0.0001)) {
     float dsx = current_speed[X_AXIS] - previous_speed[X_AXIS],
           dsy = current_speed[Y_AXIS] - previous_speed[Y_AXIS],
-          dsz = fabs(csz - previous_speed[Z_AXIS]),
-          dse = fabs(cse - previous_speed[E_AXIS]),
+          #ifdef __SAM3X8E__
+            dsz = FABS(csz - previous_speed[Z_AXIS]),
+            dse = FABS(cse - previous_speed[E_AXIS]),
+          #else
+            dsz = fabs(csz - previous_speed[Z_AXIS]),
+            dse = fabs(cse - previous_speed[E_AXIS]),
+          #endif
           jerk = HYPOT(dsx, dsy);
 
-    //    if ((fabs(previous_speed[X_AXIS]) > 0.0001) || (fabs(previous_speed[Y_AXIS]) > 0.0001)) {
+    #ifdef __SAM3X8E__
+      //    if ((FABS(previous_speed[X_AXIS]) > 0.0001) || (FABS(previous_speed[Y_AXIS]) > 0.0001)) {
+    #else
+      //    if ((fabs(previous_speed[X_AXIS]) > 0.0001) || (fabs(previous_speed[Y_AXIS]) > 0.0001)) {
+    #endif
     vmax_junction = block->nominal_speed;
     //    }
     if (jerk > max_xy_jerk) vmax_junction_factor = max_xy_jerk / jerk;
@@ -1215,10 +1295,17 @@ void Planner::set_position_mm(ARG_X, ARG_Y, ARG_Z, const float &e) {
     apply_leveling(lx, ly, lz);
   #endif
 
-  long nx = position[X_AXIS] = lround(lx * axis_steps_per_mm[X_AXIS]),
-       ny = position[Y_AXIS] = lround(ly * axis_steps_per_mm[Y_AXIS]),
-       nz = position[Z_AXIS] = lround(lz * axis_steps_per_mm[Z_AXIS]),
-       ne = position[E_AXIS] = lround(e * axis_steps_per_mm[E_AXIS]);
+  #ifdef __SAM3X8E__
+    long nx = position[X_AXIS] = LROUND(lx * axis_steps_per_mm[X_AXIS]),
+         ny = position[Y_AXIS] = LROUND(ly * axis_steps_per_mm[Y_AXIS]),
+         nz = position[Z_AXIS] = LROUND(lz * axis_steps_per_mm[Z_AXIS]),
+         ne = position[E_AXIS] = LROUND(e * axis_steps_per_mm[E_AXIS]);
+  #else
+    long nx = position[X_AXIS] = lround(lx * axis_steps_per_mm[X_AXIS]),
+         ny = position[Y_AXIS] = lround(ly * axis_steps_per_mm[Y_AXIS]),
+         nz = position[Z_AXIS] = lround(lz * axis_steps_per_mm[Z_AXIS]),
+         ne = position[E_AXIS] = lround(e * axis_steps_per_mm[E_AXIS]);
+  #endif
   stepper.set_position(nx, ny, nz, ne);
   previous_nominal_speed = 0.0; // Resets planner junction speeds. Assumes start from rest.
 
@@ -1236,7 +1323,11 @@ void Planner::sync_from_steppers() {
  * Directly set the planner E position (hence the stepper E position).
  */
 void Planner::set_e_position_mm(const float& e) {
-  position[E_AXIS] = lround(e * axis_steps_per_mm[E_AXIS]);
+  #ifdef __SAM3X8E__
+    position[E_AXIS] = LROUND(e * axis_steps_per_mm[E_AXIS]);
+  #else
+    position[E_AXIS] = lround(e * axis_steps_per_mm[E_AXIS]);
+  #endif
   stepper.set_e_position(position[E_AXIS]);
   previous_speed[E_AXIS] = 0.0;
 }

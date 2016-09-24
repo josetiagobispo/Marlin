@@ -1172,7 +1172,11 @@ inline bool code_value_bool() { return !code_has_value() || code_value_byte() > 
         linear_unit_factor = 1.0;
         break;
     }
-    volumetric_unit_factor = pow(linear_unit_factor, 3.0);
+    #ifdef __SAM3X8E__
+      volumetric_unit_factor = POW(linear_unit_factor, 3.0);
+    #else
+      volumetric_unit_factor = pow(linear_unit_factor, 3.0);
+    #endif
   }
 
   inline float axis_unit_factor(int axis) {
@@ -2324,7 +2328,11 @@ static void homeaxis(AxisEnum axis) {
 
   #if ENABLED(Z_DUAL_ENDSTOPS)
     if (axis == Z_AXIS) {
-      float adj = fabs(z_endstop_adj);
+      #ifdef __SAM3X8E__
+        float adj = FABS(z_endstop_adj);
+      #else
+        float adj = fabs(z_endstop_adj);
+      #endif
       bool lockZ1;
       if (axis_home_dir > 0) {
         adj = -adj;
@@ -2661,7 +2669,11 @@ inline void gcode_G0_G1(
           const float e = clockwise ? -1 : 1,                     // clockwise -1, counterclockwise 1
                       dx = x2 - x1, dy = y2 - y1,                 // X and Y differences
                       d = HYPOT(dx, dy),                          // Linear distance between the points
-                      h = sqrt(sq(r) - sq(d * 0.5)),              // Distance to the arc pivot-point
+                      #ifdef __SAM3X8E__
+                        h = SQRT(sq(r) - sq(d * 0.5)),              // Distance to the arc pivot-point
+                      #else
+                        h = sqrt(sq(r) - sq(d * 0.5)),              // Distance to the arc pivot-point
+                      #endif
                       mx = (x1 + x2) * 0.5, my = (y1 + y2) * 0.5, // Point between the two points
                       sx = -dy / d, sy = dx / d,                  // Slope of the perpendicular bisector
                       cx = mx + e * h * sx, cy = my + e * h * sy; // Pivot-point of the arc
@@ -2823,7 +2835,11 @@ inline void gcode_G4() {
     float mlx = max_length(X_AXIS),
           mly = max_length(Y_AXIS),
           mlratio = mlx > mly ? mly / mlx : mlx / mly,
-          fr_mm_s = min(homing_feedrate_mm_s[X_AXIS], homing_feedrate_mm_s[Y_AXIS]) * sqrt(sq(mlratio) + 1.0);
+          #ifdef __SAM3X8E__
+            fr_mm_s = min(homing_feedrate_mm_s[X_AXIS], homing_feedrate_mm_s[Y_AXIS]) * SQRT(sq(mlratio) + 1.0);
+          #else
+            fr_mm_s = min(homing_feedrate_mm_s[X_AXIS], homing_feedrate_mm_s[Y_AXIS]) * sqrt(sq(mlratio) + 1.0);
+          #endif
 
     do_blocking_move_to_xy(1.5 * mlx * x_axis_home_dir, 1.5 * mly * home_dir(Y_AXIS), fr_mm_s);
     endstops.hit_on_purpose(); // clear endstop hit flags
@@ -3623,7 +3639,11 @@ inline void gcode_G28() {
 
       for (uint8_t yCount = 0; yCount < abl_grid_points_y; yCount++) {
         float yBase = front_probe_bed_position + yGridSpacing * yCount;
-        yProbe = floor(yBase + (yBase < 0 ? 0 : 0.5));
+        #ifdef __SAM3X8E__
+          yProbe = FLOOR(yBase + (yBase < 0 ? 0 : 0.5));
+        #else
+          yProbe = floor(yBase + (yBase < 0 ? 0 : 0.5));
+        #endif
 
         int8_t xStart, xStop, xInc;
 
@@ -3642,7 +3662,11 @@ inline void gcode_G28() {
 
         for (int8_t xCount = xStart; xCount != xStop; xCount += xInc) {
           float xBase = left_probe_bed_position + xGridSpacing * xCount;
-          xProbe = floor(xBase + (xBase < 0 ? 0 : 0.5));
+          #ifdef __SAM3X8E__
+            xProbe = FLOOR(xBase + (xBase < 0 ? 0 : 0.5));
+          #else
+            xProbe = floor(xBase + (xBase < 0 ? 0 : 0.5));
+          #endif
 
           #if ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
             indexIntoAB[xCount][yCount] = ++probePointCounter;
@@ -4802,7 +4826,11 @@ inline void gcode_M109() {
 
     #if TEMP_RESIDENCY_TIME > 0
 
-      float temp_diff = fabs(theTarget - temp);
+      #ifdef __SAM3X8E__
+        float temp_diff = FABS(theTarget - temp);
+      #else
+        float temp_diff = fabs(theTarget - temp);
+      #endif
 
       if (!residency_start_ms) {
         // Start the TEMP_RESIDENCY_TIME timer when we reach target temp for the first time.
@@ -4921,7 +4949,11 @@ inline void gcode_M109() {
 
       #if TEMP_BED_RESIDENCY_TIME > 0
 
-        float temp_diff = fabs(theTarget - temp);
+        #ifdef __SAM3X8E__
+          float temp_diff = FABS(theTarget - temp);
+        #else
+          float temp_diff = fabs(theTarget - temp);
+        #endif
 
         if (!residency_start_ms) {
           // Start the TEMP_BED_RESIDENCY_TIME timer when we reach target temp for the first time.
@@ -7842,7 +7874,11 @@ void ok_to_send() {
           hy2 = half_y - 0.001, hy1 = -hy2,
           grid_x = max(hx1, min(hx2, RAW_X_POSITION(cartesian[X_AXIS]) / nonlinear_grid_spacing[X_AXIS])),
           grid_y = max(hy1, min(hy2, RAW_Y_POSITION(cartesian[Y_AXIS]) / nonlinear_grid_spacing[Y_AXIS]));
-    int   floor_x = floor(grid_x), floor_y = floor(grid_y);
+    #ifdef __SAM3X8E__
+      int   floor_x = FLOOR(grid_x), floor_y = FLOOR(grid_y);
+    #else
+      int   floor_x = floor(grid_x), floor_y = floor(grid_y);
+    #endif
     float ratio_x = grid_x - floor_x, ratio_y = grid_y - floor_y,
           z1 = bed_level_grid[floor_x + half_x][floor_y + half_y],
           z2 = bed_level_grid[floor_x + half_x][floor_y + half_y + 1],
@@ -8025,7 +8061,11 @@ void ok_to_send() {
     float p12[3] = { delta_tower2_x - delta_tower1_x, delta_tower2_y - delta_tower1_y, z2 - z1 };
 
     // Get the Magnitude of vector.
-    float d = sqrt( sq(p12[0]) + sq(p12[1]) + sq(p12[2]) );
+    #ifdef __SAM3X8E__
+      float d = SQRT( sq(p12[0]) + sq(p12[1]) + sq(p12[2]) );
+    #else
+      float d = sqrt( sq(p12[0]) + sq(p12[1]) + sq(p12[2]) );
+    #endif
 
     // Create unit vector by dividing by magnitude.
     float ex[3] = { p12[0] / d, p12[1] / d, p12[2] / d };
@@ -8044,7 +8084,11 @@ void ok_to_send() {
     float ey[3] = { p13[0] - iex[0], p13[1] - iex[1], p13[2] - iex[2] };
 
     // The magnitude of Y component
-    float j = sqrt( sq(ey[0]) + sq(ey[1]) + sq(ey[2]) );
+    #ifdef __SAM3X8E__
+      float j = SQRT( sq(ey[0]) + sq(ey[1]) + sq(ey[2]) );
+    #else
+      float j = sqrt( sq(ey[0]) + sq(ey[1]) + sq(ey[2]) );
+    #endif
 
     // Convert to a unit vector
     ey[0] /= j; ey[1] /= j;  ey[2] /= j;
@@ -8061,7 +8105,11 @@ void ok_to_send() {
     // Plug them into the equations defined in Wikipedia for Xnew, Ynew and Znew
     float Xnew = (delta_diagonal_rod_2_tower_1 - delta_diagonal_rod_2_tower_2 + sq(d)) / (d * 2),
           Ynew = ((delta_diagonal_rod_2_tower_1 - delta_diagonal_rod_2_tower_3 + HYPOT2(i, j)) / 2 - i * Xnew) / j,
-          Znew = sqrt(delta_diagonal_rod_2_tower_1 - HYPOT2(Xnew, Ynew));
+          #ifdef __SAM3X8E__
+            Znew = SQRT(delta_diagonal_rod_2_tower_1 - HYPOT2(Xnew, Ynew));
+          #else
+            Znew = sqrt(delta_diagonal_rod_2_tower_1 - HYPOT2(Xnew, Ynew));
+          #endif
 
     // Start from the origin of the old coordinates and add vectors in the
     // old coords that represent the Xnew, Ynew and Znew to find the point
@@ -8215,7 +8263,11 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
     LOOP_XYZE(i) difference[i] = ltarget[i] - current_position[i];
 
     // Get the linear distance in XYZ
-    float cartesian_mm = sqrt(sq(difference[X_AXIS]) + sq(difference[Y_AXIS]) + sq(difference[Z_AXIS]));
+    #ifdef __SAM3X8E__
+      float cartesian_mm = SQRT(sq(difference[X_AXIS]) + sq(difference[Y_AXIS]) + sq(difference[Z_AXIS]));
+    #else
+      float cartesian_mm = sqrt(sq(difference[X_AXIS]) + sq(difference[Y_AXIS]) + sq(difference[Z_AXIS]));
+    #endif
 
     // If the move is very short, check the E move distance
     if (UNEAR_ZERO(cartesian_mm)) cartesian_mm = abs(difference[E_AXIS]);
@@ -8505,7 +8557,11 @@ void prepare_move_to_destination() {
           rt_Y = logical[Y_AXIS] - center_Y;
 
     // CCW angle of rotation between position and target from the circle center. Only one atan2() trig computation required.
-    float angular_travel = atan2(r_X * rt_Y - r_Y * rt_X, r_X * rt_X + r_Y * rt_Y);
+    #ifdef __SAM3X8E__
+      float angular_travel = ATAN2(r_X * rt_Y - r_Y * rt_X, r_X * rt_X + r_Y * rt_Y);
+    #else
+      float angular_travel = atan2(r_X * rt_Y - r_Y * rt_X, r_X * rt_X + r_Y * rt_Y);
+    #endif
     if (angular_travel < 0) angular_travel += RADIANS(360);
     if (clockwise) angular_travel -= RADIANS(360);
 
@@ -8513,9 +8569,17 @@ void prepare_move_to_destination() {
     if (angular_travel == 0 && current_position[X_AXIS] == logical[X_AXIS] && current_position[Y_AXIS] == logical[Y_AXIS])
       angular_travel += RADIANS(360);
 
-    float mm_of_travel = HYPOT(angular_travel * radius, fabs(linear_travel));
+    #ifdef __SAM3X8E__
+      float mm_of_travel = HYPOT(angular_travel * radius, FABS(linear_travel));
+    #else
+      float mm_of_travel = HYPOT(angular_travel * radius, fabs(linear_travel));
+    #endif
     if (mm_of_travel < 0.001) return;
-    uint16_t segments = floor(mm_of_travel / (MM_PER_ARC_SEGMENT));
+    #ifdef __SAM3X8E__
+      uint16_t segments = FLOOR(mm_of_travel / (MM_PER_ARC_SEGMENT));
+    #else
+      uint16_t segments = floor(mm_of_travel / (MM_PER_ARC_SEGMENT));
+    #endif
     if (segments == 0) segments = 1;
 
     float theta_per_segment = angular_travel / segments;
@@ -8730,7 +8794,11 @@ void prepare_move_to_destination() {
     else
       C2 = (HYPOT2(sx, sy) - (L1_2 + L2_2)) / (2.0 * L1 * L2);
 
-    S2 = sqrt(sq(C2) - 1);
+    #ifdef __SAM3X8E__
+      S2 = SQRT(sq(C2) - 1);
+    #else
+      S2 = sqrt(sq(C2) - 1);
+    #endif
 
     // Unrotated Arm1 plus rotated Arm2 gives the distance from Center to End
     SK1 = L1 + L2 * C2;
@@ -8739,10 +8807,18 @@ void prepare_move_to_destination() {
     SK2 = L2 * S2;
 
     // Angle of Arm1 is the difference between Center-to-End angle and the Center-to-Elbow
-    THETA = atan2(SK1, SK2) - atan2(sx, sy);
+    #ifdef __SAM3X8E__
+      THETA = ATAN2(SK1, SK2) - ATAN2(sx, sy);
+    #else
+      THETA = atan2(SK1, SK2) - atan2(sx, sy);
+    #endif
 
     // Angle of Arm2
-    PSI = atan2(S2, C2);
+    #ifdef __SAM3X8E__
+      PSI = ATAN2(S2, C2);
+    #else
+      PSI = atan2(S2, C2);
+    #endif
 
     delta[A_AXIS] = DEGREES(THETA);        // theta is support arm angle
     delta[B_AXIS] = DEGREES(THETA + PSI);  // equal to sub arm angle (inverted motor)

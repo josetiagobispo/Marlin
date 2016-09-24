@@ -773,7 +773,28 @@
     #define MAX_PROBE_Y (min(Y_MAX_POS, Y_MAX_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
   #endif
 
-  #ifndef __SAM3X8E__
+  #ifdef __SAM3X8E__
+    #if ENABLED(DELTA_FAST_SQRT)
+      #define ATAN2(y, x) atan2f(y, x)
+      #define FABS(x) fabsf(x)
+      #define POW(x, y) powf(x, y)
+      #define SQRT(x) sqrtf(x)
+      #define CEIL(x) ceilf(x)
+      #define FLOOR(x) floorf(x)
+      #define LROUND(x) lroundf(x)
+      #define FMOD(x, y) fmodf(x, y)
+    #else
+      #define ATAN2(y, x) atan2(y, x)
+      #define FABS(x) fabs(x)
+      #define POW(x, y) pow(x, y)
+      #define SQRT(x) sqrt(x)
+      #define CEIL(x) ceil(x)
+      #define FLOOR(x) floor(x)
+      #define LROUND(x) lround(x)
+      #define FMOD(x, y) fmod(x, y)
+    #endif
+    #define HYPOT(x,y) SQRT(HYPOT2(x,y))
+  #else
     #undef UI_VOLTAGE_LEVEL
     #undef RADDS_DISPLAY
     #undef MOTOR_CURRENT

@@ -58,7 +58,9 @@
 #define RADIANS(d) ((d)*M_PI/180.0)
 #define DEGREES(r) ((r)*180.0/M_PI)
 #define HYPOT2(x,y) (sq(x)+sq(y))
-#define HYPOT(x,y) sqrt(HYPOT2(x,y))
+#ifndef __SAM3X8E__
+  #define HYPOT(x,y) sqrt(HYPOT2(x,y))
+#endif
 
 // Macros to contrain values
 #define NOLESS(v,n) do{ if (v < n) v = n; }while(0)

@@ -751,7 +751,11 @@ void Temperature::manage_heater() {
     #endif // THERMAL_PROTECTION_HOTENDS
 
     #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      if (fabs(current_temperature[0] - redundant_temperature) > MAX_REDUNDANT_TEMP_SENSOR_DIFF) {
+      #ifdef __SAM3X8E__
+        if (FABS(current_temperature[0] - redundant_temperature) > MAX_REDUNDANT_TEMP_SENSOR_DIFF) {
+      #else
+        if (fabs(current_temperature[0] - redundant_temperature) > MAX_REDUNDANT_TEMP_SENSOR_DIFF) {
+      #endif
         _temp_error(0, PSTR(MSG_REDUNDANCY), PSTR(MSG_ERR_REDUNDANT_TEMP));
       }
     #endif
@@ -774,7 +778,11 @@ void Temperature::manage_heater() {
       // Get the delayed info and add 100 to reconstitute to a percent of
       // the nominal filament diameter then square it to get an area
       meas_shift_index = constrain(meas_shift_index, 0, MAX_MEASUREMENT_DELAY);
-      float vm = pow((measurement_delay[meas_shift_index] + 100.0) * 0.01, 2);
+      #ifdef __SAM3X8E__
+        float vm = POW((measurement_delay[meas_shift_index] + 100.0) * 0.01, 2);
+      #else
+        float vm = pow((measurement_delay[meas_shift_index] + 100.0) * 0.01, 2);
+      #endif
       NOLESS(vm, 0.01);
       volumetric_multiplier[FILAMENT_SENSOR_EXTRUDER_NUM] = vm;
     }
