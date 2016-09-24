@@ -7830,7 +7830,11 @@ void ok_to_send() {
 
   // Get the Z adjustment for non-linear bed leveling
   float nonlinear_z_offset(float cartesian[XYZ]) {
-    if (planner.abl_enabled) return;
+    #ifdef __SAM3X8E__
+      if (planner.abl_enabled) return 0.0;
+    #else
+      if (planner.abl_enabled) return;
+    #endif
 
     int half_x = (ABL_GRID_POINTS_X - 1) / 2,
         half_y = (ABL_GRID_POINTS_Y - 1) / 2;
