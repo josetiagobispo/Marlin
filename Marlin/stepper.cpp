@@ -505,8 +505,10 @@ void Stepper::isr() {
         _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
       }
 
+    #define CYCLES_EATEN_BY_CODE 240
+
     // If a minimum pulse time was specified get the CPU clock
-    #if MINIMUM_STEPPER_PULSE > 0
+    #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
       static uint32_t pulse_start;
       #ifdef __SAM3X8E__
         pulse_start = HAL_timer_get_current_count(TEMP_TIMER); // Because advanced extruder and temperature of Due aren't sharing a timer
@@ -543,13 +545,11 @@ void Stepper::isr() {
     #endif // !ADVANCE && !LIN_ADVANCE
 
     // For a minimum pulse time wait before stopping pulses
-    #if MINIMUM_STEPPER_PULSE > 0
+    #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
       #ifdef __SAM3X8E__
-        #define CYCLES_EATEN_BY_CODE 3 // what is this means?
-        while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < ((MINIMUM_STEPPER_PULSE * (REFERENCE_F_CPU / 1000000UL)) - CYCLES_EATEN_BY_CODE) * TEMP_TIMER_FACTOR) { /* nada */ }
+        while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) * TEMP_TIMER_FACTOR) { /* nada */ }
       #else
-        #define CYCLES_EATEN_BY_CODE 10
-        while ((uint32_t)(TCNT0 - pulse_start) < (MINIMUM_STEPPER_PULSE * (F_CPU / 1000000UL)) - CYCLES_EATEN_BY_CODE) { /* nada */ }
+        while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) { /* nada */ }
       #endif
     #endif
 
@@ -785,10 +785,12 @@ void Stepper::isr() {
         E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
       }
 
+    #define CYCLES_EATEN_BY_E 60
+
     // Step all E steppers that have steps
     for (uint8_t i = 0; i < step_loops; i++) {
 
-      #if MINIMUM_STEPPER_PULSE > 0
+      #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_E
         static uint32_t pulse_start;
         #ifdef __SAM3X8E__
           pulse_start = HAL_timer_get_current_count(TEMP_TIMER); // Because advanced extruder and temperature of Due aren't sharing a timer
@@ -809,13 +811,11 @@ void Stepper::isr() {
       #endif
 
       // For a minimum pulse time wait before stopping pulses
-      #if MINIMUM_STEPPER_PULSE > 0
+      #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_E
         #ifdef __SAM3X8E__
-          #define CYCLES_EATEN_BY_E 3 // what is this means?
-          while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < ((MINIMUM_STEPPER_PULSE * (REFERENCE_F_CPU / 1000000UL)) - CYCLES_EATEN_BY_E) * TEMP_TIMER_FACTOR) { /* nada */ }
+          while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) * TEMP_TIMER_FACTOR) { /* nada */ }
         #else
-          #define CYCLES_EATEN_BY_E 10
-          while ((uint32_t)(TCNT0 - pulse_start) < (MINIMUM_STEPPER_PULSE * (F_CPU / 1000000UL)) - CYCLES_EATEN_BY_E) { /* nada */ }
+          while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) { /* nada */ }
         #endif
       #endif
 

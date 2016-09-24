@@ -1705,7 +1705,7 @@ static void clean_up_after_endstop_or_probe_move() {
 
 #endif //HAS_BED_PROBE
 
-#if ENABLED(Z_PROBE_ALLEN_KEY) || ENABLED(Z_PROBE_SLED) || ENABLED(Z_SAFE_HOMING) || HAS_PROBING_PROCEDURE || HOTENDS > 1 || ENABLED(NOZZLE_CLEAN_FEATURE) || ENABLED(NOZZLE_PARK_FEATURE)
+#if ENABLED(Z_PROBE_ALLEN_KEY) || ENABLED(Z_PROBE_SLED) || HAS_PROBING_PROCEDURE || HOTENDS > 1 || ENABLED(NOZZLE_CLEAN_FEATURE) || ENABLED(NOZZLE_PARK_FEATURE)
   static bool axis_unhomed_error(const bool x, const bool y, const bool z) {
     const bool xx = x && !axis_homed[X_AXIS],
                yy = y && !axis_homed[Y_AXIS],
@@ -2558,8 +2558,7 @@ bool position_is_reachable(float target[XYZ]
   #endif
 ) {
   float dx = RAW_X_POSITION(target[X_AXIS]),
-        dy = RAW_Y_POSITION(target[Y_AXIS]),
-        dz = RAW_Z_POSITION(target[Z_AXIS]);
+        dy = RAW_Y_POSITION(target[Y_AXIS]);
 
   #if HAS_BED_PROBE
     if (by_probe) {
@@ -2578,6 +2577,7 @@ bool position_is_reachable(float target[XYZ]
   #elif ENABLED(DELTA)
     return HYPOT2(dx, dy) <= sq(DELTA_PRINTABLE_RADIUS);
   #else
+    const float dz = RAW_Z_POSITION(target[Z_AXIS]);
     return dx >= X_MIN_POS - 0.0001 && dx <= X_MAX_POS + 0.0001
         && dy >= Y_MIN_POS - 0.0001 && dy <= Y_MAX_POS + 0.0001
         && dz >= Z_MIN_POS - 0.0001 && dz <= Z_MAX_POS + 0.0001;
@@ -7862,11 +7862,6 @@ void ok_to_send() {
 
   // Get the Z adjustment for non-linear bed leveling
   float nonlinear_z_offset(float cartesian[XYZ]) {
-    #ifdef __SAM3X8E__
-      if (planner.abl_enabled) return 0.0;
-    #else
-      if (planner.abl_enabled) return;
-    #endif
 
     int half_x = (ABL_GRID_POINTS_X - 1) / 2,
         half_y = (ABL_GRID_POINTS_Y - 1) / 2;

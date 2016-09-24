@@ -38,6 +38,9 @@
   #endif
 #endif
 
+// Clock speed factor
+#define CYCLES_PER_MICROSECOND (F_CPU / 1000000UL) // 16 or 20
+
 // Remove compiler warning on an unused variable
 #define UNUSED(x) (void) (x)
 

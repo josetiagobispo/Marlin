@@ -773,6 +773,9 @@
     #define MAX_PROBE_Y (min(Y_MAX_POS, Y_MAX_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
   #endif
 
+  // Stepper pulse duration, in cycles
+  #define STEP_PULSE_CYCLES ((MINIMUM_STEPPER_PULSE) * CYCLES_PER_MICROSECOND)
+
   #ifdef __SAM3X8E__
     #if ENABLED(DELTA_FAST_SQRT)
       #define ATAN2(y, x) atan2f(y, x)
