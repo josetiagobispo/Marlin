@@ -97,8 +97,8 @@ volatile uint32_t Stepper::step_events_completed = 0; // The number of step even
 #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
 
   #ifdef __SAM3X8E__
-    uint16_t Stepper::old_OCR0A;
-    volatile uint16_t Stepper::eISR_Rate = 200 * EXTRUDER_TIMER_FACTOR; // Keep the ISR at a low rate until needed
+    uint32_t Stepper::old_OCR0A = 0;
+    volatile uint32_t Stepper::eISR_Rate = 200 * EXTRUDER_TIMER_FACTOR; // Keep the ISR at a low rate until needed
   #else
     unsigned char Stepper::old_OCR0A;
     volatile unsigned char Stepper::eISR_Rate = 200; // Keep the ISR at a low rate until needed
@@ -505,13 +505,17 @@ void Stepper::isr() {
         _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
       }
 
-    #define CYCLES_EATEN_BY_CODE 240
+    #ifdef __SAM3X8E__
+      #define CYCLES_EATEN_BY_CODE 12
+    #else
+      #define CYCLES_EATEN_BY_CODE 240
+    #endif
 
     // If a minimum pulse time was specified get the CPU clock
     #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
       static uint32_t pulse_start;
       #ifdef __SAM3X8E__
-        pulse_start = HAL_timer_get_current_count(TEMP_TIMER); // Because advanced extruder and temperature of Due aren't sharing a timer
+        pulse_start = HAL_timer_get_current_count(STEPPER_TIMER);
       #else
         pulse_start = TCNT0;
       #endif
@@ -547,7 +551,8 @@ void Stepper::isr() {
     // For a minimum pulse time wait before stopping pulses
     #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
       #ifdef __SAM3X8E__
-        while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) * TEMP_TIMER_FACTOR) { /* nada */ }
+        // MINIMUM_STEPPER_PULSE = 0... pulse width = 820ns, 1... 1.5µs, 2... 2.24µs, 3... 3.34µs, 4... 4.08µs, 5... 5.18µs
+        while (HAL_timer_get_current_count(STEPPER_TIMER) - pulse_start < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) / STEPPER_TIMER_PRESCALE) { /* nada */ }
       #else
         while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) { /* nada */ }
       #endif
@@ -742,7 +747,9 @@ void Stepper::isr() {
   }
 
   #ifdef __SAM3X8E__
-    HAL_TIMER_SET_STEPPER_COUNT(HAL_timer_get_count(STEPPER_TIMER) < (HAL_timer_get_current_count(STEPPER_TIMER) + 16 * STEPPER_TIMER_FACTOR) ? (HAL_timer_get_current_count(STEPPER_TIMER) + 16 * STEPPER_TIMER_FACTOR) : HAL_timer_get_count(STEPPER_TIMER));
+    uint32_t stepper_timer_count = HAL_timer_get_count(STEPPER_TIMER),
+             stepper_timer_current_count = HAL_timer_get_current_count(STEPPER_TIMER) + 16 * STEPPER_TIMER_FACTOR;
+    HAL_TIMER_SET_STEPPER_COUNT(stepper_timer_count < stepper_timer_current_count ? stepper_timer_current_count : stepper_timer_count);
   #else
     NOLESS(OCR1A, TCNT1 + 16);
   #endif
@@ -785,7 +792,11 @@ void Stepper::isr() {
         E## INDEX ##_STEP_WRITE(INVERT_E_STEP_PIN); \
       }
 
-    #define CYCLES_EATEN_BY_E 60
+    #ifdef __SAM3X8E__
+      #define CYCLES_EATEN_BY_E 12
+    #else
+      #define CYCLES_EATEN_BY_E 60
+    #endif
 
     // Step all E steppers that have steps
     for (uint8_t i = 0; i < step_loops; i++) {
@@ -793,7 +804,7 @@ void Stepper::isr() {
       #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_E
         static uint32_t pulse_start;
         #ifdef __SAM3X8E__
-          pulse_start = HAL_timer_get_current_count(TEMP_TIMER); // Because advanced extruder and temperature of Due aren't sharing a timer
+          pulse_start = HAL_timer_get_current_count(EXTRUDER_TIMER);
         #else
           pulse_start = TCNT0;
         #endif
@@ -813,7 +824,9 @@ void Stepper::isr() {
       // For a minimum pulse time wait before stopping pulses
       #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_E
         #ifdef __SAM3X8E__
-          while ((HAL_timer_get_current_count(TEMP_TIMER) - pulse_start) < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) * TEMP_TIMER_FACTOR) { /* nada */ }
+          // ADVANCE: MINIMUM_STEPPER_PULSE = 0... pulse width = 40ns, 1... 1.34µs, 2... 2.3µs, 3... 3.27µs, 4... 4.24µs, 5... 5.2µs
+          // LIN_ADVANCE: MINIMUM_STEPPER_PULSE = 0... pulse width = 300ns, 1... 1.12µs, 2... 2.38µs, 3... 3.21µs, 4... 4.04µs, 5... 5.3µs
+          while (HAL_timer_get_current_count(EXTRUDER_TIMER) - pulse_start < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) / EXTRUDER_TIMER_PRESCALE) { /* nada */ }
         #else
           while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) { /* nada */ }
         #endif

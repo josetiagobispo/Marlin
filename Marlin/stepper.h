@@ -110,8 +110,8 @@ class Stepper {
 
     #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
       #ifdef __SAM3X8E__
-        static uint16_t old_OCR0A;
-        static volatile uint16_t eISR_Rate;
+        static uint32_t old_OCR0A;
+        static volatile uint32_t eISR_Rate;
       #else
         static unsigned char old_OCR0A;
         static volatile unsigned char eISR_Rate;
