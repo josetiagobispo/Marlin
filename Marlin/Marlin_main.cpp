@@ -21,7 +21,6 @@
  */
 
 /**
- *
  * About Marlin
  *
  * This firmware is a mashup between Sprinter and grbl.
@@ -34,11 +33,11 @@
 
 #include "Marlin.h"
 
-#if ENABLED(AUTO_BED_LEVELING_FEATURE)
+#if HAS_ABL
   #include "vector_3.h"
 #endif
 
-#if ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
+#if ENABLED(AUTO_BED_LEVELING_LINEAR)
   #include "qr_solve.h"
 #elif ENABLED(MESH_BED_LEVELING)
   #include "mesh_bed_leveling.h"
@@ -142,124 +141,123 @@
  * M1   - Same as M0
  * M17  - Enable/Power all stepper motors
  * M18  - Disable all stepper motors; same as M84
- * M20  - List SD card
- * M21  - Init SD card
- * M22  - Release SD card
- * M23  - Select SD file (M23 filename.g)
- * M24  - Start/resume SD print
- * M25  - Pause SD print
- * M26  - Set SD position in bytes (M26 S12345)
- * M27  - Report SD print status
- * M28  - Start SD write (M28 filename.g)
- * M29  - Stop SD write
- * M30  - Delete file from SD (M30 filename.g)
- * M31  - Output time since last M109 or SD card start to serial
- * M32  - Select file and start SD print (Can be used _while_ printing from SD card files):
- *        syntax "M32 /path/filename#", or "M32 S<startpos bytes> !filename#"
- *        Call gcode file : "M32 P !filename#" and return to caller file after finishing (similar to #include).
+ * M20  - List SD card. (Requires SDSUPPORT)
+ * M21  - Init SD card. (Requires SDSUPPORT)
+ * M22  - Release SD card. (Requires SDSUPPORT)
+ * M23  - Select SD file: "M23 /path/file.gco". (Requires SDSUPPORT)
+ * M24  - Start/resume SD print. (Requires SDSUPPORT)
+ * M25  - Pause SD print. (Requires SDSUPPORT)
+ * M26  - Set SD position in bytes: "M26 S12345". (Requires SDSUPPORT)
+ * M27  - Report SD print status. (Requires SDSUPPORT)
+ * M28  - Start SD write: "M28 /path/file.gco". (Requires SDSUPPORT)
+ * M29  - Stop SD write. (Requires SDSUPPORT)
+ * M30  - Delete file from SD: "M30 /path/file.gco"
+ * M31  - Report time since last M109 or SD card start to serial.
+ * M32  - Select file and start SD print: "M32 [S<bytepos>] !/path/file.gco#". (Requires SDSUPPORT)
+ *        Use P to run other files as sub-programs: "M32 P !filename#"
  *        The '#' is necessary when calling from within sd files, as it stops buffer prereading
- * M33  - Get the longname version of a path
- * M42  - Change pin status via gcode Use M42 Px Sy to set pin x to value y, when omitting Px the onboard led will be used.
- * M48  - Measure Z_Probe repeatability. M48 [P # of points] [X position] [Y position] [V_erboseness #] [E_ngage Probe] [L # of legs of travel]
- * M75  - Start the print job timer
- * M76  - Pause the print job timer
- * M77  - Stop the print job timer
- * M78  - Show statistical information about the print jobs
- * M80  - Turn on Power Supply
- * M81  - Turn off Power Supply
- * M82  - Set E codes absolute (default)
- * M83  - Set E codes relative while in Absolute Coordinates (G90) mode
- * M84  - Disable steppers until next move,
- *        or use S<seconds> to specify an inactivity timeout, after which the steppers will be disabled.  S0 to disable the timeout.
+ * M33  - Get the longname version of a path. (Requires LONG_FILENAME_HOST_SUPPORT)
+ * M42  - Change pin status via gcode: M42 P<pin> S<value>. LED pin assumed if P is omitted.
+ * M48  - Measure Z Probe repeatability: M48 P<points> X<pos> Y<pos> V<level> E<engage> L<legs>. (Requires Z_MIN_PROBE_REPEATABILITY_TEST)
+ * M75  - Start the print job timer.
+ * M76  - Pause the print job timer.
+ * M77  - Stop the print job timer.
+ * M78  - Show statistical information about the print jobs. (Requires PRINTCOUNTER)
+ * M80  - Turn on Power Supply. (Requires POWER_SUPPLY)
+ * M81  - Turn off Power Supply. (Requires POWER_SUPPLY)
+ * M82  - Set E codes absolute (default).
+ * M83  - Set E codes relative while in Absolute (G90) mode.
+ * M84  - Disable steppers until next move, or use S<seconds> to specify an idle
+ *        duration after which steppers should turn off. S0 disables the timeout.
  * M85  - Set inactivity shutdown timer with parameter S<seconds>. To disable set zero (default)
- * M92  - Set planner.axis_steps_per_mm - same syntax as G92
- * M104 - Set extruder target temp
- * M105 - Read current temp
- * M106 - Fan on
- * M107 - Fan off
- * M108 - Stop the waiting for heaters in M109, M190, M303. Does not affect the target temperature.
+ * M92  - Set planner.axis_steps_per_mm for one or more axes.
+ * M104 - Set extruder target temp.
+ * M105 - Report current temperatures.
+ * M106 - Fan on.
+ * M107 - Fan off.
+ * M108 - Break out of heating loops (M109, M190, M303). With no controller, breaks out of M0/M1. (Requires EMERGENCY_PARSER)
  * M109 - Sxxx Wait for extruder current temp to reach target temp. Waits only when heating
  *        Rxxx Wait for extruder current temp to reach target temp. Waits when heating and cooling
  *        IF AUTOTEMP is enabled, S<mintemp> B<maxtemp> F<factor>. Exit autotemp by any M109 without F
- * M110 - Set the current line number
- * M111 - Set debug flags with S<mask>. See flag bits defined in enum.h.
- * M112 - Emergency stop
- * M113 - Get or set the timeout interval for Host Keepalive "busy" messages
- * M114 - Output current position to serial port
- * M115 - Capabilities string
- * M117 - Display a message on the controller screen
- * M119 - Output Endstop status to serial port
- * M120 - Enable endstop detection
- * M121 - Disable endstop detection
- * M126 - Solenoid Air Valve Open (BariCUDA support by jmil)
- * M127 - Solenoid Air Valve Closed (BariCUDA vent to atmospheric pressure by jmil)
- * M128 - EtoP Open (BariCUDA EtoP = electricity to air pressure transducer by jmil)
- * M129 - EtoP Closed (BariCUDA EtoP = electricity to air pressure transducer by jmil)
- * M140 - Set bed target temp
- * M145 - Set the heatup state H<hotend> B<bed> F<fan speed> for S<material> (0=PLA, 1=ABS)
- * M149 - Set temperature units
- * M150 - Set BlinkM Color Output R: Red<0-255> U(!): Green<0-255> B: Blue<0-255> over i2c, G for green does not work.
- * M163 - Set a single proportion for a mixing extruder. Requires MIXING_EXTRUDER.
- * M164 - Save the mix as a virtual extruder. Requires MIXING_EXTRUDER and MIXING_VIRTUAL_TOOLS.
- * M165 - Set the proportions for a mixing extruder. Use parameters ABCDHI to set the mixing factors. Requires MIXING_EXTRUDER.
- * M190 - Sxxx Wait for bed current temp to reach target temp. Waits only when heating
- *        Rxxx Wait for bed current temp to reach target temp. Waits when heating and cooling
+ * M110 - Set the current line number. (Used by host printing)
+ * M111 - Set debug flags: "M111 S<flagbits>". See flag bits defined in enum.h.
+ * M112 - Emergency stop.
+ * M113 - Get or set the timeout interval for Host Keepalive "busy" messages. (Requires HOST_KEEPALIVE_FEATURE)
+ * M114 - Report current position.
+ * M115 - Report capabilities.
+ * M117 - Display a message on the controller screen. (Requires an LCD)
+ * M119 - Report endstops status.
+ * M120 - Enable endstops detection.
+ * M121 - Disable endstops detection.
+ * M126 - Solenoid Air Valve Open. (Requires BARICUDA)
+ * M127 - Solenoid Air Valve Closed. (Requires BARICUDA)
+ * M128 - EtoP Open. (Requires BARICUDA)
+ * M129 - EtoP Closed. (Requires BARICUDA)
+ * M140 - Set bed target temp. S<temp>
+ * M145 - Set heatup values for materials on the LCD. H<hotend> B<bed> F<fan speed> for S<material> (0=PLA, 1=ABS)
+ * M149 - Set temperature units. (Requires TEMPERATURE_UNITS_SUPPORT)
+ * M150 - Set BlinkM Color R<red> U<green> B<blue>. Values 0-255. (Requires BLINKM)
+ * M163 - Set a single proportion for a mixing extruder. (Requires MIXING_EXTRUDER)
+ * M164 - Save the mix as a virtual extruder. (Requires MIXING_EXTRUDER and MIXING_VIRTUAL_TOOLS)
+ * M165 - Set the proportions for a mixing extruder. Use parameters ABCDHI to set the mixing factors. (Requires MIXING_EXTRUDER)
+ * M190 - Sxxx Wait for bed current temp to reach target temp. ** Waits only when heating! **
+ *        Rxxx Wait for bed current temp to reach target temp. ** Waits for heating or cooling. **
  * M200 - Set filament diameter, D<diameter>, setting E axis units to cubic. (Use S0 to revert to linear units.)
- * M201 - Set max acceleration in units/s^2 for print moves (M201 X1000 Y1000)
- * M202 - Set max acceleration in units/s^2 for travel moves (M202 X1000 Y1000) Unused in Marlin!!
- * M203 - Set maximum feedrate that your machine can sustain (M203 X200 Y200 Z300 E10000) in units/sec
- * M204 - Set default acceleration: P for Printing moves, R for Retract only (no X, Y, Z) moves and T for Travel (non printing) moves (ex. M204 P800 T3000 R9000) in units/sec^2
+ * M201 - Set max acceleration in units/s^2 for print moves: "M201 X<accel> Y<accel> Z<accel> E<accel>"
+ * M202 - Set max acceleration in units/s^2 for travel moves: "M202 X<accel> Y<accel> Z<accel> E<accel>" ** UNUSED IN MARLIN! **
+ * M203 - Set maximum feedrate: "M203 X<fr> Y<fr> Z<fr> E<fr>" in units/sec.
+ * M204 - Set default acceleration in units/sec^2: P<printing> R<extruder_only> T<travel>
  * M205 - Set advanced settings. Current units apply:
             S<print> T<travel> minimum speeds
             B<minimum segment time>
             X<max xy jerk>, Z<max Z jerk>, E<max E jerk>
- * M206 - Set additional homing offset
- * M207 - Set Retract Length: S<length>, Feedrate: F<units/min>, and Z lift: Z<distance>
- * M208 - Set Recover (unretract) Additional (!) Length: S<length> and Feedrate: F<units/min>
- * M209 - Turn Automatic Retract Detection on/off: S<bool> (For slicers that don't support G10/11).
+ * M206 - Set additional homing offset.
+ * M207 - Set Retract Length: S<length>, Feedrate: F<units/min>, and Z lift: Z<distance>. (Requires FWRETRACT)
+ * M208 - Set Recover (unretract) Additional (!) Length: S<length> and Feedrate: F<units/min>. (Requires FWRETRACT)
+ * M209 - Turn Automatic Retract Detection on/off: S<0|1> (For slicers that don't support G10/11). (Requires FWRETRACT)
           Every normal extrude-only move will be classified as retract depending on the direction.
- * M211 - Enable, Disable, and/or Report software endstops: [S<bool>]
- * M218 - Set a tool offset: T<index> X<offset> Y<offset>
- * M220 - Set Feedrate Percentage: S<percent> ("FR" on your LCD)
- * M221 - Set Flow Percentage: S<percent>
- * M226 - Wait until the specified pin reaches the state required: P<pin number> S<pin state>
- * M240 - Trigger a camera to take a photograph
- * M250 - Set LCD contrast C<contrast value> (value 0..63)
- * M280 - Set servo position absolute. P: servo index, S: angle or microseconds
+ * M211 - Enable, Disable, and/or Report software endstops: S<0|1>
+ * M218 - Set a tool offset: "M218 T<index> X<offset> Y<offset>". (Requires 2 or more extruders)
+ * M220 - Set Feedrate Percentage: "M220 S<percent>" (i.e., "FR" on the LCD)
+ * M221 - Set Flow Percentage: "M221 S<percent>"
+ * M226 - Wait until a pin is in a given state: "M226 P<pin> S<state>"
+ * M240 - Trigger a camera to take a photograph. (Requires CHDK or PHOTOGRAPH_PIN)
+ * M250 - Set LCD contrast: "M250 C<contrast>" (0-63). (Requires LCD support)
+ * M280 - Set servo position absolute: "M280 P<index> S<angle|µs>". (Requires servos)
  * M300 - Play beep sound S<frequency Hz> P<duration ms>
- * M301 - Set PID parameters P I and D
- * M302 - Allow cold extrudes, or set the minimum extrude S<temperature>.
- * M303 - PID relay autotune S<temperature> sets the target temperature. (default target temperature = 150C)
- * M304 - Set bed PID parameters P I and D
- * M380 - Activate solenoid on active extruder
- * M381 - Disable all solenoids
- * M400 - Finish all moves
- * M401 - Lower Z probe if present
- * M402 - Raise Z probe if present
- * M404 - Display or set the Nominal Filament Width: [ N<diameter> ]
- * M405 - Enable Filament Sensor extrusion control. Optional delay between sensor and extruder: D<cm>
- * M406 - Disable Filament Sensor extrusion control
- * M407 - Display measured filament diameter in millimeters
- * M410 - Quickstop. Abort all the planned moves
- * M420 - Enable/Disable Mesh Leveling (with current values) S1=enable S0=disable
- * M421 - Set a single Z coordinate in the Mesh Leveling grid. X<units> Y<units> Z<units>
- * M428 - Set the home_offset logically based on the current_position
- * M500 - Store parameters in EEPROM
- * M501 - Read parameters from EEPROM (if you need reset them after you changed them temporarily).
- * M502 - Revert to the default "factory settings". You still need to store them in EEPROM afterwards if you want to.
- * M503 - Print the current settings (from memory not from EEPROM). Use S0 to leave off headings.
- * M540 - Use S[0|1] to enable or disable the stop SD card print on endstop hit (requires ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
- * M600 - Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
- * M665 - Set delta configurations: L<diagonal rod> R<delta radius> S<segments/s>
- * M666 - Set delta endstop adjustment
- * M605 - Set dual x-carriage movement mode: S<mode> [ X<duplication x-offset> R<duplication temp offset> ]
- * M851 - Set Z probe's Z offset in current units. (Negative values apply to probes that extend below the nozzle.)
- * M907 - Set digital trimpot motor current using axis codes.
- * M908 - Control digital trimpot directly.
- * M909 - DAC_STEPPER_CURRENT: Print digipot/DAC current value
- * M910 - DAC_STEPPER_CURRENT: Commit digipot/DAC value to external EEPROM via I2C
- * M350 - Set microstepping mode.
- * M351 - Toggle MS1 MS2 pins directly.
+ * M301 - Set PID parameters P I and D. (Requires PIDTEMP)
+ * M302 - Allow cold extrudes, or set the minimum extrude S<temperature>. (Requires PREVENT_COLD_EXTRUSION)
+ * M303 - PID relay autotune S<temperature> sets the target temperature. Default 150C. (Requires PIDTEMP)
+ * M304 - Set bed PID parameters P I and D. (Requires PIDTEMPBED)
+ * M380 - Activate solenoid on active extruder. (Requires EXT_SOLENOID)
+ * M381 - Disable all solenoids. (Requires EXT_SOLENOID)
+ * M400 - Finish all moves.
+ * M401 - Lower Z probe. (Requires a probe)
+ * M402 - Raise Z probe. (Requires a probe)
+ * M404 - Display or set the Nominal Filament Width: "W<diameter>". (Requires FILAMENT_WIDTH_SENSOR)
+ * M405 - Enable Filament Sensor flow control. "M405 D<delay_cm>". (Requires FILAMENT_WIDTH_SENSOR)
+ * M406 - Disable Filament Sensor flow control. (Requires FILAMENT_WIDTH_SENSOR)
+ * M407 - Display measured filament diameter in millimeters. (Requires FILAMENT_WIDTH_SENSOR)
+ * M410 - Quickstop. Abort all planned moves.
+ * M420 - Enable/Disable Mesh Leveling (with current values) S1=enable S0=disable (Requires MESH_BED_LEVELING)
+ * M421 - Set a single Z coordinate in the Mesh Leveling grid. X<units> Y<units> Z<units> (Requires MESH_BED_LEVELING)
+ * M428 - Set the home_offset based on the current_position. Nearest edge applies.
+ * M500 - Store parameters in EEPROM. (Requires EEPROM_SETTINGS)
+ * M501 - Restore parameters from EEPROM. (Requires EEPROM_SETTINGS)
+ * M502 - Revert to the default "factory settings". ** Does not write them to EEPROM! **
+ * M503 - Print the current settings (in memory): "M503 S<verbose>". S0 specifies compact output.
+ * M540 - Enable/disable SD card abort on endstop hit: "M540 S<state>". (Requires ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
+ * M600 - Pause for filament change: "M600 X<pos> Y<pos> Z<raise> E<first_retract> L<later_retract>". (Requires FILAMENT_CHANGE_FEATURE)
+ * M665 - Set delta configurations: "M665 L<diagonal rod> R<delta radius> S<segments/s>" (Requires DELTA)
+ * M666 - Set delta endstop adjustment. (Requires DELTA)
+ * M605 - Set dual x-carriage movement mode: "M605 S<mode> [X<x_offset>] [R<temp_offset>]". (Requires DUAL_X_CARRIAGE)
+ * M851 - Set Z probe's Z offset in current units. (Negative = below the nozzle.)
+ * M907 - Set digital trimpot motor current using axis codes. (Requires a board with digital trimpots)
+ * M908 - Control digital trimpot directly. (Requires DAC_STEPPER_CURRENT or DIGIPOTSS_PIN)
+ * M909 - Print digipot/DAC current value. (Requires DAC_STEPPER_CURRENT)
+ * M910 - Commit digipot/DAC value to external EEPROM via I2C. (Requires DAC_STEPPER_CURRENT)
+ * M350 - Set microstepping mode. (Requires digital microstepping pins.)
+ * M351 - Toggle MS1 MS2 pins directly. (Requires digital microstepping pins.)
  *
  * ************ SCARA Specific - This can change to suit future G-code regulations
  * M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration)
@@ -270,13 +268,13 @@
  * ************* SCARA End ***************
  *
  * ************ Custom codes - This can change to suit future G-code regulations
- * M100 - Watch Free Memory (For Debugging Only)
- * M928 - Start SD logging (M928 filename.g) - ended by M29
+ * M100 - Watch Free Memory (For Debugging). (Requires M100_FREE_MEMORY_WATCHER)
+ * M928 - Start SD logging: "M928 filename.gco". Stop with M29. (Requires SDSUPPORT)
  * M999 - Restart after being stopped by error
  *
  * "T" Codes
  *
- * T0-T3 - Select a tool by index (usually an extruder) [ F<units/min> ]
+ * T0-T3 - Select an extruder (tool) by index: "T<n> F<units/min>"
  *
  */
 
@@ -412,7 +410,7 @@ static uint8_t target_extruder;
 
 #define PLANNER_XY_FEEDRATE() (min(planner.max_feedrate_mm_s[X_AXIS], planner.max_feedrate_mm_s[Y_AXIS]))
 
-#if ENABLED(AUTO_BED_LEVELING_FEATURE)
+#if HAS_ABL
   float xy_probe_feedrate_mm_s = MMM_TO_MMS(XY_PROBE_SPEED);
   #define XY_PROBE_FEEDRATE_MM_S xy_probe_feedrate_mm_s
 #elif defined(XY_PROBE_SPEED)
@@ -505,8 +503,8 @@ static uint8_t target_extruder;
 
 #endif
 
-#if ENABLED(AUTO_BED_LEVELING_NONLINEAR)
-  int nonlinear_grid_spacing[2] = { 0 };
+#if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+  int bilinear_grid_spacing[2] = { 0 }, bilinear_start[2] = { 0 };
   float bed_level_grid[ABL_GRID_POINTS_X][ABL_GRID_POINTS_Y];
 #endif
 
@@ -646,7 +644,7 @@ static void report_current_position();
     print_xyz(prefix, suffix, xyz[X_AXIS], xyz[Y_AXIS], xyz[Z_AXIS]);
   }
 
-  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+  #if HAS_ABL
     void print_xyz(const char* prefix, const char* suffix, const vector_3 &xyz) {
       print_xyz(prefix, suffix, xyz.x, xyz.y, xyz.z);
     }
@@ -812,7 +810,7 @@ void setup_killpin() {
 #if ENABLED(FILAMENT_RUNOUT_SENSOR)
 
   void setup_filrunoutpin() {
-    pinMode(FIL_RUNOUT_PIN, INPUT);
+    SET_INPUT(FIL_RUNOUT_PIN);
     #if ENABLED(ENDSTOPPULLUP_FIL_RUNOUT)
       WRITE(FIL_RUNOUT_PIN, HIGH);
     #endif
@@ -890,10 +888,9 @@ void servo_init() {
  */
 #if HAS_STEPPER_RESET
   void disableStepperDrivers() {
-    pinMode(STEPPER_RESET_PIN, OUTPUT);
-    digitalWrite(STEPPER_RESET_PIN, LOW);  // drive it down to hold in reset motor driver chips
+    OUT_WRITE(STEPPER_RESET_PIN, LOW);  // drive it down to hold in reset motor driver chips
   }
-  void enableStepperDrivers() { pinMode(STEPPER_RESET_PIN, INPUT); }  // set to input, which allows it to be pulled high by pullups
+  void enableStepperDrivers() { SET_INPUT(STEPPER_RESET_PIN); }  // set to input, which allows it to be pulled high by pullups
 #endif
 
 #if ENABLED(EXPERIMENTAL_I2CBUS) && I2C_SLAVE_ADDRESS > 0
@@ -2156,7 +2153,7 @@ static void clean_up_after_endstop_or_probe_move() {
 
 #endif // HAS_BED_PROBE
 
-#if ENABLED(AUTO_BED_LEVELING_FEATURE)
+#if HAS_ABL
 
   /**
    * Reset calibration results to zero.
@@ -2170,62 +2167,145 @@ static void clean_up_after_endstop_or_probe_move() {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("reset_bed_level");
     #endif
-    #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+    #if ABL_PLANAR
       planner.bed_level_matrix.set_to_identity();
-    #elif ENABLED(AUTO_BED_LEVELING_NONLINEAR)
-      memset(bed_level_grid, 0, sizeof(bed_level_grid));
+    #elif ENABLED(AUTO_BED_LEVELING_BILINEAR)
+      for (uint8_t x = 0; x < ABL_GRID_POINTS_X; x++)
+        for (uint8_t y = 0; y < ABL_GRID_POINTS_Y; y++)
+          bed_level_grid[x][y] = 1000.0;
     #endif
   }
 
-#endif // AUTO_BED_LEVELING_FEATURE
+#endif // HAS_ABL
 
-#if ENABLED(AUTO_BED_LEVELING_NONLINEAR)
+#if ENABLED(AUTO_BED_LEVELING_BILINEAR)
 
   /**
    * Extrapolate a single point from its neighbors
    */
   static void extrapolate_one_point(uint8_t x, uint8_t y, int8_t xdir, int8_t ydir) {
-    if (bed_level_grid[x][y]) return;  // Don't overwrite good values.
-    float a = 2 * bed_level_grid[x + xdir][y] - bed_level_grid[x + xdir * 2][y], // Left to right.
-          b = 2 * bed_level_grid[x][y + ydir] - bed_level_grid[x][y + ydir * 2], // Front to back.
-          c = 2 * bed_level_grid[x + xdir][y + ydir] - bed_level_grid[x + xdir * 2][y + ydir * 2]; // Diagonal.
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (DEBUGGING(LEVELING)) {
+        SERIAL_ECHOPGM("Extrapolate [");
+        if (x < 10) SERIAL_CHAR(' ');
+        SERIAL_ECHO((int)x);
+        SERIAL_CHAR(xdir ? (xdir > 0 ? '+' : '-') : ' ');
+        SERIAL_CHAR(' ');
+        if (y < 10) SERIAL_CHAR(' ');
+        SERIAL_ECHO((int)y);
+        SERIAL_CHAR(ydir ? (ydir > 0 ? '+' : '-') : ' ');
+        SERIAL_CHAR(']');
+      }
+    #endif
+    if (bed_level_grid[x][y] < 999.0) {
+      #if ENABLED(DEBUG_LEVELING_FEATURE)
+        if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM(" (done)");
+      #endif
+      return;  // Don't overwrite good values.
+    }
+
+    // Get X neighbors, Y neighbors, and XY neighbors
+    float a1 = bed_level_grid[x + xdir][y], a2 = bed_level_grid[x + xdir * 2][y],
+          b1 = bed_level_grid[x][y + ydir], b2 = bed_level_grid[x][y + ydir * 2],
+          c1 = bed_level_grid[x + xdir][y + ydir], c2 = bed_level_grid[x + xdir * 2][y + ydir * 2];
+
+    // Treat far unprobed points as zero, near as equal to far
+    if (a2 > 999.0) a2 = 0.0; if (a1 > 999.0) a1 = a2;
+    if (b2 > 999.0) b2 = 0.0; if (b1 > 999.0) b1 = b2;
+    if (c2 > 999.0) c2 = 0.0; if (c1 > 999.0) c1 = c2;
+
+    float a = 2 * a1 - a2, b = 2 * b1 - b2, c = 2 * c1 - c2;
+
+    // Take the average intstead of the median
+    bed_level_grid[x][y] = (a + b + c) / 3.0;
+
     // Median is robust (ignores outliers).
-    bed_level_grid[x][y] = (a < b) ? ((b < c) ? b : (c < a) ? a : c)
-                                   : ((c < b) ? b : (a < c) ? a : c);
+    // bed_level_grid[x][y] = (a < b) ? ((b < c) ? b : (c < a) ? a : c)
+    //                                : ((c < b) ? b : (a < c) ? a : c);
   }
+
+  #define EXTRAPOLATE_FROM_EDGE
+
+  #if ENABLED(EXTRAPOLATE_FROM_EDGE)
+    #if ABL_GRID_POINTS_X < ABL_GRID_POINTS_Y
+      #define HALF_IN_X
+    #elif ABL_GRID_POINTS_Y < ABL_GRID_POINTS_X
+      #define HALF_IN_Y
+    #endif
+  #endif
 
   /**
    * Fill in the unprobed points (corners of circular print surface)
    * using linear extrapolation, away from the center.
    */
   static void extrapolate_unprobed_bed_level() {
-    int half_x = (ABL_GRID_POINTS_X - 1) / 2,
-        half_y = (ABL_GRID_POINTS_Y - 1) / 2;
-    for (uint8_t y = 0; y <= half_y; y++) {
-      for (uint8_t x = 0; x <= half_x; x++) {
-        if (x + y < 3) continue;
-        extrapolate_one_point(half_x - x, half_y - y, x > 1 ? +1 : 0, y > 1 ? +1 : 0);
-        extrapolate_one_point(half_x + x, half_y - y, x > 1 ? -1 : 0, y > 1 ? +1 : 0);
-        extrapolate_one_point(half_x - x, half_y + y, x > 1 ? +1 : 0, y > 1 ? -1 : 0);
-        extrapolate_one_point(half_x + x, half_y + y, x > 1 ? -1 : 0, y > 1 ? -1 : 0);
+    #ifdef HALF_IN_X
+      const uint8_t ctrx2 = 0, xlen = ABL_GRID_POINTS_X - 1;
+    #else
+      const uint8_t ctrx1 = (ABL_GRID_POINTS_X - 1) / 2, // left-of-center
+                    ctrx2 = ABL_GRID_POINTS_X / 2,       // right-of-center
+                    xlen = ctrx1;
+    #endif
+
+    #ifdef HALF_IN_Y
+      const uint8_t ctry2 = 0, ylen = ABL_GRID_POINTS_Y - 1;
+    #else
+      const uint8_t ctry1 = (ABL_GRID_POINTS_Y - 1) / 2, // top-of-center
+                    ctry2 = ABL_GRID_POINTS_Y / 2,       // bottom-of-center
+                    ylen = ctry1;
+    #endif
+
+    for (uint8_t xo = 0; xo <= xlen; xo++)
+      for (uint8_t yo = 0; yo <= ylen; yo++) {
+        uint8_t x2 = ctrx2 + xo, y2 = ctry2 + yo;
+        #ifndef HALF_IN_X
+          uint8_t x1 = ctrx1 - xo;
+        #endif
+        #ifndef HALF_IN_Y
+          uint8_t y1 = ctry1 - yo;
+          #ifndef HALF_IN_X
+            extrapolate_one_point(x1, y1, +1, +1);   //  left-below + +
+          #endif
+          extrapolate_one_point(x2, y1, -1, +1);     // right-below - +
+        #endif
+        #ifndef HALF_IN_X
+          extrapolate_one_point(x1, y2, +1, -1);     //  left-above + -
+        #endif
+        extrapolate_one_point(x2, y2, -1, -1);       // right-above - -
       }
-    }
+
   }
 
   /**
    * Print calibration results for plotting or manual frame adjustment.
    */
   static void print_bed_level() {
+    SERIAL_ECHOPGM("Bilinear Leveling Grid:\n ");
+    for (uint8_t x = 1; x < ABL_GRID_POINTS_X + 1; x++) {
+      SERIAL_PROTOCOLPGM("    ");
+      if (x < 10) SERIAL_PROTOCOLCHAR(' ');
+      SERIAL_PROTOCOL((int)x);
+    }
+    SERIAL_EOL;
     for (uint8_t y = 0; y < ABL_GRID_POINTS_Y; y++) {
+      if (y < 9) SERIAL_PROTOCOLCHAR(' ');
+      SERIAL_PROTOCOL(y + 1);
       for (uint8_t x = 0; x < ABL_GRID_POINTS_X; x++) {
-        SERIAL_PROTOCOL_F(bed_level_grid[x][y], 2);
         SERIAL_PROTOCOLCHAR(' ');
+        float offset = bed_level_grid[x][y];
+        if (offset < 999.0) {
+          if (offset > 0) SERIAL_CHAR('+');
+          SERIAL_PROTOCOL_F(offset, 2);
+        }
+        else
+          SERIAL_PROTOCOLPGM(" ====");
       }
       SERIAL_EOL;
     }
+    SERIAL_EOL;
   }
 
-#endif // AUTO_BED_LEVELING_NONLINEAR
+#endif // AUTO_BED_LEVELING_BILINEAR
 
 /**
  * Home an individual linear axis
@@ -2233,7 +2313,7 @@ static void clean_up_after_endstop_or_probe_move() {
 static void do_homing_move(const AxisEnum axis, float distance, float fr_mm_s=0.0) {
 
   #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
-    bool deploy_bltouch = (axis == Z_AXIS && where < 0);
+    bool deploy_bltouch = (axis == Z_AXIS && distance < 0);
     if (deploy_bltouch) set_bltouch_deployed(true);
   #endif
 
@@ -2906,6 +2986,47 @@ inline void gcode_G4() {
         SERIAL_ECHOPGM(" & Same Z as");
       SERIAL_ECHOLNPGM(" Nozzle)");
     #endif
+
+    #if HAS_ABL
+      SERIAL_ECHOPGM("Auto Bed Leveling: ");
+      #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+        SERIAL_ECHOPGM("LINEAR");
+      #elif ENABLED(AUTO_BED_LEVELING_BILINEAR)
+        SERIAL_ECHOPGM("BILINEAR");
+      #elif ENABLED(AUTO_BED_LEVELING_3POINT)
+        SERIAL_ECHOPGM("3POINT");
+      #endif
+      if (planner.abl_enabled) {
+        SERIAL_ECHOLNPGM(" (enabled)");
+        #if ENABLED(AUTO_BED_LEVELING_LINEAR) || ENABLED(AUTO_BED_LEVELING_3POINT)
+          float diff[XYZ] = {
+            stepper.get_axis_position_mm(X_AXIS) - current_position[X_AXIS],
+            stepper.get_axis_position_mm(Y_AXIS) - current_position[Y_AXIS],
+            stepper.get_axis_position_mm(Z_AXIS) - current_position[Z_AXIS]
+          };
+          SERIAL_ECHOPGM("ABL Adjustment X");
+          if (diff[X_AXIS] > 0) SERIAL_CHAR('+');
+          SERIAL_ECHO(diff[X_AXIS]);
+          SERIAL_ECHOPGM(" Y");
+          if (diff[Y_AXIS] > 0) SERIAL_CHAR('+');
+          SERIAL_ECHO(diff[Y_AXIS]);
+          SERIAL_ECHOPGM(" Z");
+          if (diff[Z_AXIS] > 0) SERIAL_CHAR('+');
+          SERIAL_ECHO(diff[Z_AXIS]);
+        #elif ENABLED(AUTO_BED_LEVELING_BILINEAR)
+          SERIAL_ECHOPAIR("ABL Adjustment Z", bilinear_z_offset(current_position));
+        #endif
+      }
+      SERIAL_EOL;
+    #elif ENABLED(MESH_BED_LEVELING)
+      SERIAL_ECHOPGM("Mesh Bed Leveling");
+      if (mbl.active()) {
+        SERIAL_ECHOLNPGM(" (enabled)");
+        SERIAL_ECHOPAIR("MBL Adjustment Z", mbl.get_z(RAW_CURRENT_POSITION(X_AXIS), RAW_CURRENT_POSITION(Y_AXIS)));
+      }
+      SERIAL_EOL;
+    #endif
+
   }
 
 #endif // DEBUG_LEVELING_FEATURE
@@ -3035,7 +3156,7 @@ inline void gcode_G28() {
   stepper.synchronize();
 
   // For auto bed leveling, clear the level matrix
-  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+  #if HAS_ABL
     reset_bed_level();
   #endif
 
@@ -3447,7 +3568,7 @@ inline void gcode_G28() {
     report_current_position();
   }
 
-#elif ENABLED(AUTO_BED_LEVELING_FEATURE)
+#elif HAS_ABL
 
   /**
    * G29: Detailed Z probe, probes the bed at 3 or more points.
@@ -3455,7 +3576,7 @@ inline void gcode_G28() {
    *
    * Enhanced G29 Auto Bed Leveling Probe Routine
    *
-   * Parameters With AUTO_BED_LEVELING_GRID:
+   * Parameters With ABL_GRID:
    *
    *  P  Set the size of the grid that will be probed (P x P points).
    *     Not supported by non-linear delta printer bed leveling.
@@ -3490,11 +3611,15 @@ inline void gcode_G28() {
   inline void gcode_G29() {
 
     #if ENABLED(DEBUG_LEVELING_FEATURE)
+      bool query = code_seen('Q');
+      uint8_t old_debug_flags = marlin_debug_flags;
+      if (query) marlin_debug_flags |= DEBUG_LEVELING;
       if (DEBUGGING(LEVELING)) {
-        SERIAL_ECHOLNPGM(">>> gcode_G29");
-        DEBUG_POS("", current_position);
+        DEBUG_POS(">>> gcode_G29", current_position);
         log_machine_info();
       }
+      marlin_debug_flags = old_debug_flags;
+      if (query) return;
     #endif
 
     // Don't allow auto-leveling without homing first
@@ -3509,9 +3634,9 @@ inline void gcode_G28() {
     bool dryrun = code_seen('D'),
          stow_probe_after_each = code_seen('E');
 
-    #if ENABLED(AUTO_BED_LEVELING_GRID)
+    #if ABL_GRID
 
-      #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+      #if ABL_PLANAR
         bool do_topography_map = verbose_level > 2 || code_seen('T');
       #endif
 
@@ -3523,7 +3648,7 @@ inline void gcode_G28() {
       int abl_grid_points_x = ABL_GRID_POINTS_X,
           abl_grid_points_y = ABL_GRID_POINTS_Y;
 
-      #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+      #if ABL_PLANAR
         if (code_seen('P')) abl_grid_points_x = abl_grid_points_y = code_value_int();
         if (abl_grid_points_x < 2) {
           SERIAL_PROTOCOLLNPGM("?Number of probed (P)oints is implausible (2 minimum).");
@@ -3567,12 +3692,12 @@ inline void gcode_G28() {
         return;
       }
 
-    #endif // AUTO_BED_LEVELING_GRID
+    #endif // ABL_GRID
 
     stepper.synchronize();
 
     // Disable auto bed leveling during G29
-    bool abl_should_reenable = planner.abl_enabled;
+    bool abl_should_enable = planner.abl_enabled;
 
     planner.abl_enabled = false;
 
@@ -3590,31 +3715,37 @@ inline void gcode_G28() {
 
     // Deploy the probe. Probe will raise if needed.
     if (DEPLOY_PROBE()) {
-      planner.abl_enabled = abl_should_reenable;
+      planner.abl_enabled = abl_should_enable;
       return;
     }
 
     float xProbe = 0, yProbe = 0, measured_z = 0;
 
-    #if ENABLED(AUTO_BED_LEVELING_GRID)
+    #if ABL_GRID
 
       // probe at the points of a lattice grid
       const float xGridSpacing = (right_probe_bed_position - left_probe_bed_position) / (abl_grid_points_x - 1),
                   yGridSpacing = (back_probe_bed_position - front_probe_bed_position) / (abl_grid_points_y - 1);
 
-      #if ENABLED(AUTO_BED_LEVELING_NONLINEAR)
+      #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
 
         float zoffset = zprobe_zoffset;
         if (code_seen('Z')) zoffset += code_value_axis_units(Z_AXIS);
 
-        if (xGridSpacing != nonlinear_grid_spacing[X_AXIS] || yGridSpacing != nonlinear_grid_spacing[Y_AXIS]) {
-          nonlinear_grid_spacing[X_AXIS] = xGridSpacing;
-          nonlinear_grid_spacing[Y_AXIS] = yGridSpacing;
+        if ( xGridSpacing != bilinear_grid_spacing[X_AXIS]
+          || yGridSpacing != bilinear_grid_spacing[Y_AXIS]
+          || left_probe_bed_position != bilinear_start[X_AXIS]
+          || front_probe_bed_position != bilinear_start[Y_AXIS]
+        ) {
+          bilinear_grid_spacing[X_AXIS] = xGridSpacing;
+          bilinear_grid_spacing[Y_AXIS] = yGridSpacing;
+          bilinear_start[X_AXIS] = RAW_X_POSITION(left_probe_bed_position);
+          bilinear_start[Y_AXIS] = RAW_Y_POSITION(front_probe_bed_position);
           // Can't re-enable (on error) until the new grid is written
-          abl_should_reenable = false;
+          abl_should_enable = false;
         }
 
-      #elif ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
+      #elif ENABLED(AUTO_BED_LEVELING_LINEAR)
 
         /**
          * solve the plane equation ax + by + d = z
@@ -3633,7 +3764,7 @@ inline void gcode_G28() {
               eqnBVector[abl2],     // "B" vector of Z points
               mean = 0.0;
 
-      #endif // AUTO_BED_LEVELING_LINEAR_GRID
+      #endif // AUTO_BED_LEVELING_LINEAR
 
       bool zig = abl_grid_points_y & 1; //always end at [RIGHT_PROBE_BED_POSITION, BACK_PROBE_BED_POSITION]
 
@@ -3668,7 +3799,7 @@ inline void gcode_G28() {
             xProbe = floor(xBase + (xBase < 0 ? 0 : 0.5));
           #endif
 
-          #if ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
+          #if ENABLED(AUTO_BED_LEVELING_LINEAR)
             indexIntoAB[xCount][yCount] = ++probePointCounter;
           #endif
 
@@ -3681,11 +3812,11 @@ inline void gcode_G28() {
           measured_z = probe_pt(xProbe, yProbe, stow_probe_after_each, verbose_level);
 
           if (measured_z == NAN) {
-            planner.abl_enabled = abl_should_reenable;
+            planner.abl_enabled = abl_should_enable;
             return;
           }
 
-          #if ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
+          #if ENABLED(AUTO_BED_LEVELING_LINEAR)
 
             mean += measured_z;
             eqnBVector[probePointCounter] = measured_z;
@@ -3693,7 +3824,7 @@ inline void gcode_G28() {
             eqnAMatrix[probePointCounter + 1 * abl2] = yProbe;
             eqnAMatrix[probePointCounter + 2 * abl2] = 1;
 
-          #elif ENABLED(AUTO_BED_LEVELING_NONLINEAR)
+          #elif ENABLED(AUTO_BED_LEVELING_BILINEAR)
 
             bed_level_grid[xCount][yCount] = measured_z + zoffset;
 
@@ -3725,7 +3856,7 @@ inline void gcode_G28() {
       }
 
       if (measured_z == NAN) {
-        planner.abl_enabled = abl_should_reenable;
+        planner.abl_enabled = abl_should_enable;
         return;
       }
 
@@ -3739,14 +3870,14 @@ inline void gcode_G28() {
         planner.bed_level_matrix = matrix_3x3::create_look_at(planeNormal);
 
         // Can't re-enable (on error) until the new grid is written
-        abl_should_reenable = false;
+        abl_should_enable = false;
       }
 
     #endif // AUTO_BED_LEVELING_3POINT
 
     // Raise to _Z_CLEARANCE_DEPLOY_PROBE. Stow the probe.
     if (STOW_PROBE()) {
-      planner.abl_enabled = abl_should_reenable;
+      planner.abl_enabled = abl_should_enable;
       return;
     }
 
@@ -3763,12 +3894,12 @@ inline void gcode_G28() {
     #endif
 
     // Calculate leveling, print reports, correct the position
-    #if ENABLED(AUTO_BED_LEVELING_NONLINEAR)
+    #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
 
       if (!dryrun) extrapolate_unprobed_bed_level();
       print_bed_level();
 
-    #elif ENABLED(AUTO_BED_LEVELING_LINEAR_GRID)
+    #elif ENABLED(AUTO_BED_LEVELING_LINEAR)
 
       // For LINEAR leveling calculate matrix, print reports, correct the position
 
@@ -3865,9 +3996,9 @@ inline void gcode_G28() {
         }
       } //do_topography_map
 
-    #endif // AUTO_BED_LEVELING_LINEAR_GRID
+    #endif // AUTO_BED_LEVELING_LINEAR
 
-    #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+    #if ABL_PLANAR
 
       // For LINEAR and 3POINT leveling correct the current position
 
@@ -3882,7 +4013,7 @@ inline void gcode_G28() {
         // 1. Get the distance from the current position to the reference point.
         float x_dist = RAW_CURRENT_POSITION(X_AXIS) - X_TILT_FULCRUM,
               y_dist = RAW_CURRENT_POSITION(Y_AXIS) - Y_TILT_FULCRUM,
-              z_real = RAW_CURRENT_POSITION(Z_AXIS),
+              z_real = current_position[Z_AXIS],
               z_zero = 0;
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -3917,16 +4048,34 @@ inline void gcode_G28() {
         // 5. The rotated XY and corrected Z are now current_position
         current_position[X_AXIS] = LOGICAL_X_POSITION(x_dist) + X_TILT_FULCRUM;
         current_position[Y_AXIS] = LOGICAL_Y_POSITION(y_dist) + Y_TILT_FULCRUM;
-        current_position[Z_AXIS] = LOGICAL_Z_POSITION(new_z);
-
-        SYNC_PLAN_POSITION_KINEMATIC();
+        current_position[Z_AXIS] = new_z;
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
           if (DEBUGGING(LEVELING)) DEBUG_POS("G29 corrected XYZ", current_position);
         #endif
+
+        SYNC_PLAN_POSITION_KINEMATIC();
+        abl_should_enable = true;
       }
 
-    #endif // AUTO_BED_LEVELING_LINEAR
+    #elif ENABLED(AUTO_BED_LEVELING_BILINEAR)
+
+      if (!dryrun) {
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
+          if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPAIR("G29 uncorrected Z:", current_position[Z_AXIS]);
+        #endif
+
+        current_position[Z_AXIS] -= bilinear_z_offset(current_position);
+
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
+          if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPAIR(" corrected Z:", current_position[Z_AXIS]);
+        #endif
+
+        SYNC_PLAN_POSITION_KINEMATIC();
+        abl_should_enable = true;
+      }
+
+    #endif // ABL_PLANAR
 
     #ifdef Z_PROBE_END_SCRIPT
       #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -3945,10 +4094,10 @@ inline void gcode_G28() {
     KEEPALIVE_STATE(IN_HANDLER);
 
     // Auto Bed Leveling is complete! Enable if possible.
-    planner.abl_enabled = dryrun ? abl_should_reenable : true;
+    planner.abl_enabled = dryrun ? abl_should_enable : true;
   }
 
-#endif // AUTO_BED_LEVELING_FEATURE
+#endif // HAS_ABL
 
 #if HAS_BED_PROBE
 
@@ -3957,7 +4106,7 @@ inline void gcode_G28() {
    */
   inline void gcode_G30() {
 
-    #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+    #if HAS_ABL
       reset_bed_level();
     #endif
 
@@ -4403,7 +4552,7 @@ inline void gcode_M42() {
       SERIAL_PROTOCOLLNPGM("Positioning the probe...");
 
     // Disable bed level correction in M48 because we want the raw data when we probe
-    #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+    #if HAS_ABL
       reset_bed_level();
     #endif
 
@@ -6592,18 +6741,19 @@ inline void gcode_M503() {
 inline void gcode_M907() {
   #if HAS_DIGIPOTSS
     LOOP_XYZE(i)
-      if (code_seen(axis_codes[i])) stepper.digipot_current(i, code_value_int());
+    if (code_seen(axis_codes[i])) stepper.digipot_current(i, code_value_int());
     if (code_seen('B')) stepper.digipot_current(4, code_value_int());
     if (code_seen('S')) for (int i = 0; i <= 4; i++) stepper.digipot_current(i, code_value_int());
-  #endif
-  #if PIN_EXISTS(MOTOR_CURRENT_PWM_XY)
-    if (code_seen('X')) stepper.digipot_current(0, code_value_int());
-  #endif
-  #if PIN_EXISTS(MOTOR_CURRENT_PWM_Z)
-    if (code_seen('Z')) stepper.digipot_current(1, code_value_int());
-  #endif
-  #if PIN_EXISTS(MOTOR_CURRENT_PWM_E)
-    if (code_seen('E')) stepper.digipot_current(2, code_value_int());
+  #elif HAS_MOTOR_CURRENT_PWM
+    #if PIN_EXISTS(MOTOR_CURRENT_PWM_XY)
+      if (code_seen('X')) stepper.digipot_current(0, code_value_int());
+    #endif
+    #if PIN_EXISTS(MOTOR_CURRENT_PWM_Z)
+      if (code_seen('Z')) stepper.digipot_current(1, code_value_int());
+    #endif
+    #if PIN_EXISTS(MOTOR_CURRENT_PWM_E)
+      if (code_seen('E')) stepper.digipot_current(2, code_value_int());
+    #endif
   #endif
   #if ENABLED(DIGIPOT_I2C)
     // this one uses actual amps in floating point
@@ -6884,7 +7034,7 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
             }
           #endif
 
-          // No extra case for AUTO_BED_LEVELING_FEATURE in DUAL_X_CARRIAGE. Does that mean they don't work together?
+          // No extra case for HAS_ABL in DUAL_X_CARRIAGE. Does that mean they don't work together?
         #else // !DUAL_X_CARRIAGE
 
           #if ENABLED(SWITCHING_EXTRUDER)
@@ -6943,7 +7093,7 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
            * Z software endstop. But this is technically correct (and
            * there is no viable alternative).
            */
-          #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+          #if ABL_PLANAR
             // Offset extruder, make sure to apply the bed level rotation matrix
             vector_3 tmp_offset_vec = vector_3(hotend_offset[X_AXIS][tmp_extruder],
                                                hotend_offset[Y_AXIS][tmp_extruder],
@@ -6971,7 +7121,7 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
             float xydiff[2] = { offset_vec.x, offset_vec.y };
             current_position[Z_AXIS] += offset_vec.z;
 
-          #else // !AUTO_BED_LEVELING_LINEAR
+          #else // !ABL_PLANAR
 
             float xydiff[2] = {
               hotend_offset[X_AXIS][tmp_extruder] - hotend_offset[X_AXIS][active_extruder],
@@ -6995,7 +7145,7 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
 
             #endif // MESH_BED_LEVELING
 
-          #endif // !AUTO_BED_LEVELING_FEATURE
+          #endif // !HAS_ABL
 
           #if ENABLED(DEBUG_LEVELING_FEATURE)
             if (DEBUGGING(LEVELING)) {
@@ -7218,11 +7368,11 @@ void process_next_command() {
         gcode_G28();
         break;
 
-      #if ENABLED(AUTO_BED_LEVELING_FEATURE) || ENABLED(MESH_BED_LEVELING)
+      #if HAS_ABL || ENABLED(MESH_BED_LEVELING)
         case 29: // G29 Detailed Z probe, probes the bed at 3 or more points.
           gcode_G29();
           break;
-      #endif // AUTO_BED_LEVELING_FEATURE
+      #endif // HAS_ABL
 
       #if HAS_BED_PROBE
 
@@ -7717,7 +7867,7 @@ void process_next_command() {
       #endif
 
       #if HAS_BED_PROBE
-        case 851:
+        case 851: // Set Z Probe Z Offset
           gcode_M851();
           break;
       #endif // HAS_BED_PROBE
@@ -7858,50 +8008,51 @@ void ok_to_send() {
 
 #endif
 
-#if ENABLED(AUTO_BED_LEVELING_NONLINEAR)
+#if ENABLED(AUTO_BED_LEVELING_BILINEAR)
 
   // Get the Z adjustment for non-linear bed leveling
-  float nonlinear_z_offset(float cartesian[XYZ]) {
+  float bilinear_z_offset(float cartesian[XYZ]) {
 
-    int half_x = (ABL_GRID_POINTS_X - 1) / 2,
-        half_y = (ABL_GRID_POINTS_Y - 1) / 2;
-    float hx2 = half_x - 0.001, hx1 = -hx2,
-          hy2 = half_y - 0.001, hy1 = -hy2,
-          grid_x = max(hx1, min(hx2, RAW_X_POSITION(cartesian[X_AXIS]) / nonlinear_grid_spacing[X_AXIS])),
-          grid_y = max(hy1, min(hy2, RAW_Y_POSITION(cartesian[Y_AXIS]) / nonlinear_grid_spacing[Y_AXIS]));
-    #ifdef __SAM3X8E__
-      int   floor_x = FLOOR(grid_x), floor_y = FLOOR(grid_y);
-    #else
-      int   floor_x = floor(grid_x), floor_y = floor(grid_y);
-    #endif
-    float ratio_x = grid_x - floor_x, ratio_y = grid_y - floor_y,
-          z1 = bed_level_grid[floor_x + half_x][floor_y + half_y],
-          z2 = bed_level_grid[floor_x + half_x][floor_y + half_y + 1],
-          z3 = bed_level_grid[floor_x + half_x + 1][floor_y + half_y],
-          z4 = bed_level_grid[floor_x + half_x + 1][floor_y + half_y + 1],
-          left = (1 - ratio_y) * z1 + ratio_y * z2,
-          right = (1 - ratio_y) * z3 + ratio_y * z4;
+    int gridx = (cartesian[X_AXIS] - bilinear_start[X_AXIS]) / bilinear_grid_spacing[X_AXIS],
+        gridy = (cartesian[Y_AXIS] - bilinear_start[Y_AXIS]) / bilinear_grid_spacing[Y_AXIS];
+
+    // What grid box is xy inside?
+    if (gridx < 0) gridx = 0;
+    if (gridx > ABL_GRID_POINTS_X - 1) gridx = ABL_GRID_POINTS_X - 1;
+    if (gridy < 0) gridy = 0;
+    if (gridy > ABL_GRID_POINTS_Y - 1) gridy = ABL_GRID_POINTS_Y - 1;
+
+          // Ratio within the grid box
+    float ratio_x = cartesian[X_AXIS] / bilinear_grid_spacing[X_AXIS] - gridx,
+          ratio_y = cartesian[Y_AXIS] / bilinear_grid_spacing[Y_AXIS] - gridy,
+
+          // Z at the box corners
+          z1 = bed_level_grid[gridx][gridy],         // left-front
+          z2 = bed_level_grid[gridx][gridy + 1],     // left-back
+          z3 = bed_level_grid[gridx + 1][gridy],     // right-front
+          z4 = bed_level_grid[gridx + 1][gridy + 1], // right-back
+
+          L = z1 + (z2 - z1) * ratio_y,   // Linear interp. LF -> LB
+          R = z3 + (z4 - z3) * ratio_y;   // Linear interp. RF -> RB
 
     /*
-      SERIAL_ECHOPAIR("grid_x=", grid_x);
-      SERIAL_ECHOPAIR(" grid_y=", grid_y);
-      SERIAL_ECHOPAIR(" floor_x=", floor_x);
-      SERIAL_ECHOPAIR(" floor_y=", floor_y);
+      SERIAL_ECHOPAIR("gridx=", gridx);
+      SERIAL_ECHOPAIR(" gridy=", gridy);
       SERIAL_ECHOPAIR(" ratio_x=", ratio_x);
       SERIAL_ECHOPAIR(" ratio_y=", ratio_y);
       SERIAL_ECHOPAIR(" z1=", z1);
       SERIAL_ECHOPAIR(" z2=", z2);
       SERIAL_ECHOPAIR(" z3=", z3);
       SERIAL_ECHOPAIR(" z4=", z4);
-      SERIAL_ECHOPAIR(" left=", left);
-      SERIAL_ECHOPAIR(" right=", right);
-      SERIAL_ECHOPAIR(" offset=", (1 - ratio_x) * left + ratio_x * right);
+      SERIAL_ECHOPAIR(" L=", L);
+      SERIAL_ECHOPAIR(" R=", R);
+      SERIAL_ECHOPAIR(" offset=", L + ratio_x * (R - L);
     //*/
 
-    return (1 - ratio_x) * left + ratio_x * right;
+    return L + ratio_x * (R - L);
   }
 
-#endif // AUTO_BED_LEVELING_NONLINEAR
+#endif // AUTO_BED_LEVELING_BILINEAR
 
 #if ENABLED(DELTA)
 
@@ -8851,8 +9002,8 @@ void prepare_move_to_destination() {
       bool new_led = (max_temp > 55.0) ? true : (max_temp < 54.0) ? false : red_led;
       if (new_led != red_led) {
         red_led = new_led;
-        digitalWrite(STAT_LED_RED, new_led ? HIGH : LOW);
-        digitalWrite(STAT_LED_BLUE, new_led ? LOW : HIGH);
+        WRITE(STAT_LED_RED_PIN, new_led ? HIGH : LOW);
+        WRITE(STAT_LED_BLUE_PIN, new_led ? LOW : HIGH);
       }
     }
   }
@@ -9339,20 +9490,17 @@ void setup() {
   #endif
 
   #if ENABLED(Z_PROBE_SLED) && PIN_EXISTS(SLED)
-    pinMode(SLED_PIN, OUTPUT);
-    digitalWrite(SLED_PIN, LOW); // turn it off
+    OUT_WRITE(SLED_PIN, LOW); // turn it off
   #endif // Z_PROBE_SLED
 
   setup_homepin();
 
-  #ifdef STAT_LED_RED
-    pinMode(STAT_LED_RED, OUTPUT);
-    digitalWrite(STAT_LED_RED, LOW); // turn it off
+  #if PIN_EXISTS(STAT_LED_RED)
+    OUT_WRITE(STAT_LED_RED_PIN, LOW); // turn it off
   #endif
 
-  #ifdef STAT_LED_BLUE
-    pinMode(STAT_LED_BLUE, OUTPUT);
-    digitalWrite(STAT_LED_BLUE, LOW); // turn it off
+  #if PIN_EXISTS(STAT_LED_BLUE)
+    OUT_WRITE(STAT_LED_BLUE_PIN, LOW); // turn it off
   #endif
 
   lcd_init();
