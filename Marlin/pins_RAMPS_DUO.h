@@ -69,8 +69,8 @@
       #undef DOGLCD_CS
       #define DOGLCD_CS    69
 
-      #undef LCD_PIN_BL
-      #define LCD_PIN_BL   68 // backlight LED on A14/D68
+      #undef LCD_BACKLIGHT_PIN
+      #define LCD_BACKLIGHT_PIN 68 // backlight LED on A14/D68
 
       #undef KILL_PIN
       #define KILL_PIN     67
