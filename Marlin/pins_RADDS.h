@@ -53,13 +53,21 @@
 #define E2_DIR_PIN         53
 #define E2_ENABLE_PIN      49
 
-#define E3_STEP_PIN        35
-#define E3_DIR_PIN         33
-#define E3_ENABLE_PIN      37
+// For Extension Board V2
+// http://doku.radds.org/dokumentation/extension-board
+//#define E3_STEP_PIN        35
+//#define E3_DIR_PIN         33
+//#define E3_ENABLE_PIN      37
+//#define E3_MS1_PIN         67
+//#define E3_MS2_PIN         68
+//#define E3_MS3_PIN         69
 
-#define E4_STEP_PIN        29
-#define E4_DIR_PIN         27
-#define E4_ENABLE_PIN      31
+//#define Z2_STEP_PIN        29
+//#define Z2_DIR_PIN         27
+//#define Z2_ENABLE_PIN      31
+//#define Z2_MS1_PIN         67 // shared with E3_MS1_PIN
+//#define Z2_MS2_PIN         68 // shared with E3_MS2_PIN
+//#define Z2_MS3_PIN         69 // shared with E3_MS3_PIN
 
 //
 // Temperature Sensors
