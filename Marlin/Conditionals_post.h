@@ -771,28 +771,7 @@
   // Stepper pulse duration, in cycles
   #define STEP_PULSE_CYCLES ((MINIMUM_STEPPER_PULSE) * CYCLES_PER_MICROSECOND)
 
-  #ifdef __SAM3X8E__
-    #if ENABLED(DELTA_FAST_SQRT)
-      #define ATAN2(y, x) atan2f(y, x)
-      #define FABS(x) fabsf(x)
-      #define POW(x, y) powf(x, y)
-      #define SQRT(x) sqrtf(x)
-      #define CEIL(x) ceilf(x)
-      #define FLOOR(x) floorf(x)
-      #define LROUND(x) lroundf(x)
-      #define FMOD(x, y) fmodf(x, y)
-    #else
-      #define ATAN2(y, x) atan2(y, x)
-      #define FABS(x) fabs(x)
-      #define POW(x, y) pow(x, y)
-      #define SQRT(x) sqrt(x)
-      #define CEIL(x) ceil(x)
-      #define FLOOR(x) floor(x)
-      #define LROUND(x) lround(x)
-      #define FMOD(x, y) fmod(x, y)
-    #endif
-    #define HYPOT(x,y) SQRT(HYPOT2(x,y))
-  #else
+  #ifndef __SAM3X8E__
     #undef UI_VOLTAGE_LEVEL
     #undef RADDS_DISPLAY
     #undef MOTOR_CURRENT

@@ -53,6 +53,27 @@
     #define _BV(b) (1 << (b))
   #endif
 
+  #if ENABLED(DELTA_FAST_SQRT)
+    #define ATAN2(y, x) atan2f(y, x)
+    #define FABS(x) fabsf(x)
+    #define POW(x, y) powf(x, y)
+    #define SQRT(x) sqrtf(x)
+    #define CEIL(x) ceilf(x)
+    #define FLOOR(x) floorf(x)
+    #define LROUND(x) lroundf(x)
+    #define FMOD(x, y) fmodf(x, y)
+  #else
+    #define ATAN2(y, x) atan2(y, x)
+    #define FABS(x) fabs(x)
+    #define POW(x, y) pow(x, y)
+    #define SQRT(x) sqrt(x)
+    #define CEIL(x) ceil(x)
+    #define FLOOR(x) floor(x)
+    #define LROUND(x) lround(x)
+    #define FMOD(x, y) fmod(x, y)
+  #endif
+  #define HYPOT(x,y) SQRT(HYPOT2(x,y))
+
   // timers
   #define NUM_HARDWARE_TIMERS 9
 
@@ -70,7 +91,7 @@
   #define HAL_REFERENCE_TEMP_TIMER_RATE (REFERENCE_F_CPU / REFERENCE_TEMP_TIMER_PRESCALE) // timer0 of MEGA2560: 16000000 / 64 = 250KHz (sharing with advanced extruder)
   #define REFERENCE_TEMP_TIMER_FREQUENCY (HAL_REFERENCE_TEMP_TIMER_RATE / 128) // 1.953125KHz at start // note: timer0 is in mode3?
 
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
     #define EXTRUDER_TIMER 1
     #define EXTRUDER_TIMER_PRIORITY 6
     #define EXTRUDER_TIMER_FREQUENCY REFERENCE_EXTRUDER_TIMER_FREQUENCY
@@ -79,7 +100,7 @@
     #define HAL_EXTRUDER_TIMER_RATE (F_CPU / EXTRUDER_TIMER_PRESCALE) // = 42MHz
     #define EXTRUDER_TIMER_FACTOR (HAL_EXTRUDER_TIMER_RATE / HAL_REFERENCE_EXTRUDER_TIMER_RATE)
     #define EXTRUDER_TIMER_TICKS_PER_MILLISECOND (HAL_EXTRUDER_TIMER_RATE) / 1000
-  //#endif
+  #endif
 
   #define STEPPER_TIMER 2
   #define STEPPER_TIMER_PRIORITY 2
@@ -115,11 +136,11 @@
   #define HAL_ISR(p) _HAL_ISR(p)
   #define HAL_TIMER_START(n) HAL_timer_start(n, n ## _PRIORITY, n ## _FREQUENCY, n ## _CLOCK, n ## _PRESCALE)
 
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
     #define ENABLE_EXTRUDER_INTERRUPT() HAL_timer_enable_interrupt(EXTRUDER_TIMER)
     #define DISABLE_EXTRUDER_INTERRUPT() HAL_timer_disable_interrupt(EXTRUDER_TIMER)
     #define HAL_TIMER_SET_EXTRUDER_COUNT(n) HAL_timer_set_count(EXTRUDER_TIMER, n)
-  //#endif
+  #endif
 
   #define ENABLE_STEPPER_DRIVER_INTERRUPT() HAL_timer_enable_interrupt(STEPPER_TIMER)
   #define DISABLE_STEPPER_DRIVER_INTERRUPT() HAL_timer_disable_interrupt(STEPPER_TIMER)
@@ -235,12 +256,12 @@
   // Timers
   void HAL_timer_start(uint8_t timer_num, uint8_t priority, uint32_t frequency, uint32_t clock, uint8_t prescale);
   void HAL_timer_enable_interrupt(uint8_t timer_num);
-  //#if ENABLED(USE_WATCHDOG)
+  #if ENABLED(USE_WATCHDOG)
     void watchdogSetup(void);
-    //#if ENABLED(WATCHDOG_RESET_MANUAL)
+    #if ENABLED(WATCHDOG_RESET_MANUAL)
       void HAL_watchdog_timer_enable_interrupt(uint32_t timeout);
-    //#endif
-  //#endif
+    #endif
+  #endif
   void HAL_timer_disable_interrupt(uint8_t timer_num);
 
   static FORCE_INLINE void HAL_timer_isr_prologue(uint8_t timer_num) {
@@ -268,9 +289,9 @@
   }
 
 #if 0
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
     void HAL_extruder_timer_start(void);
-  //#endif
+  #endif
   void HAL_step_timer_start(void);
   void HAL_temp_timer_start(void);
 
@@ -278,7 +299,7 @@
     TC_GetStatus(tc, channel); // clear status register
   }
 
-  //#if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
+  #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
     static FORCE_INLINE void HAL_extruder_count(uint32_t count) {
       // Get the ISR from table
       Tc *tc = TimerConfig[EXTRUDER_TIMER].pTimerRegs;
@@ -288,7 +309,7 @@
       //if (count < 105) count = 105;
       TC_SetRC(tc, channel, (counter_value <= count) ? count : counter_value);
     }
-  //#endif
+  #endif
 
   static FORCE_INLINE void HAL_timer_stepper_count(uint32_t count) {
     // Get the ISR from table

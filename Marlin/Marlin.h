@@ -28,9 +28,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#ifdef __SAM3X8E__
-  #include "HAL.h"
-#else
+#ifndef __SAM3X8E__
   #include <util/delay.h>
   #include <avr/eeprom.h>
 #endif

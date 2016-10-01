@@ -37,5 +37,8 @@
 #include "Arduino.h"
 #include "Conditionals_post.h"
 #include "SanityCheck.h"
+#ifdef __SAM3X8E__
+  #include "HAL.h"
+#endif
 
 #endif // MARLIN_CONFIG_H
