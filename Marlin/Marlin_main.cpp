@@ -131,6 +131,7 @@
  * G30 - Single Z probe, probes bed at current XY location.
  * G31 - Dock sled (Z_PROBE_SLED only)
  * G32 - Undock sled (Z_PROBE_SLED only)
+ * G38 - Probe target - similar to G28 except it uses the Z_MIN endstop for all three axes
  * G90 - Use Absolute Coordinates
  * G91 - Use Relative Coordinates
  * G92 - Set current position to coordinates given
@@ -288,6 +289,11 @@
 
 #if ENABLED(EXPERIMENTAL_I2CBUS)
   TWIBus i2c;
+#endif
+
+#if ENABLED(G38_PROBE_TARGET)
+  bool G38_move = false,
+       G38_endstop_hit = false;
 #endif
 
 bool Running = true;
@@ -1371,7 +1377,7 @@ static void set_home_offset(AxisEnum axis, float v) {
  * SCARA should wait until all XY homing is done before setting the XY
  * current_position to home, because neither X nor Y is at home until
  * both are at home. Z can however be homed individually.
- * 
+ *
  */
 static void set_axis_is_at_home(AxisEnum axis) {
   #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -2359,6 +2365,7 @@ static void clean_up_after_endstop_or_probe_move() {
 
 #endif // AUTO_BED_LEVELING_BILINEAR
 
+
 /**
  * Home an individual linear axis
  */
@@ -2998,10 +3005,10 @@ inline void gcode_G4() {
     SERIAL_ECHOPGM("Probe: ");
     #if ENABLED(FIX_MOUNTED_PROBE)
       SERIAL_ECHOLNPGM("FIX_MOUNTED_PROBE");
-    #elif HAS_Z_SERVO_ENDSTOP
-      SERIAL_ECHOLNPGM("SERVO PROBE");
     #elif ENABLED(BLTOUCH)
       SERIAL_ECHOLNPGM("BLTOUCH");
+    #elif HAS_Z_SERVO_ENDSTOP
+      SERIAL_ECHOLNPGM("SERVO PROBE");
     #elif ENABLED(Z_PROBE_SLED)
       SERIAL_ECHOLNPGM("Z_PROBE_SLED");
     #elif ENABLED(Z_PROBE_ALLEN_KEY)
@@ -3836,29 +3843,27 @@ inline void gcode_G28() {
         #define PR_INNER_END abl_grid_points_x
       #endif
 
-      #if ENABLED(MAKERARM_SCARA)
-        bool zig = true;
-      #else
-        bool zig = PR_OUTER_END & 1; //always end at [RIGHT_PROBE_BED_POSITION, BACK_PROBE_BED_POSITION]
-      #endif
+      bool zig = PR_OUTER_END & 1;  // Always end at RIGHT and BACK_PROBE_BED_POSITION
 
+      // Outer loop is Y with PROBE_Y_FIRST disabled
       for (uint8_t PR_OUTER_VAR = 0; PR_OUTER_VAR < PR_OUTER_END; PR_OUTER_VAR++) {
 
         int8_t inStart, inStop, inInc;
 
-        if (zig) {
+        if (zig) { // away from origin
           inStart = 0;
           inStop = PR_INNER_END;
           inInc = 1;
         }
-        else {
+        else {     // towards origin
           inStart = PR_INNER_END - 1;
           inStop = -1;
           inInc = -1;
         }
 
-        zig = !zig;
+        zig = !zig; // zag
 
+        // Inner loop is Y with PROBE_Y_FIRST enabled
         for (int8_t PR_INNER_VAR = inStart; PR_INNER_VAR != inStop; PR_INNER_VAR += inInc) {
 
           float xBase = left_probe_bed_position + xGridSpacing * xCount,
@@ -4217,6 +4222,94 @@ inline void gcode_G28() {
   #endif // Z_PROBE_SLED
 
 #endif // HAS_BED_PROBE
+
+#if ENABLED(G38_PROBE_TARGET)
+
+  static bool G38_run_probe() {
+
+    bool G38_pass_fail = false;
+
+    // Get direction of move and retract
+    float retract_mm[XYZ];
+    LOOP_XYZ(i) {
+      float dist = destination[i] - current_position[i];
+      retract_mm[i] = fabs(dist) < G38_MINIMUM_MOVE ? 0 : home_bump_mm(i) * (dist > 0 ? -1 : 1);
+    }
+
+    stepper.synchronize();  // wait until the machine is idle
+
+    // Move until destination reached or target hit
+    endstops.enable(true);
+    G38_move = true;
+    G38_endstop_hit = false;
+    prepare_move_to_destination();
+    stepper.synchronize();
+    G38_move = false;
+
+    endstops.hit_on_purpose();
+    set_current_from_steppers_for_axis(ALL_AXES);
+    SYNC_PLAN_POSITION_KINEMATIC();
+
+    // Only do remaining moves if target was hit
+    if (G38_endstop_hit) {
+
+      G38_pass_fail = true;
+
+      // Move away by the retract distance
+      set_destination_to_current();
+      LOOP_XYZ(i) destination[i] += retract_mm[i];
+      endstops.enable(false);
+      prepare_move_to_destination();
+      stepper.synchronize();
+
+      feedrate_mm_s /= 4;
+
+      // Bump the target more slowly
+      LOOP_XYZ(i) destination[i] -= retract_mm[i] * 2;
+
+      endstops.enable(true);
+      G38_move = true;
+      prepare_move_to_destination();
+      stepper.synchronize();
+      G38_move = false;
+
+      set_current_from_steppers_for_axis(ALL_AXES);
+      SYNC_PLAN_POSITION_KINEMATIC();
+    }
+
+    endstops.hit_on_purpose();
+    endstops.not_homing();
+    return G38_pass_fail;
+  }
+
+  /**
+   * G38.2 - probe toward workpiece, stop on contact, signal error if failure
+   * G38.3 - probe toward workpiece, stop on contact
+   *
+   * Like G28 except uses Z min endstop for all axes
+   */
+  inline void gcode_G38(bool is_38_2) {
+    // Get X Y Z E F
+    gcode_get_destination();
+
+    setup_for_endstop_or_probe_move();
+
+    // If any axis has enough movement, do the move
+    LOOP_XYZ(i)
+      if (fabs(destination[i] - current_position[i]) >= G38_MINIMUM_MOVE) {
+        if (!code_seen('F')) feedrate_mm_s = homing_feedrate_mm_s[i];
+        // If G38.2 fails throw an error
+        if (!G38_run_probe() && is_38_2) {
+          SERIAL_ERROR_START;
+          SERIAL_ERRORLNPGM("Failed to reach target");
+        }
+        break;
+      }
+
+    clean_up_after_endstop_or_probe_move();
+  }
+
+#endif // G38_PROBE_TARGET
 
 /**
  * G92: Set current position to given X Y Z E
@@ -7355,6 +7448,11 @@ void process_next_command() {
   // Skip spaces to get the numeric part
   while (*cmd_ptr == ' ') cmd_ptr++;
 
+  // Allow for decimal point in command
+  #if ENABLED(G38_PROBE_TARGET)
+    uint8_t subcode = 0;
+  #endif
+
   uint16_t codenum = 0; // define ahead of goto
 
   // Bail early if there's no code
@@ -7366,6 +7464,15 @@ void process_next_command() {
     codenum = (codenum * 10) + (*cmd_ptr - '0');
     cmd_ptr++;
   } while (NUMERIC(*cmd_ptr));
+
+  // Allow for decimal point in command
+  #if ENABLED(G38_PROBE_TARGET)
+    if (*cmd_ptr == '.') {
+      cmd_ptr++;
+      while (NUMERIC(*cmd_ptr))
+        subcode = (subcode * 10) + (*cmd_ptr++ - '0');
+    }
+  #endif
 
   // Skip all spaces to get to the first argument, or nul
   while (*cmd_ptr == ' ') cmd_ptr++;
@@ -7466,6 +7573,13 @@ void process_next_command() {
 
         #endif // Z_PROBE_SLED
       #endif // HAS_BED_PROBE
+
+      #if ENABLED(G38_PROBE_TARGET)
+        case 38: // G38.2 & G38.3
+          if (subcode == 2 || subcode == 3)
+            gcode_G38(subcode == 2);
+          break;
+      #endif
 
       case 90: // G90
         relative_mode = false;
@@ -9014,7 +9128,7 @@ void prepare_move_to_destination() {
    * Morgan SCARA Inverse Kinematics. Results in delta[].
    *
    * See http://forums.reprap.org/read.php?185,283327
-   * 
+   *
    * Maths and first version by QHARLEY.
    * Integrated into Marlin and slightly restructured by Joachim Cerny.
    */

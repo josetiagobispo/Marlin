@@ -279,13 +279,27 @@ void Endstops::update() {
   // COPY_BIT: copy the value of COPY_BIT to BIT in bits
   #define COPY_BIT(bits, COPY_BIT, BIT) SET_BIT(bits, BIT, TEST(bits, COPY_BIT))
 
-  #define UPDATE_ENDSTOP(AXIS,MINMAX) do { \
+  #define _UPDATE_ENDSTOP(AXIS,MINMAX,CODE) do { \
       UPDATE_ENDSTOP_BIT(AXIS, MINMAX); \
       if (TEST_ENDSTOP(_ENDSTOP(AXIS, MINMAX)) && stepper.current_block->steps[_AXIS(AXIS)] > 0) { \
         _ENDSTOP_HIT(AXIS); \
         stepper.endstop_triggered(_AXIS(AXIS)); \
+        CODE; \
       } \
     } while(0)
+
+  #if ENABLED(G38_PROBE_TARGET) && PIN_EXISTS(Z_MIN)  // If G38 command then check Z_MIN for every axis and every direction  
+
+    #define UPDATE_ENDSTOP(AXIS,MINMAX) do { \
+        _UPDATE_ENDSTOP(AXIS,MINMAX,NOOP); \
+        if (G38_move) _UPDATE_ENDSTOP(Z, MIN, G38_endstop_hit = true); \
+      } while(0)
+
+  #else	
+
+    #define UPDATE_ENDSTOP(AXIS,MINMAX) _UPDATE_ENDSTOP(AXIS,MINMAX,NOOP)
+
+  #endif
 
   #if ENABLED(COREXY) || ENABLED(COREXZ)
     // Head direction in -X axis for CoreXY and CoreXZ bots.
@@ -351,7 +365,7 @@ void Endstops::update() {
   #else
       if (stepper.motor_direction(Z_AXIS))
   #endif
-      { // z -direction
+      { // Z -direction. Gantry down, bed up.
         #if HAS_Z_MIN
 
           #if ENABLED(Z_DUAL_ENDSTOPS)
@@ -377,6 +391,7 @@ void Endstops::update() {
 
         #endif // HAS_Z_MIN
 
+        // When closing the gap check the enabled probe
         #if ENABLED(Z_MIN_PROBE_ENDSTOP)
           if (z_probe_enabled) {
             UPDATE_ENDSTOP(Z, MIN_PROBE);
@@ -384,9 +399,10 @@ void Endstops::update() {
           }
         #endif
       }
-      else { // z +direction
+      else { // Z +direction. Gantry up, bed down.
         #if HAS_Z_MAX
 
+          // Check both Z dual endstops
           #if ENABLED(Z_DUAL_ENDSTOPS)
 
             UPDATE_ENDSTOP_BIT(Z, MAX);
@@ -398,11 +414,13 @@ void Endstops::update() {
 
             test_dual_z_endstops(Z_MAX, Z2_MAX);
 
-          #else // !Z_DUAL_ENDSTOPS
+          // If this pin is not hijacked for the bed probe
+          // then it belongs to the Z endstop
+          #elif DISABLED(Z_MIN_PROBE_ENDSTOP) || Z_MAX_PIN != Z_MIN_PROBE_PIN
 
             UPDATE_ENDSTOP(Z, MAX);
 
-          #endif // !Z_DUAL_ENDSTOPS
+          #endif // !Z_MIN_PROBE_PIN...
         #endif // Z_MAX_PIN
       }
   #if ENABLED(COREXZ)
