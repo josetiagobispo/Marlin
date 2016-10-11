@@ -34,14 +34,11 @@
 
 #include "types.h"
 #include "enum.h"
-#include "MarlinConfig.h"
+#include "Marlin.h"
 
 #if HAS_ABL
   #include "vector_3.h"
 #endif
-
-class Planner;
-extern Planner planner;
 
 /**
  * struct block_t
@@ -201,35 +198,85 @@ class Planner {
 
     static bool is_full() { return (block_buffer_tail == BLOCK_MOD(block_buffer_head + 1)); }
 
-    #if HAS_ABL || ENABLED(MESH_BED_LEVELING)
+    #if PLANNER_LEVELING
+
       #define ARG_X float lx
       #define ARG_Y float ly
       #define ARG_Z float lz
-    #else
-      #define ARG_X const float &lx
-      #define ARG_Y const float &ly
-      #define ARG_Z const float &lz
-    #endif
-
-    #if PLANNER_LEVELING
 
       /**
        * Apply leveling to transform a cartesian position
        * as it will be given to the planner and steppers.
        */
       static void apply_leveling(float &lx, float &ly, float &lz);
+      static void apply_leveling(float logical[XYZ]) { apply_leveling(logical[X_AXIS], logical[Y_AXIS], logical[Z_AXIS]); }
       static void unapply_leveling(float logical[XYZ]);
+
+    #else
+
+      #define ARG_X const float &lx
+      #define ARG_Y const float &ly
+      #define ARG_Z const float &lz
 
     #endif
 
     /**
-     * Add a new linear movement to the buffer.
+     * Planner::_buffer_line
      *
-     *  x,y,z,e   - target position in mm
+     * Add a new direct linear movement to the buffer.
+     *
+     * Leveling and kinematics should be applied ahead of this.
+     *
+     *  a,b,c,e   - target position in mm or degrees
      *  fr_mm_s   - (target) speed of the move (mm/s)
      *  extruder  - target extruder
      */
-    static void buffer_line(ARG_X, ARG_Y, ARG_Z, const float& e, float fr_mm_s, const uint8_t extruder);
+    static void _buffer_line(const float &a, const float &b, const float &c, const float &e, float fr_mm_s, const uint8_t extruder);
+
+    static void _set_position_mm(const float &a, const float &b, const float &c, const float &e);
+
+    /**
+     * Add a new linear movement to the buffer.
+     * The target is NOT translated to delta/scara
+     *
+     * Leveling will be applied to input on cartesians.
+     * Kinematic machines should call buffer_line_kinematic (for leveled moves).
+     * (Cartesians may also call buffer_line_kinematic.)
+     *
+     *  lx,ly,lz,e   - target position in mm or degrees
+     *  fr_mm_s      - (target) speed of the move (mm/s)
+     *  extruder     - target extruder
+     */
+    static FORCE_INLINE void buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, float fr_mm_s, const uint8_t extruder) {
+      #if PLANNER_LEVELING && IS_CARTESIAN
+        apply_leveling(lx, ly, lz);
+      #endif
+      _buffer_line(lx, ly, lz, e, fr_mm_s, extruder);
+    }
+
+    /**
+     * Add a new linear movement to the buffer.
+     * The target is cartesian, it's translated to delta/scara if
+     * needed.
+     *
+     *  target   - x,y,z,e CARTESIAN target in mm
+     *  fr_mm_s  - (target) speed of the move (mm/s)
+     *  extruder - target extruder
+     */
+    static FORCE_INLINE void buffer_line_kinematic(const float target[XYZE], float fr_mm_s, const uint8_t extruder) {
+      #if PLANNER_LEVELING
+        float pos[XYZ] = { target[X_AXIS], target[Y_AXIS], target[Z_AXIS] };
+        apply_leveling(pos);
+      #else
+        const float * const pos = target;
+      #endif
+      #if IS_KINEMATIC
+        inverse_kinematics(pos);
+        _buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], target[E_AXIS], fr_mm_s, extruder);
+      #else
+        _buffer_line(pos[X_AXIS], pos[Y_AXIS], pos[Z_AXIS], target[E_AXIS], fr_mm_s, extruder);
+      #endif
+    }
 
     /**
      * Set the planner.position and individual stepper positions.
@@ -240,9 +287,14 @@ class Planner {
      *
      * Clears previous speed values.
      */
-    static void set_position_mm(ARG_X, ARG_Y, ARG_Z, const float& e);
+    static FORCE_INLINE void set_position_mm(ARG_X, ARG_Y, ARG_Z, const float &e) {
+      #if PLANNER_LEVELING && IS_CARTESIAN
+        apply_leveling(lx, ly, lz);
+      #endif
+      _set_position_mm(lx, ly, lz, e);
+    }
+    static void set_position_mm_kinematic(const float position[NUM_AXIS]);
     static void set_position_mm(const AxisEnum axis, const float& v);
-
     static FORCE_INLINE void set_z_position_mm(const float& z) { set_position_mm(Z_AXIS, z); }
     static FORCE_INLINE void set_e_position_mm(const float& e) { set_position_mm(E_AXIS, e); }
 
@@ -344,5 +396,7 @@ class Planner {
     static void recalculate();
 
 };
+
+extern Planner planner;
 
 #endif // PLANNER_H

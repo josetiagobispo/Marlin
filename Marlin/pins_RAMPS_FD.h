@@ -65,16 +65,17 @@
 //
 // Temperature Sensors
 //
-#define TEMP_0_PIN          1 // ANALOG NUMBERING
-#define TEMP_1_PIN          2 // ANALOG NUMBERING
-#define TEMP_2_PIN          3 // ANALOG NUMBERING
-#define TEMP_BED_PIN        0 // ANALOG NUMBERING
+#define TEMP_0_PIN          1   // Analog Input
+#define TEMP_1_PIN          2   // Analog Input
+#define TEMP_2_PIN          3   // Analog Input
+#define TEMP_BED_PIN        0   // Analog Input
 
-//
-// Misc. Functions
-//
-#define SDSS                4
-#define LED_PIN            13
+// SPI for Max6675 or Max31855 Thermocouple
+#if DISABLED(SDSUPPORT)
+  #define MAX6675_SS            53
+#else
+  #define MAX6675_SS            49
+#endif
 
 //
 // Heaters / Fans
@@ -86,6 +87,12 @@
 
 #define FAN_PIN            12
 #define CONTROLLER_FAN_PIN -1
+
+//
+// Misc. Functions
+//
+#define SDSS                4
+#define LED_PIN            13
 
 //
 // LCD / Controller
@@ -111,10 +118,3 @@
     #endif
   #endif
 #endif // ULTRA_LCD
-
-// SPI for Max6675 or Max31855 Thermocouple
-#if DISABLED(SDSUPPORT)
-  #define MAX6675_SS            53
-#else
-  #define MAX6675_SS            49
-#endif

@@ -33,22 +33,18 @@
 #define X_STEP_PIN            96 // PB24
 #define X_DIR_PIN              2 // PB25
 #define X_ENABLE_PIN          24 // PA15, motor RESET pin
-#define X_MS1_PIN             99 // PC10
 
 #define Y_STEP_PIN            94 // PB22
 #define Y_DIR_PIN             95 // PB23
 #define Y_ENABLE_PIN          24 // PA15, motor RESET pin
-#define Y_MS1_PIN             10 // PC29
 
 #define Z_STEP_PIN            98 // PC27
 #define Z_DIR_PIN              3 // PC28
 #define Z_ENABLE_PIN          24 // PA15, motor RESET pin
-#define Z_MS1_PIN             44 // PC19
 
 #define E0_STEP_PIN            5 // PC25
 #define E0_DIR_PIN             4 // PC26
 #define E0_ENABLE_PIN         24 // PA15, motor RESET pin
-#define E0_MS1_PIN            45 // PC18
 
 #define E1_STEP_PIN           28 // PD3 on piggy
 #define E1_DIR_PIN            27 // PD2 on piggy
@@ -62,16 +58,35 @@
 #define E3_DIR_PIN            12 // PD8 on piggy
 #define E3_ENABLE_PIN         24 // PA15, motor RESET pin
 
+// Microstepping pins - Mapping not from fastio.h (?)
+#define X_MS1_PIN             99 // PC10
+#define Y_MS1_PIN             10 // PC29
+#define Z_MS1_PIN             44 // PC19
+#define E0_MS1_PIN            45 // PC18
+
 //#define MOTOR_FAULT_PIN     22 // PB26 , motor X-Y-Z-E0 motor FAULT
 
 //
 // Temperature Sensors
 //
-#define TEMP_0_PIN             1 // PA24, analog pin
-#define TEMP_1_PIN             2 // PA23 analog pin on piggy
-#define TEMP_2_PIN             3 // PA22, analog pin on piggy
-#define TEMP_3_PIN             4 // PA6, analog on piggy
-#define TEMP_BED_PIN           0 // PA16
+#define TEMP_0_PIN             1   // Analog Input (PA24)
+#define TEMP_1_PIN             2   // Analog Input (PA23 on piggy)
+#define TEMP_2_PIN             3   // Analog Input (PA22 on piggy)
+#define TEMP_3_PIN             4   // Analog Input (PA6 on piggy)
+#define TEMP_BED_PIN           0   // Analog Input (PA16)
+
+//
+// Heaters / Fans
+//
+// Note that on the Due pin A0 on the board is channel 2 on the ARM chip
+#define HEATER_0_PIN          68 // PA1
+#define HEATER_1_PIN           8 // PC22 on piggy
+#define HEATER_2_PIN           9 // PC21 on piggy
+#define HEATER_3_PIN          97 // PC20 on piggy
+#define HEATER_BED_PIN        69 // PA0
+
+#define FAN_PIN               92 // PA5
+#define FAN1_PIN              31 // PA7
 
 //
 // Misc. Functions
@@ -99,19 +114,6 @@
 // FLASH SPI
 // 32Mb
 #define SPI_FLASH_CS          23 // PA14
-
-//
-// Heaters / Fans
-// Note that on the Due pin A0 on the board is channel 2 on the ARM chip
-//
-#define HEATER_0_PIN          68 // PA1
-#define HEATER_1_PIN           8 // PC22 on piggy
-#define HEATER_2_PIN           9 // PC21 on piggy
-#define HEATER_3_PIN          97 // PC20 on piggy
-#define HEATER_BED_PIN        69 // PA0
-
-#define FAN_PIN               92 // PA5
-#define FAN1_PIN              31 // PA7
 
 //
 // LCD / Controller

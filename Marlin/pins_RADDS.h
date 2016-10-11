@@ -58,13 +58,15 @@
 //#define E3_STEP_PIN        35
 //#define E3_DIR_PIN         33
 //#define E3_ENABLE_PIN      37
-//#define E3_MS1_PIN         67
-//#define E3_MS2_PIN         68
-//#define E3_MS3_PIN         69
 
 //#define Z2_STEP_PIN        29
 //#define Z2_DIR_PIN         27
 //#define Z2_ENABLE_PIN      31
+
+// Microstepping pins - Mapping not from fastio.h (?)
+//#define E3_MS1_PIN         67
+//#define E3_MS2_PIN         68
+//#define E3_MS3_PIN         69
 //#define Z2_MS1_PIN         67 // shared with E3_MS1_PIN
 //#define Z2_MS2_PIN         68 // shared with E3_MS2_PIN
 //#define Z2_MS3_PIN         69 // shared with E3_MS3_PIN
@@ -72,17 +74,18 @@
 //
 // Temperature Sensors
 //
-#define TEMP_0_PIN          0 // ANALOG NUMBERING
-#define TEMP_1_PIN          1 // ANALOG NUMBERING
-#define TEMP_2_PIN          2 // ANALOG NUMBERING
-#define TEMP_3_PIN          3 // ANALOG NUMBERING
-#define TEMP_BED_PIN        4 // ANALOG NUMBERING
+#define TEMP_0_PIN          0   // Analog Input
+#define TEMP_1_PIN          1   // Analog Input
+#define TEMP_2_PIN          2   // Analog Input
+#define TEMP_3_PIN          3   // Analog Input
+#define TEMP_BED_PIN        4   // Analog Input
 
-//
-// Misc. Functions
-//
-#define SDSS                4
-#define PS_ON_PIN          40
+// SPI for Max6675 or Max31855 Thermocouple
+#if DISABLED(SDSUPPORT)
+  #define MAX6675_SS        53
+#else
+  #define MAX6675_SS        49
+#endif
 
 //
 // Heaters / Fans
@@ -94,6 +97,12 @@
 
 #define FAN_PIN             9
 #define FAN1_PIN            8
+
+//
+// Misc. Functions
+//
+#define SDSS                4
+#define PS_ON_PIN          40
 
 //
 // LCD / Controller
@@ -150,10 +159,3 @@
 
   #endif // SPARK_FULL_GRAPHICS
 #endif // ULTRA_LCD
-
-// SPI for Max6675 or Max31855 Thermocouple
-#if DISABLED(SDSUPPORT)
-  #define MAX6675_SS        53
-#else
-  #define MAX6675_SS        49
-#endif

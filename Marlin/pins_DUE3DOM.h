@@ -57,16 +57,17 @@
 //
 // Temperature Sensors
 //
-#define TEMP_0_PIN          0 // HOTEND0 thermistor
-#define TEMP_1_PIN          2 // HOTEND1 thermistor
-#define TEMP_2_PIN          5 // unused
-#define TEMP_BED_PIN        1 // BED thermistor
+#define TEMP_0_PIN          0   // Analog Input (HOTEND0 thermistor)
+#define TEMP_1_PIN          2   // Analog Input (HOTEND1 thermistor)
+#define TEMP_2_PIN          5   // Analog Input (unused)
+#define TEMP_BED_PIN        1   // Analog Input (BED thermistor)
 
-//
-// Misc. Functions
-//
-#define SDSS                4
-#define PS_ON_PIN          40
+// SPI for Max6675 or Max31855 Thermocouple
+#if DISABLED(SDSUPPORT)
+  #define MAX6675_SS        -1
+#else
+  #define MAX6675_SS        -1
+#endif
 
 //
 // Heaters / Fans
@@ -78,6 +79,12 @@
 #define FAN_PIN            11 // FAN1 header on board - PRINT FAN
 #define FAN1_PIN            9 // FAN2 header on board - CONTROLLER FAN
 #define FAN2_PIN           12 // FAN3 header on board - EXTRUDER0 FAN
+
+//
+// Misc. Functions
+//
+#define SDSS                4
+#define PS_ON_PIN          40
 
 //
 // LCD / Controller
@@ -134,10 +141,3 @@
     #define BEEPER_PIN      -1
   #endif // SPARK_FULL_GRAPHICS
 #endif // ULTRA_LCD
-
-// SPI for Max6675 or Max31855 Thermocouple
-#if DISABLED(SDSUPPORT)
-  #define MAX6675_SS        -1
-#else
-  #define MAX6675_SS        -1
-#endif

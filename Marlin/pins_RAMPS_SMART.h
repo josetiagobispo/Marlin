@@ -42,18 +42,27 @@
 // Temperature Sensors
 //
 #undef TEMP_0_PIN
-#define TEMP_0_PIN          9 // ANALOG NUMBERING
+#define TEMP_0_PIN          9   // Analog Input
 
 #undef TEMP_1_PIN
-#define TEMP_1_PIN         10 // ANALOG NUMBERING
+#define TEMP_1_PIN         10   // Analog Input
 
 #undef TEMP_BED_PIN
-#define TEMP_BED_PIN       11 // ANALOG NUMBERING
+#define TEMP_BED_PIN       11   // Analog Input
+
+// SPI for Max6675 or Max31855 Thermocouple
+#if DISABLED(SDSUPPORT)
+  #undef MAX6675_SS
+  #define MAX6675_SS       67 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
+#else
+  #undef MAX6675_SS
+  #define MAX6675_SS       67 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
+#endif
 
 //
 // LCD / Controller
-// Support for AZSMZ 12864 LCD with SD Card 3D printer smart controller control panel (not tested)
 //
+// Support for AZSMZ 12864 LCD with SD Card 3D printer smart controller control panel (not tested)
 #if ENABLED(VIKI2)
   #undef BEEPER_PIN
   #define BEEPER_PIN       66
@@ -79,13 +88,4 @@
 
   #undef KILL_PIN
   #define KILL_PIN         42
-#endif
-
-// SPI for Max6675 or Max31855 Thermocouple
-#if DISABLED(SDSUPPORT)
-  #undef MAX6675_SS
-  #define MAX6675_SS       67 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
-#else
-  #undef MAX6675_SS
-  #define MAX6675_SS       67 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
 #endif

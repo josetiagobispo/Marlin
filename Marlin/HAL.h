@@ -38,8 +38,6 @@
   // Defines
   // --------------------------------------------------------------------------
 
-  // Marlin needs to account for pins that equal -1
-  #define marlinAnalogInputToDigitalPin(p) ((p) == -1 ? -1 : (p))
   #define FORCE_INLINE __attribute__((always_inline)) inline
 
   #define CRITICAL_SECTION_START uint32_t primask = __get_PRIMASK(); __disable_irq();
