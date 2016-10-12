@@ -38,6 +38,8 @@
   // Defines
   // --------------------------------------------------------------------------
 
+  #define MAX_ANALOG_PIN_NUMBER 11
+
   #define FORCE_INLINE __attribute__((always_inline)) inline
 
   #define CRITICAL_SECTION_START uint32_t primask = __get_PRIMASK(); __disable_irq();
