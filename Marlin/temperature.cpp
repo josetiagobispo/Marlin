@@ -1009,6 +1009,38 @@ void Temperature::init() {
 
     OUT_WRITE(MAX6675_SS, HIGH);
 
+    #if ENABLED(MAX6675_IS_MAX31856)
+
+      #define MAX6675_SPEED_BITS (_BV(SPR1)) // clock ÷ 64
+
+      CBI(
+        #ifdef PRR
+          PRR
+        #elif defined(PRR0)
+          PRR0
+        #endif
+          , PRSPI);
+      SPCR = _BV(MSTR) | _BV(SPE) | MAX6675_SPEED_BITS;
+
+      WRITE(MAX6675_SS, LOW); // enable TT_MAX6675
+
+      // ensure 100ns delay - a bit extra is fine
+      asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
+      asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
+
+      // Write a setting
+      SPDR = 0x80; // Select configuration 0 register for writing
+      for (;!TEST(SPSR, SPIF););
+      SPDR = 0x80; // Automatic Conversion mode
+      for (;!TEST(SPSR, SPIF););
+      SPDR = 0x81; // Select configuration 1 register for writing
+      for (;!TEST(SPSR, SPIF););
+      SPDR = 0x00 | THERMOCOUPLE_TYPE; // 1 sample
+      for (;!TEST(SPSR, SPIF););
+
+      WRITE(MAX6675_SS, HIGH); // disable TT_MAX6675
+    #endif
+
   #endif //HEATER_0_USES_MAX6675
 
   #ifdef DIDR2
@@ -1293,13 +1325,20 @@ void Temperature::disable_all_heaters() {
 
   #define MAX6675_HEAT_INTERVAL 250u
 
-  #if ENABLED(MAX6675_IS_MAX31855)
+  #if ENABLED(MAX6675_IS_MAX31856)
     uint32_t max6675_temp = 2000;
+    #define MAX6675_READ_SIZE 3
+    #define MAX6675_ERROR_MASK 0xff
+    #define MAX6675_DISCARD_BITS 10
+  #elif ENABLED(MAX6675_IS_MAX31855)
+    uint32_t max6675_temp = 2000;
+    #define MAX6675_READ_SIZE sizeof(max6675_temp)
     #define MAX6675_ERROR_MASK 7
     #define MAX6675_DISCARD_BITS 18
     #define MAX6675_SPEED_BITS (_BV(SPR1)) // clock ÷ 64
   #else
     uint16_t max6675_temp = 2000;
+    #define MAX6675_READ_SIZE sizeof(max6675_temp)
     #define MAX6675_ERROR_MASK 4
     #define MAX6675_DISCARD_BITS 3
     #define MAX6675_SPEED_BITS (_BV(SPR0)) // clock ÷ 16
@@ -1324,7 +1363,7 @@ void Temperature::disable_all_heaters() {
         , PRSPI);
     SPCR = _BV(MSTR) | _BV(SPE) | MAX6675_SPEED_BITS;
 
-    WRITE(MAX6675_SS, 0); // enable TT_MAX6675
+    WRITE(MAX6675_SS, LOW); // enable TT_MAX6675
 
     // ensure 100ns delay - a bit extra is fine
     asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
@@ -1332,34 +1371,40 @@ void Temperature::disable_all_heaters() {
 
     // Read a big-endian temperature value
     max6675_temp = 0;
-    for (uint8_t i = sizeof(max6675_temp); i--;) {
-      SPDR = 0;
+    for (uint8_t i = MAX6675_READ_SIZE; i--;) {
+      #if ENABLED(MAX6675_IS_MAX31856)
+        SPDR = 0x0c + i; // Select  Linearized TC Temperature register for reading
+      #else
+        SPDR = 0;
+      #endif
       for (;!TEST(SPSR, SPIF););
       max6675_temp |= SPDR;
       if (i > 0) max6675_temp <<= 8; // shift left if not the last byte
     }
 
-    WRITE(MAX6675_SS, 1); // disable TT_MAX6675
+    WRITE(MAX6675_SS, HIGH); // disable TT_MAX6675
 
-    if (max6675_temp & MAX6675_ERROR_MASK) {
-      SERIAL_ERROR_START;
-      SERIAL_ERRORPGM("Temp measurement error! ");
-      #if MAX6675_ERROR_MASK == 7
-        SERIAL_ERRORPGM("MAX31855 ");
-        if (max6675_temp & 1)
-          SERIAL_ERRORLNPGM("Open Circuit");
-        else if (max6675_temp & 2)
-          SERIAL_ERRORLNPGM("Short to GND");
-        else if (max6675_temp & 4)
-          SERIAL_ERRORLNPGM("Short to VCC");
-      #else
-        SERIAL_ERRORLNPGM("MAX6675");
-      #endif
-      max6675_temp = MAX6675_TMAX * 4; // thermocouple open
-    }
-    else
+    #if DISABLED(MAX6675_IS_MAX31856)
+      if (max6675_temp & MAX6675_ERROR_MASK) {
+        SERIAL_ERROR_START;
+        SERIAL_ERRORPGM("Temp measurement error! ");
+        #if MAX6675_ERROR_MASK == 7
+          SERIAL_ERRORPGM("MAX31855 ");
+          if (max6675_temp & 1)
+            SERIAL_ERRORLNPGM("Open Circuit");
+          else if (max6675_temp & 2)
+            SERIAL_ERRORLNPGM("Short to GND");
+          else if (max6675_temp & 4)
+            SERIAL_ERRORLNPGM("Short to VCC");
+        #else
+          SERIAL_ERRORLNPGM("MAX6675");
+        #endif
+        max6675_temp = MAX6675_TMAX * 4; // thermocouple open
+      }
+      else
+    #endif
       max6675_temp >>= MAX6675_DISCARD_BITS;
-      #if ENABLED(MAX6675_IS_MAX31855)
+      #if ENABLED(MAX6675_IS_MAX31855) || ENABLED(MAX6675_IS_MAX31856)
         // Support negative temperature
         if (max6675_temp & 0x00002000) max6675_temp |= 0xffffc000;
       #endif
