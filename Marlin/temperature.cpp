@@ -156,7 +156,7 @@ volatile bool Temperature::temp_meas_ready = false;
   millis_t Temperature::next_bed_check_ms;
 #endif
 
-unsigned long Temperature::raw_temp_value[4] = { 0 };
+unsigned long Temperature::raw_temp_value[MAX_EXTRUDERS] = { 0 };
 unsigned long Temperature::raw_temp_bed_value = 0;
 
 #ifdef __SAM3X8E__
@@ -682,8 +682,8 @@ void Temperature::manage_heater() {
   updateTemperaturesFromRawValues(); // also resets the watchdog
 
   #if ENABLED(HEATER_0_USES_MAX6675)
-    if (current_temperature[0] > min(HEATER_0_MAXTEMP, 1023)) max_temp_error(0);
-    if (current_temperature[0] < max(HEATER_0_MINTEMP, 0.01)) min_temp_error(0);
+    if (current_temperature[0] > min(HEATER_0_MAXTEMP, MAX6675_TMAX - 1)) max_temp_error(0);
+    if (current_temperature[0] < max(HEATER_0_MINTEMP, MAX6675_TMIN + 0.01)) min_temp_error(0);
   #endif
 
   #if (ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0) || (ENABLED(THERMAL_PROTECTION_BED) && WATCH_BED_TEMP_PERIOD > 0) || DISABLED(PIDTEMPBED) || HAS_AUTO_FAN
@@ -1431,10 +1431,14 @@ void Temperature::disable_all_heaters() {
       #else
         SERIAL_ERRORLNPGM("MAX6675");
       #endif
-      max6675_temp = 4000; // thermocouple open
+      max6675_temp = MAX6675_TMAX * 4; // thermocouple open
     }
     else
       max6675_temp >>= MAX6675_DISCARD_BITS;
+      #if ENABLED(MAX6675_IS_MAX31855)
+        // Support negative temperature
+        if (max6675_temp & 0x00002000) max6675_temp |= 0xffffc000;
+      #endif
 
     return (int)max6675_temp;
   }
@@ -1938,6 +1942,9 @@ void Temperature::isr() {
   #else
     if (temp_count >= OVERSAMPLENR) { // 10 * 16 * 1/(16000000/64/256)  = 164ms.
   #endif
+
+    temp_count = 0;
+
     // Update the raw values if they've been read. Else we could be updating them during reading.
     if (!temp_meas_ready) set_current_temp_raw();
 
@@ -1946,85 +1953,54 @@ void Temperature::isr() {
       current_raw_filwidth = raw_filwidth_value >> 10;  // Divide to get to 0-16384 range since we used 1/128 IIR filter approach
     #endif
 
-    temp_count = 0;
-    for (int i = 0; i < 4; i++) raw_temp_value[i] = 0;
+    ZERO(raw_temp_value);
     raw_temp_bed_value = 0;
 
-    #if HAS_TEMP_0 && DISABLED(HEATER_0_USES_MAX6675)
-      #if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
-        #define GE0 <=
+    int constexpr temp_dir[] = {
+      #if ENABLED(HEATER_0_USES_MAX6675)
+         0
+      #elif HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
+        -1
       #else
-        #define GE0 >=
+         1
       #endif
-      if (current_temperature_raw[0] GE0 maxttemp_raw[0]) max_temp_error(0);
-      if (minttemp_raw[0] GE0 current_temperature_raw[0] && !is_preheating(0) && target_temperature[0] > 0.0f) {
-        #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-          if (++consecutive_low_temperature_error[0] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
+      #if HAS_TEMP_1 && HOTENDS > 1
+        #if HEATER_1_RAW_LO_TEMP > HEATER_1_RAW_HI_TEMP
+          , -1
+        #else
+          ,  1
         #endif
-            min_temp_error(0);
-      }
-      #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-        else
-          consecutive_low_temperature_error[0] = 0;
       #endif
-    #endif
+      #if HAS_TEMP_2 && HOTENDS > 2
+        #if HEATER_2_RAW_LO_TEMP > HEATER_2_RAW_HI_TEMP
+          , -1
+        #else
+          ,  1
+        #endif
+      #endif
+      #if HAS_TEMP_3 && HOTENDS > 3
+        #if HEATER_3_RAW_LO_TEMP > HEATER_3_RAW_HI_TEMP
+          , -1
+        #else
+          ,  1
+        #endif
+      #endif
+    };
 
-    #if HAS_TEMP_1 && HOTENDS > 1
-      #if HEATER_1_RAW_LO_TEMP > HEATER_1_RAW_HI_TEMP
-        #define GE1 <=
-      #else
-        #define GE1 >=
-      #endif
-      if (current_temperature_raw[1] GE1 maxttemp_raw[1]) max_temp_error(1);
-      if (minttemp_raw[1] GE1 current_temperature_raw[1] && !is_preheating(1) && target_temperature[1] > 0.0f) {
+    for (uint8_t e = 0; e < COUNT(temp_dir); e++) {
+      const int tdir = temp_dir[e], rawtemp = current_temperature_raw[e] * tdir;
+      if (rawtemp > maxttemp_raw[e] * tdir && target_temperature[e] > 0.0f) max_temp_error(e);
+      if (rawtemp < minttemp_raw[e] * tdir && !is_preheating(e) && target_temperature[e] > 0.0f) {
         #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-          if (++consecutive_low_temperature_error[1] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
+          if (++consecutive_low_temperature_error[e] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
         #endif
-          min_temp_error(1);
+            min_temp_error(e);
       }
       #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
         else
-          consecutive_low_temperature_error[1] = 0;
+          consecutive_low_temperature_error[e] = 0;
       #endif
-    #endif // TEMP_SENSOR_1
-
-    #if HAS_TEMP_2 && HOTENDS > 2
-      #if HEATER_2_RAW_LO_TEMP > HEATER_2_RAW_HI_TEMP
-        #define GE2 <=
-      #else
-        #define GE2 >=
-      #endif
-      if (current_temperature_raw[2] GE2 maxttemp_raw[2]) max_temp_error(2);
-      if (minttemp_raw[2] GE2 current_temperature_raw[2] && !is_preheating(2) && target_temperature[2] > 0.0f) {
-        #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-          if (++consecutive_low_temperature_error[2] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
-        #endif
-          min_temp_error(2);
-      }
-      #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-        else
-          consecutive_low_temperature_error[2] = 0;
-      #endif
-    #endif // TEMP_SENSOR_2
-
-    #if HAS_TEMP_3 && HOTENDS > 3
-      #if HEATER_3_RAW_LO_TEMP > HEATER_3_RAW_HI_TEMP
-        #define GE3 <=
-      #else
-        #define GE3 >=
-      #endif
-      if (current_temperature_raw[3] GE3 maxttemp_raw[3]) max_temp_error(3);
-      if (minttemp_raw[3] GE3 current_temperature_raw[3] && !is_preheating(3) && target_temperature[3] > 0.0f) {
-        #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-          if (++consecutive_low_temperature_error[3] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
-        #endif
-          min_temp_error(3);
-      }
-      #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-        else
-          consecutive_low_temperature_error[3] = 0;
-      #endif
-    #endif // TEMP_SENSOR_3
+    }
 
     #if HAS_TEMP_BED
       #if HEATER_BED_RAW_LO_TEMP > HEATER_BED_RAW_HI_TEMP
@@ -2032,7 +2008,7 @@ void Temperature::isr() {
       #else
         #define GEBED >=
       #endif
-      if (current_temperature_bed_raw GEBED bed_maxttemp_raw) max_temp_error(-1);
+      if (current_temperature_bed_raw GEBED bed_maxttemp_raw && target_temperature_bed > 0.0f) max_temp_error(-1);
       if (bed_minttemp_raw GEBED current_temperature_bed_raw && target_temperature_bed > 0.0f) min_temp_error(-1);
     #endif
 
