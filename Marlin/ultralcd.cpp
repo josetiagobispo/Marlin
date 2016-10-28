@@ -2441,6 +2441,7 @@ void kill_screen(const char* lcd_msg) {
         case X_AXIS: lcd_move_x(); break;
         case Y_AXIS: lcd_move_y(); break;
         case Z_AXIS: lcd_move_z();
+        default: break;
       }
     }
     static void reprapworld_keypad_move_z_up()    { _reprapworld_keypad_move(Z_AXIS,  1); }
@@ -2560,15 +2561,9 @@ void lcd_init() {
     #endif
 
     #if ENABLED(REPRAPWORLD_KEYPAD)
-      pinMode(SHIFT_CLK, OUTPUT);
-      pinMode(SHIFT_LD, OUTPUT);
-      pinMode(SHIFT_OUT, INPUT);
-      #ifdef __SAM3X8E__
-        PULLUP(SHIFT_OUT, HIGH);
-      #else
-        WRITE(SHIFT_OUT, HIGH);
-      #endif
-      WRITE(SHIFT_LD, HIGH);
+      SET_OUTPUT(SHIFT_CLK);
+      OUT_WRITE(SHIFT_LD, HIGH);
+      SET_INPUT_PULLUP(SHIFT_OUT);
     #endif
 
     #if BUTTON_EXISTS(UP)
@@ -2587,20 +2582,13 @@ void lcd_init() {
   #else // !NEWPANEL
 
     #if ENABLED(SR_LCD_2W_NL) // Non latching 2 wire shift register
-      pinMode(SR_DATA_PIN, OUTPUT);
-      pinMode(SR_CLK_PIN, OUTPUT);
+      SET_OUTPUT(SR_DATA_PIN);
+      SET_OUTPUT(SR_CLK_PIN);
     #elif defined(SHIFT_CLK)
-      pinMode(SHIFT_CLK, OUTPUT);
-      pinMode(SHIFT_LD, OUTPUT);
-      pinMode(SHIFT_EN, OUTPUT);
-      pinMode(SHIFT_OUT, INPUT);
-      #ifdef __SAM3X8E__
-        PULLUP(SHIFT_OUT, HIGH);
-      #else
-        WRITE(SHIFT_OUT, HIGH);
-      #endif
-      WRITE(SHIFT_LD, HIGH);
-      WRITE(SHIFT_EN, LOW);
+      SET_OUTPUT(SHIFT_CLK);
+      OUT_WRITE(SHIFT_LD, HIGH);
+      OUT_WRITE(SHIFT_EN, LOW);
+      SET_INPUT_PULLUP(SHIFT_OUT);
     #endif // SR_LCD_2W_NL
 
   #endif // !NEWPANEL
