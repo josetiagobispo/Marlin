@@ -674,7 +674,11 @@ void Stepper::isr() {
     #endif // ADVANCE or LIN_ADVANCE
 
     #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-      eISR_Rate = (timer >> 3) * step_loops / abs(e_steps[TOOL_E_INDEX]); //>> 3 is divide by 8. Reason: Timer 1 runs at 16/8=2MHz, Timer 0 at 16/64=0.25MHz. ==> 2/0.25=8.
+      #ifdef __SAM3X8E__
+        eISR_Rate = timer * step_loops / abs(e_steps[TOOL_E_INDEX]); //Both Timer 2 and Timer 1 runs at 84/2=42MHz.
+      #else
+        eISR_Rate = (timer >> 3) * step_loops / abs(e_steps[TOOL_E_INDEX]); //>> 3 is divide by 8. Reason: Timer 1 runs at 16/8=2MHz, Timer 0 at 16/64=0.25MHz. ==> 2/0.25=8.
+      #endif
     #endif
   }
   else if (step_events_completed > (uint32_t)current_block->decelerate_after) {
@@ -732,7 +736,11 @@ void Stepper::isr() {
     #endif // ADVANCE or LIN_ADVANCE
 
     #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
-      eISR_Rate = (timer >> 3) * step_loops / abs(e_steps[TOOL_E_INDEX]);
+      #ifdef __SAM3X8E__
+        eISR_Rate = timer * step_loops / abs(e_steps[TOOL_E_INDEX]);
+      #else
+        eISR_Rate = (timer >> 3) * step_loops / abs(e_steps[TOOL_E_INDEX]);
+      #endif
     #endif
   }
   else {
