@@ -4764,7 +4764,11 @@ inline void gcode_M42() {
     int first_pin = 0, last_pin = NUM_DIGITAL_PINS - 1;
     if (code_seen('P')) {
       first_pin = last_pin = code_value_byte();
-      if (first_pin > NUM_DIGITAL_PINS - 1) return;
+      #ifdef __SAM3X8E__
+        if (first_pin > (int)(NUM_DIGITAL_PINS - 1)) return;
+      #else
+        if (first_pin > NUM_DIGITAL_PINS - 1) return;
+      #endif
     }
 
     bool ignore_protection = code_seen('I') ? code_value_bool() : false;
