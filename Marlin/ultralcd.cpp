@@ -271,9 +271,8 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
         encoderTopLine = encoderLine - (LCD_HEIGHT - 1); \
       } \
       bool _skipStatic = true; \
-      BACK_TO_PARENT() \
+      BACK_TO_PARENT(); \
       SCREEN_OR_MENU_LOOP()
-    #endif
   #else
     #define START_MENU() \
       START_SCREEN_OR_MENU(1); \
@@ -2644,14 +2643,22 @@ void lcd_update() {
 
     // If the action button is pressed...
     #ifdef __SAM3X8E__
-      if (LCD_CLICKED || LCD_BACK_CLICKED) {
+      #if BUTTON_EXISTS(BACK)
+        if (LCD_CLICKED || LCD_BACK_CLICKED) {
+      #else
+        if (LCD_CLICKED) {
+      #endif
     #else
       if (LCD_CLICKED) {
     #endif
       if (!wait_for_unclick) {           // If not waiting for a debounce release:
         wait_for_unclick = true;         //  Set debounce flag to ignore continous clicks
         #ifdef __SAM3X8E__
-          LCD_CLICKED ? lcd_clicked = !wait_for_user : lcd_backclicked = !wait_for_user;    //  Keep the click if not waiting for a user-click
+          #if BUTTON_EXISTS(BACK)
+            LCD_CLICKED ? lcd_clicked = !wait_for_user : lcd_backclicked = !wait_for_user;    //  Keep the click if not waiting for a user-click
+          #else
+            lcd_clicked = !wait_for_user;    //  Keep the click if not waiting for a user-click
+          #endif
         #else
           lcd_clicked = !wait_for_user;    //  Keep the click if not waiting for a user-click
         #endif
