@@ -607,7 +607,7 @@ void Stepper::isr() {
   #if ENABLED(ADVANCE) || ENABLED(LIN_ADVANCE)
     // If we have esteps to execute, fire the next advance_isr "now"
     #ifdef __SAM3X8E__
-      if (e_steps[TOOL_E_INDEX]) HAL_TIMER_SET_EXTRUDER_COUNT(HAL_timer_get_current_count(EXTRUDER_TIMER) + 2 * EXTRUDER_TIMER_FACTOR);
+      if (e_steps[TOOL_E_INDEX]) HAL_TIMER_SET_EXTRUDER_COUNT(HAL_timer_get_current_count(EXTRUDER_TIMER) + 2 * REFERENCE_STEPPER_TIMER_PRESCALE / EXTRUDER_TIMER_PRESCALE);
     #else
       if (e_steps[TOOL_E_INDEX]) OCR0A = TCNT0 + 2;
     #endif
@@ -765,7 +765,7 @@ void Stepper::isr() {
 
   #ifdef __SAM3X8E__
     uint32_t stepper_timer_count = HAL_timer_get_count(STEPPER_TIMER),
-             stepper_timer_current_count = HAL_timer_get_current_count(STEPPER_TIMER) + 16 * STEPPER_TIMER_FACTOR;
+             stepper_timer_current_count = HAL_timer_get_current_count(STEPPER_TIMER) + 16 * REFERENCE_STEPPER_TIMER_PRESCALE / EXTRUDER_TIMER_PRESCALE;
     HAL_TIMER_SET_STEPPER_COUNT(stepper_timer_count < stepper_timer_current_count ? stepper_timer_current_count : stepper_timer_count);
   #else
     NOLESS(OCR1A, TCNT1 + 16);
