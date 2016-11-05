@@ -87,13 +87,13 @@ int freeMemory() {
       b <<= 1;
 
       WRITE(SCK_PIN, HIGH);
-      HAL_delayMicroseconds(5U);
+      delayMicroseconds(5U);
 
       if (READ(MISO_PIN)) {
         b |= 1;
       }
       WRITE(SCK_PIN, LOW);
-      HAL_delayMicroseconds(5U);
+      delayMicroseconds(5U);
     }
     return b;
   }
@@ -247,7 +247,7 @@ int freeMemory() {
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
     // clear status
     SPI0->SPI_RDR;
-    //HAL_delayMicroseconds(1U);
+    //delayMicroseconds(1U);
   }
 
   void spiSend(const uint8_t* buf, size_t n) {
@@ -257,7 +257,7 @@ int freeMemory() {
       while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       SPI0->SPI_RDR;
-      //HAL_delayMicroseconds(1U);
+      //delayMicroseconds(1U);
     }
     spiSend(buf[n - 1]);
   }
@@ -300,7 +300,7 @@ int freeMemory() {
     // wait for receive register
     while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
     // get byte from receive register
-    //HAL_delayMicroseconds(1U);
+    //delayMicroseconds(1U);
     return SPI0->SPI_RDR;
   }
 
@@ -330,7 +330,7 @@ int freeMemory() {
       SPI0->SPI_TDR = 0x000000FF | SPI_PCS(SPI_CHAN);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       buf[i] = SPI0->SPI_RDR;
-      //HAL_delayMicroseconds(1U);
+      //delayMicroseconds(1U);
     }
     buf[nbyte] = spiRec();
   }
@@ -346,7 +346,7 @@ int freeMemory() {
       while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
       while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
       SPI0->SPI_RDR;
-      //HAL_delayMicroseconds(1U);
+      //delayMicroseconds(1U);
     }
     spiSend(buf[511]);
   }

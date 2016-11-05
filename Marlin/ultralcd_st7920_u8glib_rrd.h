@@ -45,10 +45,10 @@
 
 #define DELAY_0_NOP  NOOP
 #ifdef __SAM3X8E__
-  #define DELAY_1_NOP  HAL_delayMicroseconds(1)
-  #define DELAY_2_NOP  HAL_delayMicroseconds(1)
-  #define DELAY_3_NOP  HAL_delayMicroseconds(1)
-  #define DELAY_4_NOP  HAL_delayMicroseconds(1)
+  #define DELAY_1_NOP  delayMicroseconds(1U)
+  #define DELAY_2_NOP  delayMicroseconds(1U)
+  #define DELAY_3_NOP  delayMicroseconds(1U)
+  #define DELAY_4_NOP  delayMicroseconds(1U)
 #else
   #define DELAY_1_NOP  __asm__("nop\n\t")
   #define DELAY_2_NOP  __asm__("nop\n\t" "nop\n\t")

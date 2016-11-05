@@ -194,8 +194,8 @@
   // Enable interrupts
   void sei(void);
 
-  // Delays
 #if 0
+  // Delays
   static inline void HAL_delay(millis_t ms) {
     unsigned int del;
     while (ms > 0) {
@@ -205,16 +205,6 @@
     }
   }
 #endif
-
-  static FORCE_INLINE void HAL_delayMicroseconds(uint32_t usec) { //usec += 3;
-    uint32_t n = usec * (F_CPU / 3000000);
-    asm volatile(
-      "L2_%=_delayMicroseconds:"       "\n\t"
-      "subs   %0, #1"                 "\n\t"
-      "bge    L2_%=_delayMicroseconds" "\n"
-      : "+r" (n) :  
-    );
-  }
 
   // return free memory between end of heap (or end bss) and whatever is current
   int freeMemory(void);

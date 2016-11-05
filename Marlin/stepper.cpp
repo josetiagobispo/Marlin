@@ -1260,27 +1260,15 @@ void Stepper::report_positions() {
   #define _INVERT_DIR(AXIS) INVERT_## AXIS ##_DIR
   #define _APPLY_DIR(AXIS, INVERT) AXIS ##_APPLY_DIR(INVERT, true)
 
-  #ifdef __SAM3X8E__
-    #define BABYSTEP_AXIS(axis, AXIS, INVERT) { \
-        _ENABLE(axis); \
-        uint8_t old_pin = _READ_DIR(AXIS); \
-        _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
-        _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
-        HAL_delayMicroseconds(2U); \
-        _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
-        _APPLY_DIR(AXIS, old_pin); \
-      }
-  #else
-    #define BABYSTEP_AXIS(axis, AXIS, INVERT) { \
-        _ENABLE(axis); \
-        uint8_t old_pin = _READ_DIR(AXIS); \
-        _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
-        _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
-        delayMicroseconds(2); \
-        _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
-        _APPLY_DIR(AXIS, old_pin); \
-      }
-  #endif
+  #define BABYSTEP_AXIS(axis, AXIS, INVERT) { \
+      _ENABLE(axis); \
+      uint8_t old_pin = _READ_DIR(AXIS); \
+      _APPLY_DIR(AXIS, _INVERT_DIR(AXIS)^direction^INVERT); \
+      _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS), true); \
+      delayMicroseconds(2); \
+      _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS), true); \
+      _APPLY_DIR(AXIS, old_pin); \
+    }
 
   // MUST ONLY BE CALLED BY AN ISR,
   // No other ISR should ever interrupt this!
@@ -1320,11 +1308,7 @@ void Stepper::report_positions() {
           X_STEP_WRITE(!INVERT_X_STEP_PIN);
           Y_STEP_WRITE(!INVERT_Y_STEP_PIN);
           Z_STEP_WRITE(!INVERT_Z_STEP_PIN);
-          #ifdef __SAM3X8E__
-            HAL_delayMicroseconds(2U);
-          #else
-            delayMicroseconds(2);
-          #endif
+          delayMicroseconds(2);
           X_STEP_WRITE(INVERT_X_STEP_PIN);
           Y_STEP_WRITE(INVERT_Y_STEP_PIN);
           Z_STEP_WRITE(INVERT_Z_STEP_PIN);

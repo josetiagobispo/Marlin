@@ -1396,7 +1396,7 @@ void Temperature::disable_all_heaters() {
 
     // ensure 100ns delay - a bit extra is fine
     #ifdef __SAM3X8E__
-      HAL_delayMicroseconds(1U);
+      delayMicroseconds(1U);
     #else
       asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
       asm("nop");//50ns on 20Mhz, 62.5ns on 16Mhz
