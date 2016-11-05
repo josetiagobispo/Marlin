@@ -750,7 +750,11 @@ void Stepper::isr() {
       if (current_block->use_advance_lead)
         current_estep_rate[TOOL_E_INDEX] = final_estep_rate;
 
-      eISR_Rate = (OCR1A_nominal >> 3) * step_loops_nominal / abs(e_steps[TOOL_E_INDEX]);
+      #ifdef __SAM3X8E__
+        eISR_Rate = OCR1A_nominal * step_loops_nominal / abs(e_steps[TOOL_E_INDEX]);
+      #else
+        eISR_Rate = (OCR1A_nominal >> 3) * step_loops_nominal / abs(e_steps[TOOL_E_INDEX]);
+      #endif
 
     #endif
 
