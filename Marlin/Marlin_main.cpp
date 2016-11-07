@@ -7484,6 +7484,7 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
           ) {
             current_position[X_AXIS] = xhome;
             current_position[Z_AXIS] += TOOLCHANGE_PARK_ZLIFT;
+            NOMORE(current_position[Z_AXIS], soft_endstop_max[Z_AXIS]);
             #if ENABLED(DEBUG_LEVELING_FEATURE)
               if (DEBUGGING(LEVELING)) {
                 SERIAL_ECHOLNPAIR("Raise to ", current_position[Z_AXIS]);
