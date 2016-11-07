@@ -7511,8 +7511,8 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
           // Activate the new extruder
           active_extruder = tmp_extruder;
 
-          // This function resets the max/min values - the current position may be overwritten below.
-          set_axis_is_at_home(X_AXIS);
+          // Update the software endstops for the selected carriage
+          update_software_endstops(X_AXIS);
 
           #if ENABLED(DEBUG_LEVELING_FEATURE)
             if (DEBUGGING(LEVELING)) DEBUG_POS("New Extruder", current_position);
