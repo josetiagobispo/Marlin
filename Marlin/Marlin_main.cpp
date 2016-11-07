@@ -7489,6 +7489,9 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
             if (DEBUGGING(LEVELING)) DEBUG_POS("New Extruder", current_position);
           #endif
 
+          // Only when auto-parking are carriages safe to move
+          if (dual_x_carriage_mode != DXC_AUTO_PARK_MODE) no_move = true;
+
           switch (dual_x_carriage_mode) {
             case DXC_FULL_CONTROL_MODE:
               // New current position is the position of the activated extruder
