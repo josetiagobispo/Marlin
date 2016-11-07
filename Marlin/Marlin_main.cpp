@@ -1427,6 +1427,7 @@ static void set_home_offset(AxisEnum axis, float v) {
  * current_position to home, because neither X nor Y is at home until
  * both are at home. Z can however be homed individually.
  *
+ * Callers must sync the planner position after calling this!
  */
 static void set_axis_is_at_home(AxisEnum axis) {
   #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -3231,10 +3232,12 @@ inline void gcode_G4() {
           #endif
         )
     ) {
+
       #if HOMING_Z_WITH_PROBE
         destination[X_AXIS] -= X_PROBE_OFFSET_FROM_EXTRUDER;
         destination[Y_AXIS] -= Y_PROBE_OFFSET_FROM_EXTRUDER;
       #endif
+
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (DEBUGGING(LEVELING)) DEBUG_POS("Z_SAFE_HOMING", destination);
       #endif
@@ -3384,20 +3387,31 @@ inline void gcode_G28() {
 
     // Home X
     if (home_all_axis || homeX) {
+
       #if ENABLED(DUAL_X_CARRIAGE)
-        int tmp_extruder = active_extruder;
-        active_extruder = !active_extruder;
+
+        // Always home the 2nd (right) extruder first
+        active_extruder = 1;
         HOMEAXIS(X);
+
+        // Remember this extruder's position for later tool change
         inactive_extruder_x_pos = RAW_X_POSITION(current_position[X_AXIS]);
-        active_extruder = tmp_extruder;
+
+        // Home the 1st (left) extruder
+        active_extruder = 0;
         HOMEAXIS(X);
-        // reset state used by the different modes
+
+        // Consider the active extruder to be parked
         memcpy(raised_parked_position, current_position, sizeof(raised_parked_position));
         delayed_move_time = 0;
         active_extruder_parked = true;
+
       #else
+
         HOMEAXIS(X);
+
       #endif
+
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (DEBUGGING(LEVELING)) DEBUG_POS("> homeX", current_position);
       #endif
@@ -7433,20 +7447,21 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
             }
           #endif
 
+          float xhome = x_home_pos(active_extruder);
           if (dual_x_carriage_mode == DXC_AUTO_PARK_MODE && IsRunning() &&
-              (delayed_move_time || current_position[X_AXIS] != x_home_pos(active_extruder))
+              (delayed_move_time || current_position[X_AXIS] != xhome)
           ) {
             #if ENABLED(DEBUG_LEVELING_FEATURE)
               if (DEBUGGING(LEVELING)) {
-                SERIAL_ECHOPAIR("Raise to ", current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT); SERIAL_EOL;
-                SERIAL_ECHOPAIR("MoveX to ", x_home_pos(active_extruder)); SERIAL_EOL;
-                SERIAL_ECHOPAIR("Lower to ", current_position[Z_AXIS]); SERIAL_EOL;
+                SERIAL_ECHOLNPAIR("Raise to ", current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT);
+                SERIAL_ECHOLNPAIR("MoveX to ", xhome);
+                SERIAL_ECHOLNPAIR("Lower to ", current_position[Z_AXIS]);
               }
             #endif
             // Park old head: 1) raise 2) move to park position 3) lower
             for (uint8_t i = 0; i < 3; i++)
               planner.buffer_line(
-                i == 0 ? current_position[X_AXIS] : x_home_pos(active_extruder),
+                i == 0 ? current_position[X_AXIS] : xhome,
                 current_position[Y_AXIS],
                 current_position[Z_AXIS] + (i == 2 ? 0 : TOOLCHANGE_PARK_ZLIFT),
                 current_position[E_AXIS],
@@ -7456,9 +7471,11 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
             stepper.synchronize();
           }
 
-          // apply Y & Z extruder offset (x offset is already used in determining home pos)
+          // Apply Y & Z extruder offset (X offset is used as home pos with Dual X)
           current_position[Y_AXIS] -= hotend_offset[Y_AXIS][active_extruder] - hotend_offset[Y_AXIS][tmp_extruder];
           current_position[Z_AXIS] -= hotend_offset[Z_AXIS][active_extruder] - hotend_offset[Z_AXIS][tmp_extruder];
+
+          // Activate the new extruder
           active_extruder = tmp_extruder;
 
           // This function resets the max/min values - the current position may be overwritten below.
@@ -7470,7 +7487,9 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
 
           switch (dual_x_carriage_mode) {
             case DXC_FULL_CONTROL_MODE:
+              // New current position is the position of the activated extruder
               current_position[X_AXIS] = LOGICAL_X_POSITION(inactive_extruder_x_pos);
+              // Save the inactive extruder's position
               inactive_extruder_x_pos = RAW_X_POSITION(destination[X_AXIS]);
               break;
             case DXC_AUTO_PARK_MODE:
@@ -7484,7 +7503,10 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
               delayed_move_time = 0;
               break;
             case DXC_DUPLICATION_MODE:
-              active_extruder_parked = (active_extruder == 0); // this triggers the second extruder to move into the duplication position
+              // If the new extruder is the left one, set it "parked"
+              // This triggers the second extruder to move into the duplication position
+              active_extruder_parked = (active_extruder == 0);
+
               if (active_extruder_parked)
                 current_position[X_AXIS] = LOGICAL_X_POSITION(inactive_extruder_x_pos);
               else
@@ -9191,8 +9213,11 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
               current_position[Z_AXIS],
               current_position[E_AXIS]
             );
-            planner.buffer_line(current_position[X_AXIS] + duplicate_extruder_x_offset,
-                             current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], planner.max_feedrate_mm_s[X_AXIS], 1);
+            planner.buffer_line(
+              current_position[X_AXIS] + duplicate_extruder_x_offset,
+              current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS],
+              planner.max_feedrate_mm_s[X_AXIS], 1
+            );
             SYNC_PLAN_POSITION_KINEMATIC();
             stepper.synchronize();
             extruder_duplication_enabled = true;
