@@ -381,6 +381,12 @@ void Stepper::isr() {
       SBI(current_block->flag, BLOCK_BIT_BUSY);
       trapezoid_generator_reset();
 
+      #ifdef __SAM3X8E__
+        #if STEPPER_DIRECTION_DELAY > 0
+          delayMicroseconds(STEPPER_DIRECTION_DELAY);
+        #endif
+      #endif
+
       // Initialize Bresenham counters to 1/2 the ceiling
       counter_X = counter_Y = counter_Z = counter_E = -(current_block->step_event_count >> 1);
 
@@ -550,6 +556,7 @@ void Stepper::isr() {
       #ifdef __SAM3X8E__
         // MINIMUM_STEPPER_PULSE = 0... pulse width = 820ns, 1... 1.5μs, 2... 2.24μs, 3... 3.34μs, 4... 4.08μs, 5... 5.18μs
         while (HAL_timer_get_current_count(STEPPER_TIMER) - pulse_start < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) / STEPPER_TIMER_PRESCALE) { /* nada */ }
+        pulse_start = HAL_timer_get_current_count(STEPPER_TIMER);
       #else
         while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) { /* nada */ }
       #endif
@@ -587,6 +594,12 @@ void Stepper::isr() {
       all_steps_done = true;
       break;
     }
+    #ifdef __SAM3X8E__
+      // For a minimum pulse time wait before stopping low pulses
+      #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_CODE
+        if (i < step_loops - 1) while (HAL_timer_get_current_count(STEPPER_TIMER) - pulse_start < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_CODE) / STEPPER_TIMER_PRESCALE) { /* nada */ }
+      #endif
+    #endif
   }
 
   #if ENABLED(LIN_ADVANCE)
@@ -862,6 +875,7 @@ void Stepper::isr() {
           // ADVANCE: MINIMUM_STEPPER_PULSE = 0... pulse width = 40ns, 1... 1.34μs, 2... 2.3μs, 3... 3.27μs, 4... 4.24μs, 5... 5.2μs
           // LIN_ADVANCE: MINIMUM_STEPPER_PULSE = 0... pulse width = 300ns, 1... 1.12μs, 2... 2.38μs, 3... 3.21μs, 4... 4.04μs, 5... 5.3μs
           while (HAL_timer_get_current_count(EXTRUDER_TIMER) - pulse_start < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) / EXTRUDER_TIMER_PRESCALE) { /* nada */ }
+          pulse_start = HAL_timer_get_current_count(EXTRUDER_TIMER);
         #else
           while ((uint32_t)(TCNT0 - pulse_start) < STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) { /* nada */ }
         #endif
@@ -875,6 +889,13 @@ void Stepper::isr() {
           #if E_STEPPERS > 3
             STOP_E_PULSE(3);
           #endif
+        #endif
+      #endif
+
+      #ifdef __SAM3X8E__
+        // For a minimum pulse time wait before stopping low pulses
+        #if STEP_PULSE_CYCLES > CYCLES_EATEN_BY_E
+          if (i < step_loops - 1) while (HAL_timer_get_current_count(EXTRUDER_TIMER) - pulse_start < (STEP_PULSE_CYCLES - CYCLES_EATEN_BY_E) / EXTRUDER_TIMER_PRESCALE) { /* nada */ }
         #endif
       #endif
     }
