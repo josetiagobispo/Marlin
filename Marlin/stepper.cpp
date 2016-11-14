@@ -378,7 +378,6 @@ void Stepper::isr() {
     // Anything in the buffer?
     current_block = planner.get_current_block();
     if (current_block) {
-      SBI(current_block->flag, BLOCK_BIT_BUSY);
       trapezoid_generator_reset();
 
       #ifdef __SAM3X8E__
