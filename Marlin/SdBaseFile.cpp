@@ -403,14 +403,12 @@ bool SdBaseFile::make83Name(const char* str, uint8_t* name, const char** ptr) {
       // illegal FAT characters
       #ifdef __SAM3X8E__
         // store chars in RAM
-        if (strchr("|<>^+=?/[];,*\"\\", c)) {
-          goto fail;
-        }
-      #else  // __SAM3X8E__
+        if (strchr("|<>^+=?/[];,*\"\\", c)) goto fail;
+      #else
         PGM_P p = PSTR("|<>^+=?/[];,*\"\\");
         uint8_t b;
         while ((b = pgm_read_byte(p++))) if (b == c) goto fail;
-      #endif  // __SAM3X8E__
+      #endif
       // check size and only allow ASCII printable characters
       if (i > n || c < 0x21 || c == 0x7F) goto fail;
       // only upper case allowed in 8.3 names - convert lower to upper
