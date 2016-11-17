@@ -2710,16 +2710,26 @@ static void homeaxis(AxisEnum axis) {
 
   #if ENABLED(DIRECT_MIXING_IN_G1)
     // Get mixing parameters from the GCode
-    // Factors that are left out are set to 0
     // The total "must" be 1.0 (but it will be normalized)
+    // If no mix factors are given, the old mix is preserved
     void gcode_get_mix() {
       const char* mixing_codes = "ABCDHI";
-      for (int i = 0; i < MIXING_STEPPERS; i++) {
-        float v = code_seen(mixing_codes[i]) ? code_value_float() : 0.0;
-        NOLESS(v, 0.0);
-        mixing_factor[i] = RECIPROCAL(v);
+      byte mix_bits = 0;
+      for (uint8_t i = 0; i < MIXING_STEPPERS; i++) {
+        if (code_seen(mixing_codes[i])) {
+          SBI(mix_bits, i);
+          float v = code_value_float();
+          NOLESS(v, 0.0);
+          mixing_factor[i] = RECIPROCAL(v);
+        }
       }
-      normalize_mix();
+      // If any mixing factors were included, clear the rest
+      // If none were included, preserve the last mix
+      if (mix_bits) {
+        for (uint8_t i = 0; i < MIXING_STEPPERS; i++)
+          if (!TEST(mix_bits, i)) mixing_factor[i] = 0.0;
+        normalize_mix();
+      }
     }
   #endif
 
@@ -4299,8 +4309,12 @@ inline void gcode_G28() {
    *     S = Stows the probe if 1 (default=1)
    */
   inline void gcode_G30() {
-    float X_probe_location = code_seen('X') ? code_value_axis_units(X_AXIS) : current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER;
-    float Y_probe_location = code_seen('Y') ? code_value_axis_units(Y_AXIS) : current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER;
+    float X_probe_location = code_seen('X') ? code_value_axis_units(X_AXIS) : current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER,
+          Y_probe_location = code_seen('Y') ? code_value_axis_units(Y_AXIS) : current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER;
+
+    float pos[XYZ] = { X_probe_location, Y_probe_location, LOGICAL_Z_POSITION(0) };
+    if (!position_is_reachable(pos, true)) return;
+
     bool stow = code_seen('S') ? code_value_bool() : true;
 
     // Disable leveling so the planner won't mess with us
@@ -4310,17 +4324,14 @@ inline void gcode_G28() {
 
     setup_for_endstop_or_probe_move();
 
-    float measured_z = probe_pt(X_probe_location,
-                                Y_probe_location,
-                                stow, 1);
+    float measured_z = probe_pt(X_probe_location, Y_probe_location, stow, 1);
 
     SERIAL_PROTOCOLPGM("Bed X: ");
-    SERIAL_PROTOCOL(current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER + 0.0001);
+    SERIAL_PROTOCOL(X_probe_location + 0.0001);
     SERIAL_PROTOCOLPGM(" Y: ");
-    SERIAL_PROTOCOL(current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER + 0.0001);
+    SERIAL_PROTOCOL(Y_probe_location + 0.0001);
     SERIAL_PROTOCOLPGM(" Z: ");
-    SERIAL_PROTOCOL(measured_z + 0.0001);
-    SERIAL_EOL;
+    SERIAL_PROTOCOLLN(measured_z + 0.0001);
 
     clean_up_after_endstop_or_probe_move();
 
