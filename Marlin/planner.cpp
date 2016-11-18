@@ -1330,7 +1330,7 @@ void Planner::_buffer_line(const float &a, const float &b, const float &c, const
     }
     else {
       block->use_advance_lead = true;
-      block->abs_adv_steps_multiplier8 = lround(extruder_advance_k * (de_float / mm_D_float) * block->nominal_speed / (float)block->nominal_rate * axis_steps_per_mm[Z_AXIS] * 256.0);
+      block->abs_adv_steps_multiplier8 = lround(extruder_advance_k * (de_float / mm_D_float) * block->nominal_speed / (float)block->nominal_rate * axis_steps_per_mm[E_AXIS] * 256.0);
     }
 
   #elif ENABLED(ADVANCE)
@@ -1450,7 +1450,7 @@ void Planner::refresh_positioning() {
 
 #if ENABLED(AUTOTEMP)
 
-  void Planner::autotemp_M109() {
+  void Planner::autotemp_M104_M109() {
     autotemp_enabled = code_seen('F');
     if (autotemp_enabled) autotemp_factor = code_value_temp_diff();
     if (code_seen('S')) autotemp_min = code_value_temp_abs();

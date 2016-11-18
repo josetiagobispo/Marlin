@@ -5151,6 +5151,10 @@ inline void gcode_M104() {
 
     if (code_value_temp_abs() > thermalManager.degHotend(target_extruder)) LCD_MESSAGEPGM(MSG_HEATING);
   }
+  
+  #if ENABLED(AUTOTEMP)
+    planner.autotemp_M104_M109();
+  #endif
 }
 
 #if HAS_TEMP_HOTEND || HAS_TEMP_BED
@@ -5346,7 +5350,7 @@ inline void gcode_M109() {
   }
 
   #if ENABLED(AUTOTEMP)
-    planner.autotemp_M109();
+    planner.autotemp_M104_M109();
   #endif
 
   #if TEMP_RESIDENCY_TIME > 0
@@ -9731,7 +9735,7 @@ void disable_all_steppers() {
 void manage_inactivity(bool ignore_stepper_queue/*=false*/) {
 
   #if ENABLED(FILAMENT_RUNOUT_SENSOR)
-    if ((IS_SD_PRINTING || print_job_timer.isRunning()) && !(READ(FIL_RUNOUT_PIN) ^ FIL_RUNOUT_INVERTING))
+    if ((IS_SD_PRINTING || print_job_timer.isRunning()) && (READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING))
       handle_filament_runout();
   #endif
 
