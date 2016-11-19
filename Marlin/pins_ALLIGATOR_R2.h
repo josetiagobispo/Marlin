@@ -95,7 +95,6 @@
 #define SD_DETECT_PIN         87 // PA29
 #define LED_RED_PIN           40 // PC8
 #define LED_GREEN_PIN         41 // PC9
-//#define CASE_LIGHT_PIN       36 // PC4
 
 #define EXP_VOLTAGE_LEVEL_PIN 65
 
