@@ -31,89 +31,19 @@
  *  - http://reprap.org/pipermail/reprap-dev/2011-May/003323.html
  */
 
-#include "Marlin.h"
-
-#include "ultralcd.h"
-#include "planner.h"
-#ifdef __SAM3X8E__
-  #if MB(ALLIGATOR)
-    #include "dac_dac084s085.h"
-  #endif
-#endif
-#include "stepper.h"
-#include "endstops.h"
-#include "temperature.h"
-#include "cardreader.h"
-#include "configuration_store.h"
-#include "language.h"
-#include "pins_arduino.h"
-#include "math.h"
-#include "nozzle.h"
-#include "duration_t.h"
-#include "types.h"
-
-#if HAS_ABL
-  #include "vector_3.h"
-  #if ENABLED(AUTO_BED_LEVELING_LINEAR)
-    #include "qr_solve.h"
-  #endif
-#elif ENABLED(MESH_BED_LEVELING)
-  #include "mesh_bed_leveling.h"
-#endif
-
-#if ENABLED(BEZIER_CURVE_SUPPORT)
-  #include "planner_bezier.h"
-#endif
-
-#if HAS_BUZZER && DISABLED(LCD_USE_I2C_BUZZER)
-  #include "buzzer.h"
-#endif
-
-#if ENABLED(USE_WATCHDOG)
-  #include "watchdog.h"
-#endif
-
-#ifdef __SAM3X8E__
-  #if ENABLED(BLINKM)
-    #include "blinkm.h"
-    #include "Wire.h"
-  #elif ENABLED(EXPERIMENTAL_I2CBUS)
-    #include "Wire.h"
-  #endif
-#else
-  #if ENABLED(BLINKM)
-    #include "blinkm.h"
-    #include "Wire.h"
-  #endif
-#endif
-
-#if HAS_SERVOS
-  #include "servo.h"
-#endif
-
-#if HAS_DIGIPOTSS
-  #include <SPI.h>
-#endif
-
-#if ENABLED(DAC_STEPPER_CURRENT)
-  #include "stepper_dac.h"
-#endif
-
-#if ENABLED(EXPERIMENTAL_I2CBUS)
-  #include "twibus.h"
-#endif
-
 /**
- * Look here for descriptions of G-codes:
+ * -----------------
+ * G-Codes in Marlin
+ * -----------------
+ *
+ * Helpful G-code references:
  *  - http://linuxcnc.org/handbook/gcode/g-code.html
  *  - http://objects.reprap.org/wiki/Mendel_User_Manual:_RepRapGCodes
  *
- * Help us document these G-codes online:
- *  - https://github.com/MarlinFirmware/Marlin/wiki/G-Code-in-Marlin
+ * Help to document Marlin's G-codes online:
  *  - http://reprap.org/wiki/G-code
+ *  - https://github.com/MarlinFirmware/MarlinDocumentation
  *
- * -----------------
- * Implemented Codes
  * -----------------
  *
  * "G" Codes
@@ -286,6 +216,82 @@
  * T0-T3 - Select an extruder (tool) by index: "T<n> F<units/min>"
  *
  */
+
+#include "Marlin.h"
+
+#include "ultralcd.h"
+#include "planner.h"
+#ifdef __SAM3X8E__
+  #if MB(ALLIGATOR)
+    #include "dac_dac084s085.h"
+  #endif
+#endif
+#include "stepper.h"
+#include "endstops.h"
+#include "temperature.h"
+#include "cardreader.h"
+#include "configuration_store.h"
+#include "language.h"
+#include "pins_arduino.h"
+#include "math.h"
+#include "nozzle.h"
+#include "duration_t.h"
+#include "types.h"
+
+#if HAS_ABL
+  #include "vector_3.h"
+  #if ENABLED(AUTO_BED_LEVELING_LINEAR)
+    #include "qr_solve.h"
+  #endif
+#elif ENABLED(MESH_BED_LEVELING)
+  #include "mesh_bed_leveling.h"
+#endif
+
+#if ENABLED(BEZIER_CURVE_SUPPORT)
+  #include "planner_bezier.h"
+#endif
+
+#if HAS_BUZZER && DISABLED(LCD_USE_I2C_BUZZER)
+  #include "buzzer.h"
+#endif
+
+#if ENABLED(USE_WATCHDOG)
+  #include "watchdog.h"
+#endif
+
+#ifdef __SAM3X8E__
+  #if ENABLED(BLINKM)
+    #include "blinkm.h"
+    #include "Wire.h"
+  #elif ENABLED(EXPERIMENTAL_I2CBUS)
+    #include "Wire.h"
+  #endif
+#else
+  #if ENABLED(BLINKM)
+    #include "blinkm.h"
+    #include "Wire.h"
+  #endif
+#endif
+
+#if HAS_SERVOS
+  #include "servo.h"
+#endif
+
+#if HAS_DIGIPOTSS
+  #include <SPI.h>
+#endif
+
+#if ENABLED(DAC_STEPPER_CURRENT)
+  #include "stepper_dac.h"
+#endif
+
+#if ENABLED(EXPERIMENTAL_I2CBUS)
+  #include "twibus.h"
+#endif
+
+#if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+  #include "endstop_interrupts.h"
+#endif
 
 #if ENABLED(M100_FREE_MEMORY_WATCHER)
   void gcode_M100();
@@ -7300,9 +7306,8 @@ inline void gcode_M907() {
     static bool case_light_on
       #if ENABLED(CASE_LIGHT_DEFAULT_ON)
         = true
-      #else
+      #endif
     ;
-    #endif
     static uint8_t case_light_brightness = 255;
     if (code_seen('P')) case_light_brightness = code_value_byte();
     if (code_seen('S')) {
@@ -10170,6 +10175,10 @@ void setup() {
   #if ENABLED(EXPERIMENTAL_I2CBUS) && I2C_SLAVE_ADDRESS > 0
     i2c.onReceive(i2c_on_receive);
     i2c.onRequest(i2c_on_request);
+  #endif
+
+  #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+    setup_endstop_interrupts();
   #endif
 }
 
