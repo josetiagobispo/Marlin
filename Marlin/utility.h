@@ -63,10 +63,8 @@ void safe_delay(millis_t ms);
   // Convert signed float to string with +123.45 format
   char* ftostr52sign(const float& x);
 
-  #ifdef __SAM3X8E__
-    // Convert signed float to string with +1234.56 format
-    char* ftostr62sign(const float& x);
-  #endif
+  // Convert signed float to string with +1234.56 format
+  char* ftostr62sign(const float& x);
 
   // Convert float to rj string with 123 or -12 format
   FORCE_INLINE char *ftostr3(const float& x) { return itostr3((int)x); }
